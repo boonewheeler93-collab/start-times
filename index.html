@@ -724,6 +724,15 @@ details > summary { border-radius: var(--radius); }
   .b-right { position: sticky; top: 16px; max-height: calc(100vh - 110px); overflow-y: auto; }
   .b-clock { font-size: clamp(5rem, 9vw, 9.5rem); }
 }
+
+/* live session bar */
+.rib { position: relative; }
+.rib-mask { position: absolute; top: 0; bottom: 0; right: 0; left: 0%; background: rgba(6, 9, 20, 0.5); pointer-events: none; z-index: 2; }
+.rib-head { position: absolute; top: -6px; bottom: -6px; width: 2px; margin-left: -1px; background: #fff; border-radius: 2px; box-shadow: 0 0 12px rgba(255,255,255,0.8); z-index: 3; }
+.rib-pill { position: absolute; top: 50%; transform: translate(-50%, -50%); z-index: 4; padding: 3px 9px; border-radius: 999px; background: #fff; color: #0a1030; font-family: var(--clockfont); font-weight: 600; font-size: 0.9rem; line-height: 1.2; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.45); }
+.rib-head[hidden], .rib-pill[hidden] { display: none; }
+.rib { overflow: visible; }
+.rib > .rseg:first-child { border-radius: 14px 0 0 14px; }
 </style>
 </head>
 <body>
@@ -869,7 +878,10 @@ details > summary { border-radius: var(--radius); }
     </section>
 
     <section class="card glass" aria-labelledby="tl-h" style="order:8">
-      <h2 id="tl-h">The ProTools session</h2>
+      <div class="card-head">
+        <h2 id="tl-h">The ProTools session</h2>
+        <div class="card-meta"><span class="live-badge" id="ribLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="ribSvc"></span></div>
+      </div>
       <p class="sub-h">From pressing play to the final downbeat.</p>
       <div class="rib-wrap" id="ribbon"></div>
       <ul class="legend" id="legend"></ul>
@@ -1587,11 +1599,14 @@ details > summary { border-radius: var(--radius); }
     if (!selSvc && svcs.length) selSvc = svcs[state.sel];
     var timeAt = function (r) { return selSvc ? clockHtml(selSvc.sec + r) : fmtSigned(r); };
     var ticks =
-      '<div class="svc-tick' + (svcPos > 55 ? " flip" : "") + '" style="left:' + svcPos + '%"><span class="lab"><em>Service time</em><b>' + (selSvc ? svcClock(selSvc.sec).replace(/ (AM|PM)$/, "<small>$1</small>") : "0:00") + "</b></span></div>" +
-      '<div class="top-start"><em>Start time ' + fmtSigned(startRel) + "</em><b>" + timeAt(startRel) + "</b></div>" +
-      '<div class="mark end"><em>Final downbeat ' + fmtSigned(finalRel) + "</em><b>" + timeAt(finalRel) + "</b></div>";
+      '<div class="svc-tick' + (svcPos > 55 ? " flip" : "") + '" style="left:' + svcPos + '%"><span class="lab"><em>Service time</em><b id="ribSvcT">' + (selSvc ? svcClock(selSvc.sec).replace(/ (AM|PM)$/, "<small>$1</small>") : "0:00") + "</b></span></div>" +
+      '<div class="top-start"><em>Start time ' + fmtSigned(startRel) + '</em><b id="ribStartT">' + timeAt(startRel) + "</b></div>" +
+      '<div class="mark end"><em>Final downbeat ' + fmtSigned(finalRel) + '</em><b id="ribEndT">' + timeAt(finalRel) + "</b></div>";
     var rb = $("ribbon");
-    rb.innerHTML = '<div class="rib" style="background:linear-gradient(90deg,var(--pre-a) 0%,var(--pre-b) ' + svcPos + '%,var(--post-a) ' + svcPos + '%,var(--post-b) 100%)">' + bar + "</div>" + ticks;
+    rb.innerHTML = '<div class="rib" style="background:linear-gradient(90deg,var(--pre-a) 0%,var(--pre-b) ' + svcPos + '%,var(--post-a) ' + svcPos + '%,var(--post-b) 100%)">' + bar +
+      '<div class="rib-mask" id="ribMask"></div><div class="rib-head" id="ribHead" hidden></div><div class="rib-pill" id="ribPill" hidden></div></div>' + ticks;
+    ribTotal = total;
+    rb._sig = "";
     fitRib();
     rb.setAttribute("role", "img");
     rb.setAttribute("aria-label", "ProTools session from press play to the final downbeat, " + fmtDur(v.len) + " long");
@@ -1680,6 +1695,43 @@ details > summary { border-radius: var(--radius); }
     if (!held) return nextOcc;
     if (nextOcc && keyOf(nextOcc) !== keyOf(held) && nextOcc.t + lastCalc.startRel * 1000 - now < 300000) return nextOcc;
     return held;
+  }
+
+  // ---------- live session bar ----------
+  var ribTotal = 0;
+  function renderRibbonLive(now, occ) {
+    var rb = $("ribbon"), mask = $("ribMask"), head = $("ribHead"), pill = $("ribPill"), badge = $("ribLive"), chip = $("ribSvc");
+    if (!lastCalc || !mask || !ribTotal) return;
+    if (!occ) { head.hidden = pill.hidden = true; mask.style.left = "0%"; badge.hidden = true; chip.textContent = ""; return; }
+    var key = keyOf(occ), live = state.live && state.live.key === key ? state.live.at : null;
+    var startAt = live !== null ? live : occ.t + lastCalc.startRel * 1000;
+    // times on the bar follow the service it's showing
+    var sig = key + "|" + Math.round(startAt);
+    if (rb._sig !== sig) {
+      rb._sig = sig;
+      var sv = occ.sv, ap = function (ms) { var t = msClock(ms), i = t.lastIndexOf(" "); return t.slice(0, i) + "<small>" + t.slice(i + 1) + "</small>"; };
+      if ($("ribSvcT")) $("ribSvcT").innerHTML = svcClock(sv.sec).replace(/ (AM|PM)$/, "<small>$1</small>");
+      if ($("ribStartT")) $("ribStartT").innerHTML = ap(startAt);
+      if ($("ribEndT")) $("ribEndT").innerHTML = ap(startAt + lastCalc.len * 1000);
+      chip.textContent = sv.day + " " + svcClock(sv.sec);
+      chip.className = "daychip " + (sv.day === "Saturday" ? "sat" : "sun");
+    }
+    // playhead: ProTools' own position when linked, otherwise the clock
+    var el = (now - startAt) / 1000, linked = live !== null ? linkElapsed() : null;
+    if (linked !== null) el = linked;
+    var running = el >= 0 && el <= lastCalc.len;
+    var pctv = Math.min(100, Math.max(0, el / ribTotal * 100));
+    mask.style.left = pctv + "%";
+    mask.style.borderRadius = pctv < 1 ? "14px" : "0 14px 14px 0";
+    mask.style.display = pctv >= 99.9 ? "none" : "";
+    head.hidden = !running; pill.hidden = !running;
+    if (running) {
+      head.style.left = pctv + "%";
+      pill.style.left = Math.min(94, Math.max(6, pctv)) + "%";
+      var ph = monoHtml(fmtDur(Math.floor(el)));
+      if (pill._h !== ph) { pill.innerHTML = ph; pill._h = ph; }
+    }
+    badge.hidden = !running;
   }
 
   // ---------- booth mode ----------
@@ -2434,6 +2486,7 @@ details > summary { border-radius: var(--radius); }
     if (nb._h !== html || nb.className !== cls) { nb.innerHTML = html; nb._h = html; nb.className = cls; }
     nb.hidden = !html;
     renderMainSheet(now, pick ? sheetFocus(now, pick.o) : heldOcc(now));
+    renderRibbonLive(now, pick ? sheetFocus(now, pick.o) : heldOcc(now));
   }
   var selManualAt = 0;
   function renderMainSheet(now, autoOcc) {
