@@ -1100,12 +1100,18 @@ details > summary { border-radius: var(--radius); }
   function persist() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} syncPush(); }
 
   // this weekend's message times from Resi, pushed with the app; each device picks them up once
-  var WEEK = { id: "2026-10-18", len: "27:45", msgParts: [
+  var WEEK = { id: "2026-10-18", len: "27:45", target: "17:40", msgParts: [
     { name: "Message Start", at: "0:00" },
     { name: "Keys", at: "30:36" },
     { name: "Prayer Start", at: "31:52" },
     { name: "Hands", at: "36:34" }
   ] };
+  // this weekend's final downbeat target, applied once per device
+  if (WEEK.target && state.weekTarget !== WEEK.id + "|" + WEEK.target) {
+    state.target = WEEK.target;
+    state.weekTarget = WEEK.id + "|" + WEEK.target;
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
+  }
   // this weekend's ProTools set duration, applied once per device
   if (WEEK.len && state.weekLen !== WEEK.id + "|" + WEEK.len) {
     state.len = WEEK.len;
