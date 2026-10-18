@@ -780,6 +780,14 @@ details > summary { border-radius: var(--radius); }
 .daychip, .b-svc { font-family: var(--clockfont); font-weight: 600; letter-spacing: 0; }
 .ctable td { font-family: var(--clockfont); }
 .drop-t { font-family: var(--clockfont); font-weight: 700; }
+
+/* countdown stages use the exact Big Counter digits: same font, weight, spacing and glow */
+.b-count .b-big { font-family: var(--clockfont); font-weight: 700; font-size: clamp(3rem, 13.5vw, 7rem); letter-spacing: 0; }
+.b-count .b-big .mono-d { width: 0.6em; }
+.b-count .b-big { text-shadow: 0 0 22px rgba(238,241,251,0.18); }
+.b-count.cd-yellow .b-big { text-shadow: 0 0 22px rgba(255,211,25,0.35); }
+.b-count.cd-red .b-big { text-shadow: 0 0 24px rgba(255,59,48,0.45); }
+.b-count.is-auto .b-big { text-shadow: 0 0 22px rgba(238,241,251,0.18); }
 </style>
 </head>
 <body>
