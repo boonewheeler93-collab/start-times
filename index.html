@@ -398,7 +398,7 @@ input.hero-input {
 .svc-tick { position: absolute; top: 44px; height: 66px; width: 0; border-left: 2px dashed rgba(255,255,255,0.85); }
 .svc-tick .lab { position: absolute; bottom: 100%; margin-bottom: 4px; left: 6px; white-space: nowrap; }
 .svc-tick.flip .lab { left: auto; right: 6px; text-align: right; }
-.rib-wrap em { display: block; font-style: normal; font-size: 0.75rem; font-weight: 600; color: var(--ink-3); line-height: 1.2; }
+.rib-wrap em { display: block; font-style: normal; font-size: 0.9rem; font-weight: 700; color: var(--ink); line-height: 1.2; margin-bottom: 2px; }
 .rib-wrap b { display: block; font-size: 1.02rem; font-weight: 800; color: var(--ink); line-height: 1.25; white-space: nowrap; }
 .rib-wrap b small { font-size: 0.66em; color: var(--ink-3); margin-left: 2px; }
 .mark { position: absolute; bottom: 0; }
@@ -410,7 +410,7 @@ input.hero-input {
 /* before / after service colors on the session bar */
 :root { --pre-a: #7a58ef; --pre-b: #a88dff; --post-a: #5d7dff; --post-b: #4fb8ff; }
 .rib .rseg:not(.toss) { background: transparent !important; }
-.top-start { position: absolute; top: 4px; left: 0; }
+.top-start { position: absolute; top: 40px; left: 0; transform: translateY(-100%); }
 .top-start b { color: #c7b8ff; }
 .svc-tick b { color: var(--ink); }
 .rib-wrap.stacked { padding-top: 96px; }
@@ -1599,9 +1599,9 @@ details > summary { border-radius: var(--radius); }
     if (!selSvc && svcs.length) selSvc = svcs[state.sel];
     var timeAt = function (r) { return selSvc ? clockHtml(selSvc.sec + r) : fmtSigned(r); };
     var ticks =
-      '<div class="svc-tick' + (svcPos > 55 ? " flip" : "") + '" style="left:' + svcPos + '%"><span class="lab"><em>Service time</em><b id="ribSvcT">' + (selSvc ? svcClock(selSvc.sec).replace(/ (AM|PM)$/, "<small>$1</small>") : "0:00") + "</b></span></div>" +
-      '<div class="top-start"><em>Start time ' + fmtSigned(startRel) + '</em><b id="ribStartT">' + timeAt(startRel) + "</b></div>" +
-      '<div class="mark end"><em>Final downbeat ' + fmtSigned(finalRel) + '</em><b id="ribEndT">' + timeAt(finalRel) + "</b></div>";
+      '<div class="svc-tick' + (svcPos > 55 ? " flip" : "") + '" style="left:' + svcPos + '%"><span class="lab"><em>Service Time</em><b id="ribSvcT">' + (selSvc ? svcClock(selSvc.sec).replace(/ (AM|PM)$/, "<small>$1</small>") : "0:00") + "</b></span></div>" +
+      '<div class="top-start"><em>Start Time</em><b id="ribStartT">' + timeAt(startRel) + "</b></div>" +
+      '<div class="mark end"><em>Final Downbeat</em><b id="ribEndT">' + timeAt(finalRel) + "</b></div>";
     var rb = $("ribbon");
     rb.innerHTML = '<div class="rib" style="background:linear-gradient(90deg,var(--pre-a) 0%,var(--pre-b) ' + svcPos + '%,var(--post-a) ' + svcPos + '%,var(--post-b) 100%)">' + bar +
       '<div class="rib-mask" id="ribMask"></div><div class="rib-head" id="ribHead" hidden></div><div class="rib-pill" id="ribPill" hidden></div></div>' + ticks;
@@ -1612,7 +1612,7 @@ details > summary { border-radius: var(--radius); }
     rb.setAttribute("aria-label", "ProTools session from press play to the final downbeat, " + fmtDur(v.len) + " long");
     $("legend").innerHTML =
       '<li><span class="sw" style="background:linear-gradient(90deg,var(--pre-a),var(--pre-b))"></span>Before service</li>' +
-      '<li><span class="sw" style="background:linear-gradient(90deg,var(--post-a),var(--post-b))"></span>After service</li>' +
+      '<li><span class="sw" style="background:linear-gradient(90deg,var(--post-a),var(--post-b))"></span>During service</li>' +
       (hasToss ? '<li><span class="sw" style="background:var(--toss)"></span>Toss</li>' : "");
   }
 
