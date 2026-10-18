@@ -863,6 +863,33 @@ details > summary { border-radius: var(--radius); }
 
 /* phones: keep the big clock inside the screen even with two-digit hours */
 @media (max-width: 600px) { .b-clock { font-size: 16.5vw; } .b-clock small { margin-left: 4px; } }
+
+/* ===== view-only page (#view) ===== */
+body.view-mode .wrap, body.view-mode #booth { display: none !important; }
+.viewer { max-width: 680px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px calc(env(safe-area-inset-bottom, 0px) + 28px); display: flex; flex-direction: column; gap: 14px; }
+.viewer[hidden] { display: none !important; }
+.v-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.v-brand { font-family: var(--display); font-size: 1.25rem; color: var(--ink-2); }
+.v-clock { font-family: var(--clockfont); font-weight: 700; font-size: clamp(1.8rem, 8vw, 2.6rem); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.v-clock .mono-d { width: 0.6em; }
+.v-clock small { font-size: 0.42em; color: var(--ink-3); margin-left: 4px; }
+.v-svc { font-family: var(--clockfont); font-weight: 600; font-size: 1.05rem; color: var(--sun); }
+.v-card { padding: 18px 20px; border-radius: 22px; background: linear-gradient(180deg, var(--glass-a), var(--glass-b)); border: 1px solid var(--glass-line); }
+.v-k { color: var(--ink-3); font-weight: 700; font-size: 0.85rem; }
+.v-name { font-weight: 800; font-size: clamp(1.6rem, 7vw, 2.2rem); line-height: 1.15; margin-top: 2px; }
+.v-sub { color: var(--ink-2); font-weight: 600; font-size: 0.95rem; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.v-next { border-color: rgba(157,176,255,0.4); }
+.v-cd { font-family: var(--clockfont); font-weight: 700; font-size: clamp(3.4rem, 19vw, 6.5rem); line-height: 1; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.v-cd .mono-d { width: 0.6em; }
+.v-next.cd-yellow { border-color: rgba(255,211,25,0.6); } .v-next.cd-yellow .v-cd { color: #ffd319; }
+.v-next.cd-red { border-color: rgba(255,59,48,0.7); } .v-next.cd-red .v-cd { color: #ff3b30; }
+.v-list { list-style: none; margin: 6px 0 0; padding: 0; }
+.v-list li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 11px 2px; border-top: 1px solid var(--glass-line); font-weight: 700; }
+.v-list li:first-child { border-top: 0; }
+.v-list .vt { font-family: var(--clockfont); font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.v-list .vt small { font-size: 0.8em; margin-left: 2px; }
+.v-foot { color: var(--ink-3); font-weight: 600; font-size: 0.9rem; text-align: center; margin: 4px 0 0; min-height: 1.2em; }
+.v-list-card[hidden], .v-now[hidden] { display: none !important; }
 </style>
 </head>
 <body>
@@ -1032,6 +1059,15 @@ details > summary { border-radius: var(--radius); }
     </details>
     </div>
   </div>
+</div>
+
+<div id="viewer" class="viewer" hidden aria-live="off">
+  <div class="v-top"><span class="v-brand">Start Times</span><span class="v-clock" id="vClock"></span></div>
+  <div class="v-svc" id="vSvc"></div>
+  <section class="v-card v-now" id="vNow"><div class="v-k">Now</div><div class="v-name" id="vNowName"></div><div class="v-sub" id="vNowSub"></div></section>
+  <section class="v-card v-next" id="vNext"><div class="v-k" id="vNextK">Up next</div><div class="v-name" id="vNextName"></div><div class="v-cd" id="vNextCd"></div><div class="v-sub" id="vNextSub"></div></section>
+  <section class="v-card v-list-card" id="vListCard"><div class="v-k">Coming up</div><ol class="v-list" id="vList"></ol></section>
+  <p class="v-foot" id="vFoot"></p>
 </div>
 
 <div id="booth" class="booth" hidden role="dialog" aria-modal="true" aria-labelledby="bSvc">
@@ -2928,6 +2964,86 @@ details > summary { border-radius: var(--radius); }
   $("mNext").addEventListener("click", openBooth);
   setInterval(renderTop, 200);
   renderTop();
+
+  // ---------- view-only page (#view): just what's happening and what's next ----------
+  function viewLabel(c) {
+    var l = c.label, k = c.cls;
+    if (k.indexOf("drop") > -1) return null;
+    if (k.indexOf("hit") > -1) return "Countdown starts";
+    if (/^Walk-in/.test(l)) return "Walk-in song";
+    if (/Begins Now/.test(l)) return "Begins Now";
+    if (/^First worship song/.test(l) || l === "Set begins") return "Worship";
+    if (k.indexOf("final") > -1) return "Worship ends";
+    if (/^Go to Message/.test(l)) return "Message";
+    if (k.indexOf("mstart") > -1) return "Message starts";
+    if (/^hands$/i.test(l)) return "HANDS";
+    return l;
+  }
+  function viewRows(occ) {
+    var rows = [], msgT = null;
+    sheetRows(occ).rows.forEach(function (r) {
+      var n = viewLabel(r.c); if (!n) return;
+      if (n === "Message") msgT = r.t;
+      rows.push({ n: n, t: r.t });
+    });
+    // "Message starts" only shows when it differs from the planned Message time
+    return rows.filter(function (r) { return !(r.n === "Message starts" && msgT !== null && Math.abs(r.t - msgT) < 2000); });
+  }
+  function vTime(ms) { var t = msClock(ms), i = t.lastIndexOf(" "); return t.slice(0, i) + "<small>" + t.slice(i + 1) + "</small>"; }
+  function setHtml(el, h) { if (el._h !== h) { el.innerHTML = h; el._h = h; } }
+  function renderViewer() {
+    if (!document.body.classList.contains("view-mode")) return;
+    var now = nowMs(), cp = centralParts(now);
+    setHtml($("vClock"), monoHtml(cp.t) + "<small>" + cp.ap + "</small>");
+    if (!lastCalc || !lastCalc.svcs.length) { $("vSvc").textContent = ""; $("vNowName").textContent = "No services scheduled"; return; }
+    var occ = occurrences(now), pick = null;
+    occ.forEach(function (o) { if (!pick && now < o.t + ((lastCalc.tail || lastCalc.msg || 0) + 5) * 1000) pick = o; });
+    var focus = pick ? sheetFocus(now, pick) : heldOcc(now);
+    if (!focus) focus = occ[0];
+    $("vSvc").textContent = focus.sv.day + " " + svcClock(focus.sv.sec) + " service";
+    var rows = viewRows(focus), nextI = -1;
+    rows.forEach(function (r, i) { if (nextI < 0 && r.t > now) nextI = i; });
+    var started = rows.length && now >= rows[0].t;
+    // Now
+    $("vNow").hidden = !started;
+    if (started) {
+      var cur = rows[nextI < 0 ? rows.length - 1 : nextI - 1];
+      $("vNowName").textContent = nextI < 0 ? "Service complete" : cur.n;
+      setHtml($("vNowSub"), nextI < 0 ? "" : "since " + vTime(cur.t));
+    }
+    // Up next + coming up
+    var nx = $("vNext");
+    if (nextI >= 0) {
+      var r = rows[nextI], left = Math.ceil((r.t - now) / 1000);
+      nx.hidden = false;
+      $("vNextK").textContent = started ? "Up next" : "First up";
+      $("vNextName").textContent = r.n;
+      setHtml($("vNextCd"), monoHtml(left >= 3600 ? fmtHMS(left) : fmtMMSS(left)));
+      setHtml($("vNextSub"), "at " + vTime(r.t));
+      nx.classList.toggle("cd-red", left <= 30);
+      nx.classList.toggle("cd-yellow", left > 30 && left <= 120);
+      var li = "";
+      rows.slice(nextI + 1, nextI + 4).forEach(function (x) { li += "<li><span>" + esc(x.n) + '</span><span class="vt">' + vTime(x.t) + "</span></li>"; });
+      setHtml($("vList"), li);
+      $("vListCard").hidden = !li;
+    } else {
+      nx.hidden = true; $("vListCard").hidden = true;
+    }
+    // next service, once this one is wrapping up
+    var foot = "";
+    if (pick && keyOf(pick) !== keyOf(focus)) foot = "Next service: " + pick.sv.day + " " + svcClock(pick.sv.sec);
+    else if (nextI < 0 && occ.length > 1) foot = "Next service: " + occ[1].sv.day + " " + svcClock(occ[1].sv.sec);
+    if ($("vFoot").textContent !== foot) $("vFoot").textContent = foot;
+  }
+  function applyViewMode() {
+    var on = /^#view$/i.test(location.hash);
+    document.body.classList.toggle("view-mode", on);
+    $("viewer").hidden = !on;
+    if (on) { if (booth.open) closeBooth(); document.title = "Start Times (live)"; renderViewer(); }
+  }
+  window.addEventListener("hashchange", applyViewMode);
+  setInterval(renderViewer, 250);
+  applyViewMode();
 
   // a link ending in #booth opens straight into booth mode (bookmark it on the booth computer)
   function hashBooth() { if (/^#booth$/i.test(location.hash) && !booth.open) openBooth(); }
