@@ -803,6 +803,10 @@ details > summary { border-radius: var(--radius); }
 .part-row .tin { width: auto; min-width: 7.5em; }
 .lcs-row.part .lcs-label { color: var(--sun); }
 .lcs-row.part.next { background: rgba(180,165,255,0.10); box-shadow: inset 0 0 0 1px rgba(180,165,255,0.35); }
+
+.msg-sum { margin: 6px 2px 0; color: var(--ink-2); font-weight: 700; font-size: 0.9rem; }
+.msg-sum:empty { display: none; }
+.msg-sum.odd { color: var(--toss); }
 </style>
 </head>
 <body>
@@ -839,8 +843,9 @@ details > summary { border-radius: var(--radius); }
     </div>
 
     <section class="card glass" id="msgCard" style="order:5" aria-labelledby="msg-h">
-      <div class="card-head"><h2 id="msg-h">Message</h2><div class="card-meta"><span class="card-note">Times from Resi, after Go to Message</span></div></div>
+      <div class="card-head"><h2 id="msg-h">Message</h2><div class="card-meta"><span class="card-note">Times from Resi, from Message Start (+23:00)</span></div></div>
       <div id="msgParts"></div>
+      <p class="msg-sum" id="msgSum"></p>
       <div class="actions"><button type="button" class="ghost" id="addPart">Add a part</button></div>
     </section>
 
@@ -1032,7 +1037,7 @@ details > summary { border-radius: var(--radius); }
       { t: "song", label: "", len: "4:10" },
       { t: "song", label: "", len: "3:56" }
     ],
-    msgParts: [{ name: "Message Start", at: "" }, { name: "Keys", at: "" }, { name: "Prayer Start", at: "" }, { name: "Hands", at: "" }],
+    msgParts: [{ name: "Message Start", at: "0:00" }, { name: "Keys", at: "" }, { name: "Prayer Start", at: "" }, { name: "Hands", at: "" }],
     cutoff: "18:00", sat: "21:00", lower: "0:38", downBy: "0:00",
     sel: 0,
     services: [
@@ -1053,6 +1058,8 @@ details > summary { border-radius: var(--radius); }
       if (!Array.isArray(state.services)) state.services = JSON.parse(JSON.stringify(DEFAULTS.services));
       if (!state.skips || typeof state.skips !== "object") state.skips = {};
       if (!Array.isArray(state.msgParts)) state.msgParts = JSON.parse(JSON.stringify(DEFAULTS.msgParts));
+      // Message Start lines up with +23:00 unless a time was entered
+      state.msgParts.forEach(function (pt) { if (/^message start$/i.test(String(pt.name).trim()) && !String(pt.at || "").trim()) pt.at = "0:00"; });
       // forget skips for services more than two days old
       Object.keys(state.skips).forEach(function (k) { var t = +String(k).split("|")[2]; if (!t || t < Date.now() - 172800000) delete state.skips[k]; });
       // move saved values off the old defaults
@@ -1422,6 +1429,7 @@ details > summary { border-radius: var(--radius); }
     var last = itemEls[itemEls.length - 1]; if (last && last.focusFirst) last.focusFirst();
   });
 
+  var lastCalcHands = null;
   // ---------- message parts editor ----------
   var partEls = [];
   function renderParts() {
@@ -1432,7 +1440,9 @@ details > summary { border-radius: var(--radius); }
       nm.type = "text"; nm.className = "pname"; nm.value = pt.name; nm.placeholder = "Part name"; nm.autocomplete = "off";
       nm.setAttribute("aria-label", "Name of message part " + (i + 1));
       nm.addEventListener("input", function () { pt.name = nm.value; persist(); compute(); });
-      var tm = makeTime({ id: "part" + i, label: (pt.name || "Message part") + " time", value: pt.at, ph: ["0", "00"],
+      var nmL = String(pt.name || "").toLowerCase();
+      var tph = /prayer/.test(nmL) ? ["31", "00"] : /^message\s*start/.test(nmL) ? ["0", "00"] : /key/.test(nmL) ? ["29", "00"] : /hand/.test(nmL) ? ["35", "00"] : ["0", "00"];
+      var tm = makeTime({ id: "part" + i, label: (pt.name || "Message part") + " time", value: pt.at, ph: tph,
         onChange: function (str) { pt.at = str; persist(); compute(); } });
       var del = document.createElement("button");
       del.type = "button"; del.className = "ghost icon-btn"; del.textContent = "\u00d7";
@@ -1617,6 +1627,21 @@ details > summary { border-radius: var(--radius); }
       tail = Math.max(tail, v.msg + n);
     });
     if (partBad) flags.push("A message part time isn\u2019t a valid m:ss, so it was left off the cue sheet.");
+    // message length check: Message Start to Hands, usually 30 to 38 minutes
+    var mStart = null, mHands = null;
+    state.msgParts.forEach(function (pt) {
+      var n = parseDur(String(pt.at || "").trim()), nm = String(pt.name || "").toLowerCase();
+      if (n === null || n < 0) return;
+      if (/^message\s*start/.test(nm) && mStart === null) mStart = n;
+      if (/hand/.test(nm)) mHands = n;
+    });
+    var ms = $("msgSum");
+    if (mHands !== null) {
+      var mLen = mHands - (mStart || 0), odd = mLen < 1800 || mLen > 2280;
+      ms.textContent = "Message runs " + fmtDur(mLen) + ", start to hands" + (odd ? ". That\u2019s outside the usual 30 to 38 minutes, so double-check the times." : ".");
+      ms.className = "msg-sum" + (odd ? " odd" : "");
+    } else { ms.textContent = ""; ms.className = "msg-sum"; }
+    lastCalcHands = mHands !== null ? v.msg + mHands : null;
     cues.sort(function (a, b) { return a.rel - b.rel || a.o - b.o; });
     var tosses = cues.filter(function (c) { return c.cls === "toss"; });
 
@@ -1959,7 +1984,8 @@ details > summary { border-radius: var(--radius); }
         $("bLab").textContent = after.n + " in";
         var aHtml = monoHtml(fmtHMS(Math.ceil((after.t - now) / 1000)));
         if ($("bBig")._h !== aHtml) { $("bBig").innerHTML = aHtml; $("bBig")._h = aHtml; }
-        $("bSub").textContent = "at " + msClock(after.t); $("bSub")._h = "";
+        var hSub = lastCalcHands !== null && Math.abs(cur.t + lastCalcHands * 1000 - after.t) > 500 && cur.t + lastCalcHands * 1000 > now ? ". Hands at " + msClock(cur.t + lastCalcHands * 1000) : "";
+        $("bSub").textContent = "at " + msClock(after.t) + hSub; $("bSub")._h = "";
       } else if (el > L) {
         $("bLab").textContent = "Past the final downbeat";
         $("bBig").innerHTML = monoHtml(fmtDur(e)); $("bBig")._h = "";
@@ -1972,7 +1998,9 @@ details > summary { border-radius: var(--radius); }
     // phase color: amber in the last minute before hit play, green while the session runs
     var cb = $("bCountBox");
     // countdown colors match the Big Counter: yellow in the last 2 minutes, red in the last 30 seconds
-    var cdRed = el < 0 && -el <= 30, cdYellow = el < 0 && !cdRed && -el <= 120;
+    // the same stages count down to each part after the session: yellow at 2 minutes, red at 30 seconds
+    var aLeft = (el > L && after) ? (after.t - now) / 1000 : null;
+    var cdRed = (el < 0 && -el <= 30) || (aLeft !== null && aLeft <= 30), cdYellow = !cdRed && ((el < 0 && -el <= 120) || (aLeft !== null && aLeft <= 120));
     cb.classList.remove("is-soon");
     cb.classList.toggle("cd-yellow", cdYellow);
     cb.classList.toggle("cd-red", cdRed);
