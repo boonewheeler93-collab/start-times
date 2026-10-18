@@ -807,6 +807,18 @@ details > summary { border-radius: var(--radius); }
 .msg-sum { margin: 6px 2px 0; color: var(--ink-2); font-weight: 700; font-size: 0.9rem; }
 .msg-sum:empty { display: none; }
 .msg-sum.odd { color: var(--toss); }
+
+/* message view: section countdowns */
+.b-parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.b-parts[hidden] { display: none; }
+.bp { padding: 12px 14px; border-radius: 16px; text-align: center; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-line); transition: border-color 0.3s, background-color 0.3s; }
+.bpn { font-weight: 700; color: var(--ink-2); font-size: 0.9rem; }
+.bpt { font-family: var(--clockfont); font-weight: 700; font-size: clamp(1.8rem, 6vw, 2.6rem); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.bpt .mono-d { width: 0.6em; }
+.bp.next { border-color: rgba(180,165,255,0.55); background: rgba(180,165,255,0.10); }
+.bp.yellow { border-color: rgba(255,211,25,0.55); background: rgba(255,211,25,0.08); } .bp.yellow .bpt { color: #ffd319; }
+.bp.red { border-color: rgba(255,59,48,0.65); background: rgba(255,59,48,0.10); } .bp.red .bpt { color: #ff3b30; }
+.bp.done { opacity: 0.5; } .bp.done .bpt { color: var(--ink-2); }
 </style>
 </head>
 <body>
@@ -1006,6 +1018,7 @@ details > summary { border-radius: var(--radius); }
       <div class="b-big" id="bBig"></div>
       <div class="b-sub" id="bSub"></div>
     </div>
+    <div class="b-parts" id="bParts" hidden></div>
     <div class="b-next" id="bNext"></div>
     <div class="b-note" id="bNote" role="status"></div>
     <div class="b-actions">
@@ -1642,6 +1655,14 @@ details > summary { border-radius: var(--radius); }
       ms.className = "msg-sum" + (odd ? " odd" : "");
     } else { ms.textContent = ""; ms.className = "msg-sum"; }
     lastCalcHands = mHands !== null ? v.msg + mHands : null;
+    var msgList = [];
+    state.msgParts.forEach(function (pt) {
+      var n = parseDur(String(pt.at || "").trim()), nm = String(pt.name || "").trim();
+      if (n === null || n < 0 || /^message\s*start/i.test(nm)) return;
+      msgList.push({ name: nm || "Message part", rel: v.msg + n, hands: /hand/i.test(nm) });
+    });
+    msgList.sort(function (a, b) { return a.rel - b.rel; });
+    var handsRel = lastCalcHands !== null ? lastCalcHands : (msgList.length ? msgList[msgList.length - 1].rel : null);
     cues.sort(function (a, b) { return a.rel - b.rel || a.o - b.o; });
     var tosses = cues.filter(function (c) { return c.cls === "toss"; });
 
@@ -1693,7 +1714,7 @@ details > summary { border-radius: var(--radius); }
     tb += "</table></div>";
     $("tiles").innerHTML = svcs.length ? tb : '<p class="note" style="margin-top:0">Add a service time under Service times to see results.</p>';
     var dropPT = v.len - v.lower;
-    lastCalc = { tail: tail, startRel: startRel, finalRel: finalRel, len: v.len, lower: v.lower, sat: v.sat, stage: v.stage, msg: v.msg, cues: cues, svcs: svcs };
+    lastCalc = { mStartRel: v.msg + (mStart || 0), handsRel: handsRel, parts: msgList, tail: tail, startRel: startRel, finalRel: finalRel, len: v.len, lower: v.lower, sat: v.sat, stage: v.stage, msg: v.msg, cues: cues, svcs: svcs };
     $("dropCall").innerHTML = '<span class="dl">Drop screen</span><b>' + (dropPT >= 0 ? fmtDur(dropPT) : "\u2014") + '</b><span class="dn">on ProTools</span>';
 
     // the cue sheet itself is drawn live by renderTop()
@@ -1900,6 +1921,7 @@ details > summary { border-radius: var(--radius); }
       return '<span class="mono-' + k + '">' + esc(ch) + "</span>";
     });
   }
+  function fmtMMSS(sec) { sec = Math.max(0, Math.round(sec)); return pad(Math.floor(sec / 60)) + ":" + pad(sec % 60); }
   function fmtHMS(sec) {
     sec = Math.max(0, Math.round(sec));
     var h = Math.floor(sec / 3600);
@@ -1995,16 +2017,41 @@ details > summary { border-radius: var(--radius); }
       }
     }
 
+    // message view: from Message Start, count the whole message down to Hands, plus each section
+    var msgMode = false, msgLeft = null, mOcc = booth.manual ? null : sheetFocus(now, cur);
+    if (mOcc && lastCalc.handsRel !== null && lastCalc.handsRel !== undefined && now >= mOcc.t + lastCalc.mStartRel * 1000) {
+      msgMode = true; booth.cOn = false;
+      var handsT = mOcc.t + lastCalc.handsRel * 1000;
+      msgLeft = Math.max(0, Math.ceil((handsT - now) / 1000));
+      $("bLab").textContent = "Message";
+      var mh = monoHtml(fmtMMSS(msgLeft));
+      if ($("bBig").textContent !== fmtMMSS(msgLeft)) { $("bBig").innerHTML = mh; }
+      $("bBig")._h = mh;
+      var sameSvc = keyOf(mOcc) === keyOf(cur);
+      $("bSub").textContent = "Hands at " + msClock(handsT) + (sameSvc ? "" : ". Next: " + cur.sv.day + " " + svcClock(cur.sv.sec) + ", ProTools start at " + msClock(startAt)); $("bSub")._h = "";
+      var ph = "", seenNext = false;
+      lastCalc.parts.forEach(function (pt) {
+        var left = Math.max(0, Math.ceil((mOcc.t + pt.rel * 1000 - now) / 1000));
+        var st = left === 0 ? " done" : left <= 30 ? " red" : left <= 120 ? " yellow" : "";
+        var isNext = left > 0 && !seenNext; if (isNext) seenNext = true;
+        ph += '<div class="bp' + st + (isNext ? " next" : "") + '"><div class="bpn">' + esc(pt.name) + '</div><div class="bpt">' + monoHtml(fmtMMSS(left)) + "</div></div>";
+      });
+      if ($("bParts")._h !== ph) { $("bParts").innerHTML = ph; $("bParts")._h = ph; }
+    }
+    $("bParts").hidden = !msgMode;
+    if (msgMode) $("bNext").innerHTML = "";
+
     // phase color: amber in the last minute before hit play, green while the session runs
     var cb = $("bCountBox");
     // countdown colors match the Big Counter: yellow in the last 2 minutes, red in the last 30 seconds
     // the same stages count down to each part after the session: yellow at 2 minutes, red at 30 seconds
-    var aLeft = (el > L && after) ? (after.t - now) / 1000 : null;
+    var aLeft = msgMode ? msgLeft : (el > L && after) ? (after.t - now) / 1000 : null;
     var cdRed = (el < 0 && -el <= 30) || (aLeft !== null && aLeft <= 30), cdYellow = !cdRed && ((el < 0 && -el <= 120) || (aLeft !== null && aLeft <= 120));
     cb.classList.remove("is-soon");
     cb.classList.toggle("cd-yellow", cdYellow);
     cb.classList.toggle("cd-red", cdRed);
-    cb.classList.toggle("is-auto", ast.fires && el < 0 && !cdYellow && !cdRed);
+    if (msgMode) { cb.classList.remove("is-run", "is-counter", "cnt-yellow", "cnt-red"); }
+    cb.classList.toggle("is-auto", ast.fires && el < 0 && !cdYellow && !cdRed && !msgMode);
     cb.classList.toggle("is-run", el >= 0 && el <= L);
     cb.classList.toggle("is-counter", el >= 0 && el <= L);
     if (!(el >= 0 && el <= L)) cb.classList.remove("cnt-yellow", "cnt-red");
@@ -2020,6 +2067,7 @@ details > summary { border-radius: var(--radius); }
     } else {
       note.textContent = el >= 0 ? "Assuming you hit play on time" : "";
     }
+    if (msgMode) { note.textContent = ""; note.className = "b-note"; }
     $("bReset").hidden = live === null;
     var goTxt = ast.fires && live === null ? "Started manually" : "Started";
     if ($("bGo").textContent !== goTxt) $("bGo").textContent = goTxt;
@@ -2679,6 +2727,15 @@ details > summary { border-radius: var(--radius); }
       }
     }
     if (nb._h !== html || nb.className !== cls) { nb.innerHTML = html; nb._h = html; nb.className = cls; }
+    if (pick && lastCalc && lastCalc.handsRel !== null && lastCalc.handsRel !== undefined) {
+      var fo = sheetFocus(now, pick.o);
+      if (fo && now >= fo.t + lastCalc.mStartRel * 1000 && now < fo.t + lastCalc.handsRel * 1000 + 1000) {
+        var hl = Math.max(0, Math.ceil((fo.t + lastCalc.handsRel * 1000 - now) / 1000));
+        cls = "nextline" + (hl <= 30 ? " cd-red" : hl <= 120 ? " soon" : "");
+        html = '<span class="nv">' + esc(fo.sv.day + " " + svcClock(fo.sv.sec)) + '</span><span class="nv"><span class="vb">Message</span> <b>' + monoHtml(fmtMMSS(hl)) + "</b> to Hands</span>";
+        if (nb._h !== html || nb.className !== cls) { nb.innerHTML = html; nb._h = html; nb.className = cls; }
+      }
+    }
     nb.hidden = !html;
     renderMainSheet(now, pick ? sheetFocus(now, pick.o) : heldOcc(now));
     renderRibbonLive(now, pick ? sheetFocus(now, pick.o) : heldOcc(now));
