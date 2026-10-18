@@ -1082,6 +1082,19 @@ details > summary { border-radius: var(--radius); }
   } catch (e) {}
   function persist() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} syncPush(); }
 
+  // this weekend's message times from Resi, pushed with the app; each device picks them up once
+  var WEEK = { id: "2026-10-18", msgParts: [
+    { name: "Message Start", at: "0:00" },
+    { name: "Keys", at: "30:36" },
+    { name: "Prayer Start", at: "31:52" },
+    { name: "Hands", at: "36:34" }
+  ] };
+  if (state.weekApplied !== WEEK.id) {
+    state.msgParts = JSON.parse(JSON.stringify(WEEK.msgParts));
+    state.weekApplied = WEEK.id;
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
+  }
+
   // ---------- helpers ----------
   function parseDur(str) {
     if (str == null) return null;
