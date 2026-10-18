@@ -860,6 +860,9 @@ details > summary { border-radius: var(--radius); }
 /* the current cue stays bright even though its time has passed */
 .lcs-row.past.next .lcs-label, .lcs-row.past.next .lcs-time, .lcs-row.past.next .lcs-meta { opacity: 1; }
 .lcs-row.past.next .lcs-dot { background: var(--accent-2); border-color: var(--accent-2); }
+
+/* phones: keep the big clock inside the screen even with two-digit hours */
+@media (max-width: 600px) { .b-clock { font-size: 16.5vw; } .b-clock small { margin-left: 4px; } }
 </style>
 </head>
 <body>
