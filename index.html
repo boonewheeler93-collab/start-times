@@ -733,6 +733,21 @@ details > summary { border-radius: var(--radius); }
 .rib-head[hidden], .rib-pill[hidden] { display: none; }
 .rib { overflow: visible; }
 .rib > .rseg:first-child { border-radius: 14px 0 0 14px; }
+
+/* ProTools Big Counter look while the session runs */
+.b-count.is-counter {
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,0.028) 0 1px, transparent 1px 5px), repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 5px), linear-gradient(180deg, #0f160e, #060906);
+  border: 2px solid #2c312c;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05), inset 0 12px 30px rgba(0,0,0,0.7), 0 18px 40px -28px rgba(0,0,0,0.9);
+}
+.b-count.is-counter .b-big { font-family: var(--clockfont); font-weight: 700; color: #8edb12; text-shadow: 0 0 22px rgba(142,219,18,0.35); font-size: clamp(3rem, 13.5vw, 7rem); }
+.b-count.is-counter .mono-d { width: 0.6em; }
+.b-count.is-counter .b-lab { color: #8edb12; }
+.b-count.is-counter .b-sub { color: #9aa79a; }
+.b-count.is-counter.cnt-yellow { border-color: rgba(255,211,25,0.55); }
+.b-count.is-counter.cnt-yellow .b-big, .b-count.is-counter.cnt-yellow .b-lab { color: #ffd319; text-shadow: 0 0 22px rgba(255,211,25,0.35); }
+.b-count.is-counter.cnt-red { border-color: rgba(255,59,48,0.65); }
+.b-count.is-counter.cnt-red .b-big, .b-count.is-counter.cnt-red .b-lab { color: #ff3b30; text-shadow: 0 0 24px rgba(255,59,48,0.5); }
 </style>
 </head>
 <body>
@@ -1750,7 +1765,7 @@ details > summary { border-radius: var(--radius); }
   }
   function monoHtml(t) {
     return String(t).replace(/./g, function (ch) {
-      var k = /\d/.test(ch) ? "d" : ch === ":" ? "c" : ch === " " ? "s" : "o";
+      var k = /\d/.test(ch) ? "d" : (ch === ":" || ch === ".") ? "c" : ch === " " ? "s" : "o";
       return '<span class="mono-' + k + '">' + esc(ch) + "</span>";
     });
   }
@@ -1810,6 +1825,7 @@ details > summary { border-radius: var(--radius); }
     var verb = ast.fires ? "Auto-start" : ast.level === "none" ? "ProTools start" : "Hit play";
 
     if (el < 0) {
+      booth.cOn = false;
       var left = Math.ceil(-el);
       var cued = ast.fires && (link.done[booth.key] || {}).cue;
       if (left > 64800) { $("bLab").textContent = (ast.level === "none" ? "ProTools starts" : verb) + " at"; var fp = msClock(startAt), fi = fp.lastIndexOf(" "); $("bBig").innerHTML = monoHtml(fp.slice(0, fi)) + "<small>" + fp.slice(fi + 1) + "</small>"; $("bSub").textContent = cur.sv.day; }
@@ -1820,10 +1836,20 @@ details > summary { border-radius: var(--radius); }
       }
     } else {
       var e = Math.floor(el);
-      $("bLab").textContent = e <= L ? (linked !== null ? "ProTools, linked" : "ProTools") : "Past the final downbeat";
-      $("bBig").innerHTML = monoHtml(fmtDur(e));
-      var intoS = Math.floor((now - cur.t) / 1000);
-      $("bSub").textContent = (intoS >= 0 ? "+" + fmtDur(intoS) + " into service. " : "of " + fmtDur(L) + ". ") + "Final downbeat at " + msClock(startAt + L * 1000);
+      if (el <= L) {
+        $("bLab").textContent = linked !== null ? "ProTools, linked" : "ProTools";
+        // the Big Counter draws itself every frame so the milliseconds run smoothly
+        booth.cStart = linked !== null ? now - linked * 1000 : startAt;
+        booth.cDrop = dropEl;
+        if (!booth.cOn) { booth.cOn = true; $("bBig")._h = ""; requestAnimationFrame(counterFrame); }
+        $("bSub").textContent = "Drop screen at " + fmtDur(dropEl) + ". Final downbeat at " + msClock(startAt + L * 1000) + ".";
+      } else {
+        booth.cOn = false;
+        $("bLab").textContent = "Past the final downbeat";
+        $("bBig").innerHTML = monoHtml(fmtDur(e)); $("bBig")._h = "";
+        var intoS = Math.floor((now - cur.t) / 1000);
+        $("bSub").textContent = (intoS >= 0 ? "+" + fmtDur(intoS) + " into service. " : "") + "Final downbeat at " + msClock(startAt + L * 1000);
+      }
     }
 
     // phase color: amber in the last minute before hit play, green while the session runs
@@ -1831,6 +1857,8 @@ details > summary { border-radius: var(--radius); }
     cb.classList.toggle("is-soon", !ast.fires && el < 0 && el >= -60);
     cb.classList.toggle("is-auto", ast.fires && el < 0);
     cb.classList.toggle("is-run", el >= 0 && el <= L);
+    cb.classList.toggle("is-counter", el >= 0 && el <= L);
+    if (!(el >= 0 && el <= L)) cb.classList.remove("cnt-yellow", "cnt-red");
 
     // late-start correction
     var note = $("bNote");
@@ -1890,7 +1918,24 @@ details > summary { border-radius: var(--radius); }
     lockScreen(); wakeCursor();
     $("bGo").focus();
   }
+  // ---------- ProTools Big Counter (minutes:seconds.milliseconds) ----------
+  function fmtCounter(sec) {
+    var ms = Math.floor(Math.max(0, sec) * 1000), m = Math.floor(ms / 60000), s = Math.floor(ms / 1000) % 60, f = ms % 1000;
+    return pad(m) + ":" + pad(s) + "." + ("00" + f).slice(-3);
+  }
+  function counterFrame() {
+    var cb = $("bCountBox");
+    if (!booth.open || !booth.cOn) { cb.classList.remove("cnt-yellow", "cnt-red"); return; }
+    var el = (nowMs() - booth.cStart) / 1000, big = $("bBig"), html = monoHtml(fmtCounter(el));
+    if (big._h !== html) { big.innerHTML = html; big._h = html; }
+    // green while running, yellow 30 seconds before the screen drop, red from the drop on
+    var toDrop = booth.cDrop - el, red = toDrop <= 0, yellow = !red && toDrop <= 30;
+    if (cb.classList.contains("cnt-red") !== red) cb.classList.toggle("cnt-red", red);
+    if (cb.classList.contains("cnt-yellow") !== yellow) cb.classList.toggle("cnt-yellow", yellow);
+    requestAnimationFrame(counterFrame);
+  }
   function closeBooth() {
+    booth.cOn = false;
     booth.open = false; clearInterval(booth.timer); booth.timer = null;
     try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); } catch (e) {}
     $("booth").hidden = true; document.body.style.overflow = "";
