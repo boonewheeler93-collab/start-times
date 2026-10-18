@@ -607,7 +607,7 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
   font-family: var(--clockfont); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1, "lnum" 1;
   letter-spacing: 0; white-space: nowrap;
 }
-.b-clock { font-weight: 300; font-size: clamp(4.2rem, 21vw, 10.5rem); }
+.b-clock { font-weight: 600; font-size: clamp(4.2rem, 21vw, 10.5rem); }
 .b-big { font-weight: 400; }
 .b-checks .cv, .b-next .nt { font-weight: 400; }
 .mono-d, .mono-o { display: inline-block; width: 0.62em; text-align: center; }
@@ -618,7 +618,7 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
 /* main page: live clock + next start, booth-style numbers */
 .topbar { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 4px 18px; margin: 4px 0 10px; }
 .topbar h1 { margin: 0; }
-.mini-clock { font-family: var(--clockfont); font-weight: 300; font-size: clamp(1.9rem, 8.5vw, 3.4rem); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; padding-bottom: 4px; }
+.mini-clock { font-family: var(--clockfont); font-weight: 600; font-size: clamp(1.9rem, 8.5vw, 3.4rem); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; padding-bottom: 4px; }
 .mini-clock small { font-size: 0.36em; color: var(--ink-3); margin-left: 5px; font-weight: 500; }
 .nextline {
   display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 14px; width: 100%;
@@ -751,6 +751,9 @@ details > summary { border-radius: var(--radius); }
 .b-count.is-counter.cnt-red .b-big, .b-count.is-counter.cnt-red .b-lab { color: #ff3b30; text-shadow: 0 0 24px rgba(255,59,48,0.5); }
 .lcs-time .drop-t, .dropcall b { color: #ff3b30; text-shadow: 0 0 12px rgba(255,59,48,0.35); }
 .lcs-row.drop.past .lcs-time .drop-t { text-shadow: none; }
+
+/* bolder main clocks: slightly wider digit slots so the heavier numbers don't crowd */
+.b-clock .mono-d, .mini-clock .mono-d { width: 0.64em; }
 </style>
 </head>
 <body>
