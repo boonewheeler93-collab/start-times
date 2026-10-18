@@ -794,6 +794,15 @@ details > summary { border-radius: var(--radius); }
 .b-count.cd-yellow .b-big { font-weight: 650; }
 .b-count.cd-red .b-big { font-weight: 800; }
 .b-count.is-counter .b-big { font-weight: 700; }
+
+/* message parts */
+.card-note { color: var(--ink-3); font-size: 0.82rem; font-weight: 600; }
+.part-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+.part-row input.pname { font: inherit; font-weight: 700; font-size: 1rem; color: var(--ink); background: var(--field); border: 1px solid var(--glass-line); border-radius: 12px; padding: 10px 12px; min-height: 52px; width: 100%; min-width: 0; box-shadow: inset 0 2px 8px rgba(0,0,0,0.35); }
+.part-row input.pname:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.part-row .tin { width: auto; min-width: 7.5em; }
+.lcs-row.part .lcs-label { color: var(--sun); }
+.lcs-row.part.next { background: rgba(180,165,255,0.10); box-shadow: inset 0 0 0 1px rgba(180,165,255,0.35); }
 </style>
 </head>
 <body>
@@ -828,6 +837,12 @@ details > summary { border-radius: var(--radius); }
       <div id="status" class="status glass" role="status" aria-live="polite"></div>
       <div id="flags" class="flags" aria-live="polite"></div>
     </div>
+
+    <section class="card glass" id="msgCard" style="order:5" aria-labelledby="msg-h">
+      <div class="card-head"><h2 id="msg-h">Message</h2><div class="card-meta"><span class="card-note">Times from Resi, after Go to Message</span></div></div>
+      <div id="msgParts"></div>
+      <div class="actions"><button type="button" class="ghost" id="addPart">Add a part</button></div>
+    </section>
 
     <section class="card glass" id="linkCard" aria-labelledby="link-h" style="order:5">
       <h2 id="link-h">ProTools link</h2>
@@ -1017,6 +1032,7 @@ details > summary { border-radius: var(--radius); }
       { t: "song", label: "", len: "4:10" },
       { t: "song", label: "", len: "3:56" }
     ],
+    msgParts: [{ name: "Message Start", at: "" }, { name: "Keys", at: "" }, { name: "Prayer Start", at: "" }, { name: "Hands", at: "" }],
     cutoff: "18:00", sat: "21:00", lower: "0:38", downBy: "0:00",
     sel: 0,
     services: [
@@ -1036,6 +1052,7 @@ details > summary { border-radius: var(--radius); }
       if (!Array.isArray(state.items)) state.items = JSON.parse(JSON.stringify(DEFAULTS.items));
       if (!Array.isArray(state.services)) state.services = JSON.parse(JSON.stringify(DEFAULTS.services));
       if (!state.skips || typeof state.skips !== "object") state.skips = {};
+      if (!Array.isArray(state.msgParts)) state.msgParts = JSON.parse(JSON.stringify(DEFAULTS.msgParts));
       // forget skips for services more than two days old
       Object.keys(state.skips).forEach(function (k) { var t = +String(k).split("|")[2]; if (!t || t < Date.now() - 172800000) delete state.skips[k]; });
       // move saved values off the old defaults
@@ -1405,6 +1422,32 @@ details > summary { border-radius: var(--radius); }
     var last = itemEls[itemEls.length - 1]; if (last && last.focusFirst) last.focusFirst();
   });
 
+  // ---------- message parts editor ----------
+  var partEls = [];
+  function renderParts() {
+    var host = $("msgParts"); host.innerHTML = ""; partEls = [];
+    state.msgParts.forEach(function (pt, i) {
+      var row = document.createElement("div"); row.className = "part-row";
+      var nm = document.createElement("input");
+      nm.type = "text"; nm.className = "pname"; nm.value = pt.name; nm.placeholder = "Part name"; nm.autocomplete = "off";
+      nm.setAttribute("aria-label", "Name of message part " + (i + 1));
+      nm.addEventListener("input", function () { pt.name = nm.value; persist(); compute(); });
+      var tm = makeTime({ id: "part" + i, label: (pt.name || "Message part") + " time", value: pt.at, ph: ["0", "00"],
+        onChange: function (str) { pt.at = str; persist(); compute(); } });
+      var del = document.createElement("button");
+      del.type = "button"; del.className = "ghost icon-btn"; del.textContent = "\u00d7";
+      del.setAttribute("aria-label", "Remove " + (pt.name || "message part"));
+      del.addEventListener("click", function () { state.msgParts.splice(i, 1); persist(); renderParts(); compute(); });
+      row.appendChild(nm); row.appendChild(tm); row.appendChild(del);
+      host.appendChild(row); partEls.push(tm);
+    });
+    if (!state.msgParts.length) host.innerHTML = '<p class="note" style="margin-top:0">No message parts. Add one to count down to it.</p>';
+  }
+  $("addPart").addEventListener("click", function () {
+    state.msgParts.push({ name: "", at: "" }); persist(); renderParts(); compute();
+    var last = partEls[partEls.length - 1]; if (last && last.focusFirst) last.focusFirst();
+  });
+
   // ---------- services editor ----------
   function renderServices() {
     var host = $("svcEditor"); host.innerHTML = "";
@@ -1562,6 +1605,18 @@ details > summary { border-radius: var(--radius); }
     // Stagetime runs its full length and lands exactly on the message (18:00 + 5:00 = 23:00 by default)
     add("Stagetime", v.msg - v.stage, "svc", "Lasts " + fmtDur(v.stage));
     add("Go to Message", v.msg, "svc msg");
+    // message parts from Resi, measured from Go to Message; a blank time leaves the part off the sheet
+    var tail = Math.max(finalRel, v.msg), partBad = false;
+    state.msgParts.forEach(function (pt, i) {
+      var raw = String(pt.at || "").trim(), n = raw ? parseDur(raw) : null;
+      var bad = !!raw && (n === null || n < 0);
+      if (partEls[i]) partEls[i].classList.toggle("bad", bad);
+      if (bad) { partBad = true; return; }
+      if (n === null) return;
+      add((pt.name || "").trim() || "Message part", v.msg + n, "svc part");
+      tail = Math.max(tail, v.msg + n);
+    });
+    if (partBad) flags.push("A message part time isn\u2019t a valid m:ss, so it was left off the cue sheet.");
     cues.sort(function (a, b) { return a.rel - b.rel || a.o - b.o; });
     var tosses = cues.filter(function (c) { return c.cls === "toss"; });
 
@@ -1613,7 +1668,7 @@ details > summary { border-radius: var(--radius); }
     tb += "</table></div>";
     $("tiles").innerHTML = svcs.length ? tb : '<p class="note" style="margin-top:0">Add a service time under Service times to see results.</p>';
     var dropPT = v.len - v.lower;
-    lastCalc = { startRel: startRel, finalRel: finalRel, len: v.len, lower: v.lower, sat: v.sat, stage: v.stage, msg: v.msg, cues: cues, svcs: svcs };
+    lastCalc = { tail: tail, startRel: startRel, finalRel: finalRel, len: v.len, lower: v.lower, sat: v.sat, stage: v.stage, msg: v.msg, cues: cues, svcs: svcs };
     $("dropCall").innerHTML = '<span class="dl">Drop screen</span><b>' + (dropPT >= 0 ? fmtDur(dropPT) : "\u2014") + '</b><span class="dn">on ProTools</span>';
 
     // the cue sheet itself is drawn live by renderTop()
@@ -1698,10 +1753,11 @@ details > summary { border-radius: var(--radius); }
       var h = '<div class="lcs"><div class="lcs-rail" aria-hidden="true"><div class="lcs-fill"></div><div class="lcs-now"></div></div><ol class="lcs-list">';
       rows.forEach(function (r) {
         var c = r.c, k = c.cls;
-        var kind = k.indexOf("toss") > -1 ? " toss" : k.indexOf("hit") > -1 ? " hit" : k.indexOf("final") > -1 ? " final" : k.indexOf("drop") > -1 ? " drop" : k.indexOf("svc") > -1 ? " svc" : "";
+        var kind = k.indexOf("part") > -1 ? " svc part" : k.indexOf("toss") > -1 ? " toss" : k.indexOf("hit") > -1 ? " hit" : k.indexOf("final") > -1 ? " final" : k.indexOf("drop") > -1 ? " drop" : k.indexOf("svc") > -1 ? " svc" : "";
         // the screen drop is only ever shown as the ProTools time to press the button
         var isDrop = k.indexOf("drop") > -1;
-        var meta = isDrop ? "On the ProTools counter" : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
+        var isPart = k.indexOf("part") > -1;
+        var meta = isPart ? fmtDur(c.rel - lastCalc.msg) + " into the message" : isDrop ? "On the ProTools counter" : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
         if (c.extra) meta += ", " + c.extra.toLowerCase();
         var tm = msClock(r.t), sp = tm.lastIndexOf(" ");
         var right = isDrop ? '<span class="drop-t">' + monoHtml(fmtDur(r.pt)) + "</span>" : monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small>";
@@ -1750,7 +1806,7 @@ details > summary { border-radius: var(--radius); }
     var best = null;
     occurrences(now - HOLD_MS - 3600000).forEach(function (o) {
       var pt = o.t + lastCalc.startRel * 1000;
-      if (pt <= now && now < o.t + HOLD_MS && (!best || pt > best.pt)) best = { o: o, pt: pt };
+      if (pt <= now && now < o.t + Math.max(HOLD_MS, ((lastCalc.tail || 0) + 120) * 1000) && (!best || pt > best.pt)) best = { o: o, pt: pt };
     });
     return best ? best.o : null;
   }
@@ -1837,7 +1893,7 @@ details > summary { border-radius: var(--radius); }
       var ahead = ((DOW[sv.day] === undefined ? 0 : DOW[sv.day]) - base.getDay() + 7) % 7;
       var mk = function (add) { return new Date(base.getFullYear(), base.getMonth(), base.getDate() + add, Math.floor(sv.sec / 3600), Math.floor((sv.sec % 3600) / 60), 0, 0).getTime(); };
       var t = mk(ahead);
-      if (t + (Math.max(lastCalc.finalRel, lastCalc.msg || 0) + 60) * 1000 < now) t = mk(ahead + 7);
+      if (t + ((lastCalc.tail || Math.max(lastCalc.finalRel, lastCalc.msg || 0)) + 5) * 1000 < now) t = mk(ahead + 7);
       return { sv: sv, t: t };
     }).sort(function (a, b) { return a.t - b.t; });
   }
@@ -1885,7 +1941,7 @@ details > summary { border-radius: var(--radius); }
         $("bSub").textContent = ast.fires ? (cued ? "Cued up. ProTools plays itself at " : "ProTools plays itself at ") + msClock(startAt) : "at " + msClock(startAt);
       }
     } else {
-      var e = Math.floor(el);
+      var e = Math.floor(el), after = null;
       if (el <= L) {
         $("bLab").textContent = linked !== null ? "ProTools, linked" : "ProTools";
         // the Big Counter draws itself every frame so the milliseconds run smoothly
@@ -1896,6 +1952,15 @@ details > summary { border-radius: var(--radius); }
         if ($("bSub")._h !== dropHtml) { $("bSub").innerHTML = dropHtml; $("bSub")._h = dropHtml; }
       } else {
         booth.cOn = false;
+        var after = null;
+        lastCalc.cues.forEach(function (c) { var ct2 = cur.t + c.rel * 1000; if (!after && c.cls.indexOf("svc") > -1 && ct2 > now) after = { n: c.label, t: ct2 }; });
+      }
+      if (el > L && after) {
+        $("bLab").textContent = after.n + " in";
+        var aHtml = monoHtml(fmtHMS(Math.ceil((after.t - now) / 1000)));
+        if ($("bBig")._h !== aHtml) { $("bBig").innerHTML = aHtml; $("bBig")._h = aHtml; }
+        $("bSub").textContent = "at " + msClock(after.t); $("bSub")._h = "";
+      } else if (el > L) {
         $("bLab").textContent = "Past the final downbeat";
         $("bBig").innerHTML = monoHtml(fmtDur(e)); $("bBig")._h = "";
         $("bSub")._h = "";
@@ -1940,7 +2005,7 @@ details > summary { border-radius: var(--radius); }
 
     // next cue, with the screen drop called out
     var nx = "";
-    if (el >= 0) {
+    if (el >= 0 && el <= L) {
       var nextC = null;
       lastCalc.cues.forEach(function (c) { var ce = c.rel - lastCalc.startRel; if (!nextC && c.cls !== "hit" && ce > el) nextC = { label: c.label, cls: c.cls, el: ce }; });
       var toDrop = dropEl - el;
@@ -2343,7 +2408,7 @@ details > summary { border-radius: var(--radius); }
   var FB_VERSION = "10.12.2";
   // every device unlocks with one shared password for this sign-in
   var SYNC_LOGIN = window.START_TIMES_LOGIN || "booth@northland-start-times.app";
-  var SHARED = ["mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips"];
+  var SHARED = ["msgParts", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips"];
   var sync = { ready: false, applying: false, user: null, db: null, timer: null, device: "", role: "", peers: {}, booth: null, lastTele: "", teleAt: 0, err: "", offs: [] };
   try { sync.device = localStorage.getItem("st-device") || ""; } catch (e) {}
   if (!sync.device) { sync.device = "d" + Math.random().toString(36).slice(2, 10); try { localStorage.setItem("st-device", sync.device); } catch (e) {} }
@@ -2398,7 +2463,7 @@ details > summary { border-radius: var(--radius); }
     sync.applying = true;
     SHARED.forEach(function (k) {
       var x = v[k];
-      if (k === "items" || k === "services") {
+      if (k === "items" || k === "services" || k === "msgParts") {
         x = !x ? [] : Array.isArray(x) ? x.filter(Boolean) : Object.keys(x).sort(function (a, b) { return a - b; }).map(function (i) { return x[i]; });
       } else if (k === "skips") x = x || {};
       else if (k === "live") x = x || null;
@@ -2407,7 +2472,7 @@ details > summary { border-radius: var(--radius); }
     });
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
     durKeys.forEach(function (k) { if (comps[k] && comps[k].setValue) comps[k].setValue(state[k]); });
-    applyMode(); renderItems(); renderServices();
+    applyMode(); renderItems(); renderParts(); renderServices();
     $("ptLeadSel").value = String(state.cueLead || "30");
     compute(); updOffNote(); renderLink(); renderBooth();
     if (link.watch && state.skips[link.watch.key]) cancelScheduled(link.watch.key);
@@ -2551,6 +2616,7 @@ details > summary { border-radius: var(--radius); }
 
   applyMode();
   renderItems();
+  renderParts();
   renderServices();
   compute();
 
@@ -2562,7 +2628,7 @@ details > summary { border-radius: var(--radius); }
     var nb = $("mNext"), html = "", cls = "nextline", pick = null;
     if (lastCalc) {
       var occ = occurrences(now);
-      occ.forEach(function (o) { var pt = o.t + lastCalc.startRel * 1000; if (!pick && now < o.t + (Math.max(lastCalc.finalRel, lastCalc.msg || 0) + 60) * 1000) pick = { o: o, pt: pt }; });
+      occ.forEach(function (o) { var pt = o.t + lastCalc.startRel * 1000; if (!pick && now < o.t + ((lastCalc.tail || Math.max(lastCalc.finalRel, lastCalc.msg || 0)) + 5) * 1000) pick = { o: o, pt: pt }; });
       if (pick) {
         var key = keyOf(pick.o), name = pick.o.sv.day + " " + svcClock(pick.o.sv.sec);
         var live = state.live && state.live.key === key ? state.live.at : null;
