@@ -903,6 +903,27 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .viewer .v-next .v-name { font-size: clamp(1.4rem, 6vw, 2rem); color: var(--ink-2); font-weight: 700; }
 .viewer .v-next .v-cd { font-size: clamp(4rem, 22vw, 8rem); margin-top: 4px; }
 .viewer .v-foot { font-size: 1rem; }
+
+/* ===== basic view: live timeline ===== */
+.viewer { justify-content: flex-start; padding-top: calc(env(safe-area-inset-top, 0px) + 64px); gap: 22px; }
+.viewer .v-now .v-name { font-size: clamp(2.2rem, 10vw, 4.2rem); }
+.viewer .v-next .v-cd { font-size: clamp(3.4rem, 17vw, 6.5rem); }
+.v-line { width: 100%; max-width: 440px; margin: 4px auto 0; text-align: left; }
+.v-line:empty { display: none; }
+.vt-wrap.is-live .lcs-now { display: block; }
+.vt-wrap { position: relative; }
+.vt-list { list-style: none; margin: 0; padding: 0; }
+.vt-row { position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 12px 8px 42px; border-radius: 12px; font-weight: 700; font-size: 0.98rem; transition: background-color 0.3s; }
+.vt-row .vt-t { font-family: var(--clockfont); font-weight: 600; color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.vt-row .vt-t small { font-size: 0.8em; margin-left: 2px; }
+.vt-row.past .vt-n, .vt-row.past .vt-t { opacity: 0.4; }
+.vt-row.past .lcs-dot { background: var(--accent); border-color: var(--accent); }
+.vt-row.cur { background: rgba(157,176,255,0.10); box-shadow: inset 0 0 0 1px rgba(157,176,255,0.32); }
+.vt-row.cur .vt-n { color: var(--ink); }
+.vt-row.cur .vt-t { color: var(--ink-2); opacity: 1; }
+.vt-row.cur .lcs-dot { background: var(--accent-2); border-color: var(--accent-2); }
+@media (prefers-reduced-motion: no-preference) { .vt-row.cur .lcs-dot { animation: lcsPulse 1.6s ease-in-out infinite; } }
+.vt-row.hands .vt-n { letter-spacing: 0.04em; }
 </style>
 </head>
 <body>
@@ -1079,6 +1100,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   <div class="v-svc" id="vSvc"></div>
   <section class="v-card v-now" id="vNow"><div class="v-k">Now</div><div class="v-name" id="vNowName"></div><div class="v-sub" id="vNowSub"></div></section>
   <section class="v-card v-next" id="vNext"><div class="v-k" id="vNextK">Up next</div><div class="v-name" id="vNextName"></div><div class="v-cd" id="vNextCd"></div><div class="v-sub" id="vNextSub"></div></section>
+  <section class="v-line" id="vLine" aria-label="Service timeline"></section>
   <section class="v-card v-list-card" id="vListCard"><div class="v-k">Coming up</div><ol class="v-list" id="vList"></ol></section>
   <p class="v-foot" id="vFoot"></p>
 </div>
@@ -3003,6 +3025,37 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     return rows.filter(function (r) { return !(r.n === "Message starts" && msgT !== null && Math.abs(r.t - msgT) < 2000); });
   }
   function vTime(ms) { var t = msClock(ms), i = t.lastIndexOf(" "); return t.slice(0, i) + "<small>" + t.slice(i + 1) + "</small>"; }
+  // the slim timeline on the basic view: line fills between moments, current moment pulses
+  function renderViewLine(host, rows, now, nextI) {
+    if (!rows.length) { if (host._sig) { host.innerHTML = ""; host._sig = ""; } return; }
+    var sig = rows.map(function (r) { return r.n + "@" + Math.round(r.t); }).join(",");
+    if (host._sig !== sig) {
+      host._sig = sig;
+      var h = '<div class="vt-wrap"><div class="lcs-rail" aria-hidden="true"><div class="lcs-fill"></div><div class="lcs-now"></div></div><ol class="vt-list">';
+      rows.forEach(function (r) {
+        h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + '</span><span class="vt-t">' + vTime(r.t) + "</span></li>";
+      });
+      host.innerHTML = h + "</ol></div>";
+    }
+    var lis = host.querySelectorAll(".vt-row");
+    var started = now >= rows[0].t, curI = !started ? -1 : (nextI < 0 ? rows.length - 1 : nextI - 1);
+    Array.prototype.forEach.call(lis, function (li, i) {
+      var past = now >= rows[i].t && i !== curI, cur = i === curI;
+      if (li.classList.contains("past") !== past) li.classList.toggle("past", past);
+      if (li.classList.contains("cur") !== cur) li.classList.toggle("cur", cur);
+      if (cur) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+    });
+    var wrap = host.querySelector(".vt-wrap"), rail = host.querySelector(".lcs-rail"), fill = host.querySelector(".lcs-fill"), dotNow = host.querySelector(".lcs-now");
+    var base = wrap.getBoundingClientRect().top;
+    var ys = Array.prototype.map.call(lis, function (li) { var d = li.querySelector(".lcs-dot").getBoundingClientRect(); return d.top + d.height / 2 - base; });
+    var top = ys[0], bot = ys[ys.length - 1], y;
+    if (!started) y = top;
+    else if (nextI < 0) y = bot;
+    else { var a = rows[nextI - 1].t, b = rows[nextI].t, f = b > a ? Math.min(1, Math.max(0, (now - a) / (b - a))) : 1; y = ys[nextI - 1] + (ys[nextI] - ys[nextI - 1]) * f; }
+    rail.style.top = top + "px"; rail.style.height = Math.max(0, bot - top) + "px";
+    fill.style.height = Math.max(0, y - top) + "px"; dotNow.style.top = Math.max(0, y - top) + "px";
+    wrap.classList.toggle("is-live", started && nextI >= 0);
+  }
   function setHtml(el, h) { if (el._h !== h) { el.innerHTML = h; el._h = h; } }
   function renderViewer() {
     if (!document.body.classList.contains("view-mode")) return;
@@ -3042,6 +3095,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     } else {
       nx.hidden = true; $("vListCard").hidden = true;
     }
+    renderViewLine($("vLine"), rows, now, nextI);
     // next service, once this one is wrapping up
     var foot = "";
     if (pick && keyOf(pick) !== keyOf(focus)) foot = "Next service: " + pick.sv.day + " " + svcClock(pick.sv.sec);
