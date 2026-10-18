@@ -743,7 +743,8 @@ details > summary { border-radius: var(--radius); }
 .b-count.is-counter .b-big { font-family: var(--clockfont); font-weight: 700; color: #8edb12; text-shadow: 0 0 22px rgba(142,219,18,0.35); font-size: clamp(3rem, 13.5vw, 7rem); }
 .b-count.is-counter .mono-d { width: 0.6em; }
 .b-count.is-counter .b-lab { color: #8edb12; }
-.b-count.is-counter .b-sub { color: #9aa79a; }
+.b-count.is-counter .b-sub { color: #c9d2c9; font-weight: 700; font-size: 1.05rem; }
+.b-count.is-counter .drop-t { color: #ff3b30; font-family: var(--clockfont); font-weight: 700; font-variant-numeric: tabular-nums; text-shadow: 0 0 12px rgba(255,59,48,0.4); }
 .b-count.is-counter.cnt-yellow { border-color: rgba(255,211,25,0.55); }
 .b-count.is-counter.cnt-yellow .b-big, .b-count.is-counter.cnt-yellow .b-lab { color: #ffd319; text-shadow: 0 0 22px rgba(255,211,25,0.35); }
 .b-count.is-counter.cnt-red { border-color: rgba(255,59,48,0.65); }
@@ -1825,7 +1826,7 @@ details > summary { border-radius: var(--radius); }
     var verb = ast.fires ? "Auto-start" : ast.level === "none" ? "ProTools start" : "Hit play";
 
     if (el < 0) {
-      booth.cOn = false;
+      booth.cOn = false; $("bSub")._h = "";
       var left = Math.ceil(-el);
       var cued = ast.fires && (link.done[booth.key] || {}).cue;
       if (left > 64800) { $("bLab").textContent = (ast.level === "none" ? "ProTools starts" : verb) + " at"; var fp = msClock(startAt), fi = fp.lastIndexOf(" "); $("bBig").innerHTML = monoHtml(fp.slice(0, fi)) + "<small>" + fp.slice(fi + 1) + "</small>"; $("bSub").textContent = cur.sv.day; }
@@ -1842,11 +1843,13 @@ details > summary { border-radius: var(--radius); }
         booth.cStart = linked !== null ? now - linked * 1000 : startAt;
         booth.cDrop = dropEl;
         if (!booth.cOn) { booth.cOn = true; $("bBig")._h = ""; requestAnimationFrame(counterFrame); }
-        $("bSub").textContent = "Drop screen at " + fmtDur(dropEl) + ". Final downbeat at " + msClock(startAt + L * 1000) + ".";
+        var dropHtml = 'Drop screen at <span class="drop-t">' + fmtDur(dropEl) + "</span>";
+        if ($("bSub")._h !== dropHtml) { $("bSub").innerHTML = dropHtml; $("bSub")._h = dropHtml; }
       } else {
         booth.cOn = false;
         $("bLab").textContent = "Past the final downbeat";
         $("bBig").innerHTML = monoHtml(fmtDur(e)); $("bBig")._h = "";
+        $("bSub")._h = "";
         var intoS = Math.floor((now - cur.t) / 1000);
         $("bSub").textContent = (intoS >= 0 ? "+" + fmtDur(intoS) + " into service. " : "") + "Final downbeat at " + msClock(startAt + L * 1000);
       }
