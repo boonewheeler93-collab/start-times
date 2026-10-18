@@ -828,6 +828,22 @@ details > summary { border-radius: var(--radius); }
 .ma-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .ma-btns button { min-height: 48px; }
 .part-row .tin.has-step { min-width: 12em; }
+
+/* message parts on the cue sheet: countdown first, real time underneath */
+.lcs-row.part .lcs-time.lcs-cd { font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+.b-right .lcs-row.part .lcs-time.lcs-cd { font-size: 1.9rem; }
+.lcs-cd .mono-d { width: 0.6em; }
+.lcs-at { font-family: var(--clockfont); font-size: 0.82rem; font-weight: 600; color: var(--ink-3); white-space: nowrap; margin-top: 2px; }
+.lcs-at small { font-size: 0.85em; margin-left: 2px; }
+.lcs-row.part.cd-yellow .lcs-cd { color: #ffd319; }
+.lcs-row.part.cd-red .lcs-cd { color: #ff3b30; }
+.lcs-row.part.past .lcs-cd { color: var(--ink-2); }
+/* booth cue sheet scrolls on its own so it can follow the service */
+.b-right { max-height: 72vh; overflow-y: auto; overscroll-behavior: contain; }
+@media (min-width: 1100px) { .b-right { max-height: calc(100vh - 110px); } }
+
+.b-right { padding-top: 0; }
+.b-right .card-head { position: sticky; top: 0; z-index: 5; margin: 0 -18px 10px; padding: 16px 18px 12px; background: #11151f; border-bottom: 1px solid var(--glass-line); }
 </style>
 </head>
 <body>
@@ -1031,7 +1047,7 @@ details > summary { border-radius: var(--radius); }
     <div class="b-msgadj" id="bMsgAdj" hidden>
       <span class="ma-l">Message start <b id="maVal">on time</b></span>
       <div class="ma-btns">
-        <button type="button" class="ghost" id="maMinus" aria-label="Message started 1 second earlier">\u22121 s</button>
+        <button type="button" class="ghost" id="maMinus" aria-label="Message started 1 second earlier">−1 s</button>
         <button type="button" class="ghost" id="maPlus" aria-label="Message started 1 second later">+1 s</button>
         <button type="button" class="solid" id="maNow">Started now</button>
       </div>
@@ -1838,6 +1854,20 @@ details > summary { border-radius: var(--radius); }
     }).sort(function (a, b) { return a.t - b.t || a.c.o - b.c.o; });
     return { rows: rows, key: key, startAt: startAt };
   }
+  function scrollSheetTo(host, li) {
+    var box = host.closest ? host.closest(".b-right") : null;
+    if (!box || !li) return;
+    var first = !host._scrolledOnce;
+    // measure after the browser has laid the sheet out
+    requestAnimationFrame(function () {
+      if (box.scrollHeight <= box.clientHeight + 4) return;
+      var head = box.querySelector(".card-head"), headH = head ? head.offsetHeight : 0;
+      var target = box.scrollTop + (li.getBoundingClientRect().top - box.getBoundingClientRect().top) - headH - box.clientHeight * 0.12;
+      var calm = first || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+      try { box.scrollTo({ top: Math.max(0, target), behavior: calm ? "auto" : "smooth" }); } catch (e) { box.scrollTop = Math.max(0, target); }
+      host._scrolledOnce = true;
+    });
+  }
   function renderLiveSheet(host, occ, now, badge) {
     if (!host) return;
     if (!lastCalc || !occ) { if (host._sig) { host.innerHTML = ""; host._sig = ""; } if (badge) badge.hidden = true; return; }
@@ -1856,9 +1886,11 @@ details > summary { border-radius: var(--radius); }
         if (c.extra) meta += ", " + c.extra.toLowerCase();
         var tm = msClock(r.t), sp = tm.lastIndexOf(" ");
         var right = isDrop ? '<span class="drop-t">' + monoHtml(fmtDur(r.pt)) + "</span>" : monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small>";
+        var rightBox = isPart
+          ? '<div class="lcs-time lcs-cd"></div><div class="lcs-at">' + monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small></div>"
+          : '<div class="lcs-time">' + right + '</div><div class="lcs-in"></div>';
         h += '<li class="lcs-row' + kind + '"><span class="lcs-dot" aria-hidden="true"></span><div class="lcs-main"><div class="lcs-label">' + esc(c.label) +
-          '</div><div class="lcs-meta">' + esc(meta) + '</div></div><div class="lcs-right"><div class="lcs-time">' + right +
-          '</div><div class="lcs-in"></div></div></li>';
+          '</div><div class="lcs-meta">' + esc(meta) + '</div></div><div class="lcs-right">' + rightBox + "</div></li>";
       });
       host.innerHTML = h + "</ol></div>";
     }
@@ -1871,8 +1903,19 @@ details > summary { border-radius: var(--radius); }
     Array.prototype.forEach.call(lis, function (li, i) {
       var isNext = i === nextI, inEl = li.querySelector(".lcs-in"), txt = "";
       if (li.classList.contains("next") !== isNext) li.classList.toggle("next", isNext);
-      if (isNext) { var left = Math.ceil((rows[i].t - now) / 1000); if (left <= 5400) txt = '<span class="lcs-inl">in</span> ' + monoHtml(fmtHMS(left)); }
-      if (inEl._t !== txt) { inEl.innerHTML = txt; inEl._t = txt; }
+      if (inEl) {
+        if (isNext) { var left = Math.ceil((rows[i].t - now) / 1000); if (left <= 5400) txt = '<span class="lcs-inl">in</span> ' + monoHtml(fmtHMS(left)); }
+        if (inEl._t !== txt) { inEl.innerHTML = txt; inEl._t = txt; }
+      }
+      // message parts: always counting down to their own time, holding at 00:00
+      var cdEl = li.querySelector(".lcs-cd");
+      if (cdEl) {
+        var lf = Math.max(0, Math.ceil((rows[i].t - now) / 1000)), ctx = lf >= 3600 ? fmtHMS(lf) : fmtMMSS(lf);
+        if (cdEl._t !== ctx) { cdEl.innerHTML = monoHtml(ctx); cdEl._t = ctx; }
+        var cr = lf > 0 && lf <= 30, cy = lf > 30 && lf <= 120;
+        if (li.classList.contains("cd-red") !== cr) li.classList.toggle("cd-red", cr);
+        if (li.classList.contains("cd-yellow") !== cy) li.classList.toggle("cd-yellow", cy);
+      }
     });
     // the progress line on the left follows the clock between cues
     var wrap = host.querySelector(".lcs"), rail = host.querySelector(".lcs-rail"), fill = host.querySelector(".lcs-fill"), nowEl = host.querySelector(".lcs-now");
@@ -1888,6 +1931,7 @@ details > summary { border-radius: var(--radius); }
     }
     rail.style.top = top + "px"; rail.style.height = Math.max(0, bot - top) + "px";
     fill.style.height = Math.max(0, y - top) + "px"; nowEl.style.top = Math.max(0, y - top) + "px";
+    if (host.id === "bSheet" && host._nextI !== nextI) { host._nextI = nextI; scrollSheetTo(host, lis[Math.max(0, (nextI < 0 ? lis.length : nextI) - 1)]); }
     var running = nextI !== 0 && nextI !== -1;
     wrap.classList.toggle("is-live", running);
     if (badge) badge.hidden = !(running || (nextI === 0 && rows[0].t - now < 3600000));
@@ -2168,7 +2212,7 @@ details > summary { border-radius: var(--radius); }
     try { if (navigator.wakeLock && navigator.wakeLock.request) navigator.wakeLock.request("screen").then(function (l) { booth.lock = l; }, function () {}); } catch (e) {}
   }
   function openBooth() {
-    booth.open = true; booth.key = null; booth.manual = false;
+    booth.open = true; booth.key = null; booth.manual = false; $("bSheet")._nextI = undefined; $("bSheet")._scrolledOnce = false;
     $("booth").hidden = false; document.body.style.overflow = "hidden";
     renderBooth();
     booth.timer = setInterval(renderBooth, 100);
