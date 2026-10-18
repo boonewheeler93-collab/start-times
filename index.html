@@ -924,7 +924,7 @@ details > summary { border-radius: var(--radius); }
     <p class="b-keys">Space: Started. Up and down arrows: adjust the clock. F: full screen. Esc: close.</p>
     </div>
     <div class="b-right">
-      <div class="card-head"><h2>Cue sheet</h2><div class="card-meta"><span class="live-badge" id="bLive" hidden><span class="ld"></span>Live</span></div></div>
+      <div class="card-head"><h2>Cue sheet</h2><div class="card-meta"><span class="live-badge" id="bLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="bSheetSvc"></span></div></div>
       <div id="bSheet"></div>
     </div>
     </div>
@@ -1663,6 +1663,25 @@ details > summary { border-radius: var(--radius); }
     if (badge) badge.lastChild.nodeValue = running ? "Live" : "Up next";
   }
 
+  // the cue sheet stays on a service until 1:10 after its ProTools start time, then the next one loads
+  var HOLD_MS = 70 * 60000;
+  function heldOcc(now) {
+    if (!lastCalc) return null;
+    var best = null;
+    occurrences(now - HOLD_MS - 60000).forEach(function (o) {
+      var pt = o.t + lastCalc.startRel * 1000;
+      if (pt <= now && now < pt + HOLD_MS && (!best || pt > best.pt)) best = { o: o, pt: pt };
+    });
+    return best ? best.o : null;
+  }
+  // which service a cue sheet should show: the held one, unless the next start is under 10 minutes away
+  function sheetFocus(now, nextOcc) {
+    var held = heldOcc(now);
+    if (!held) return nextOcc;
+    if (nextOcc && keyOf(nextOcc) !== keyOf(held) && nextOcc.t + lastCalc.startRel * 1000 - now < 600000) return nextOcc;
+    return held;
+  }
+
   // ---------- booth mode ----------
   var lastCalc = null;
   // the app's clock: this device's clock (kept accurate by the Mac's automatic time) plus any wall-clock adjustment
@@ -1802,13 +1821,17 @@ details > summary { border-radius: var(--radius); }
     $("bNext").innerHTML = nx;
 
     // live cue sheet
-    renderLiveSheet($("bSheet"), cur, now, $("bLive"));
+    var sheetOcc = booth.manual ? cur : (sheetFocus(now, cur) || cur);
+    var bs = $("bSheetSvc"), bst = sheetOcc.sv.day + " " + svcClock(sheetOcc.sv.sec), bsc = "daychip " + (sheetOcc.sv.day === "Saturday" ? "sat" : "sun");
+    if (bs.textContent !== bst) bs.textContent = bst;
+    if (bs.className !== bsc) bs.className = bsc;
+    renderLiveSheet($("bSheet"), sheetOcc, now, $("bLive"));
   }
   function lockScreen() {
     try { if (navigator.wakeLock && navigator.wakeLock.request) navigator.wakeLock.request("screen").then(function (l) { booth.lock = l; }, function () {}); } catch (e) {}
   }
   function openBooth() {
-    booth.open = true; booth.key = null;
+    booth.open = true; booth.key = null; booth.manual = false;
     $("booth").hidden = false; document.body.style.overflow = "hidden";
     renderBooth();
     booth.timer = setInterval(renderBooth, 100);
@@ -1824,6 +1847,7 @@ details > summary { border-radius: var(--radius); }
     $("openBooth").focus();
   }
   function shiftSvc(d) {
+    booth.manual = true;
     var occ = occurrences(nowMs());
     if (!occ.length) return;
     var idx = 0;
@@ -2409,7 +2433,7 @@ details > summary { border-radius: var(--radius); }
     }
     if (nb._h !== html || nb.className !== cls) { nb.innerHTML = html; nb._h = html; nb.className = cls; }
     nb.hidden = !html;
-    renderMainSheet(now, pick ? pick.o : null);
+    renderMainSheet(now, pick ? sheetFocus(now, pick.o) : heldOcc(now));
   }
   var selManualAt = 0;
   function renderMainSheet(now, autoOcc) {
