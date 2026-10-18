@@ -629,7 +629,8 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
 .nextline .nv { white-space: nowrap; }
 .nextline b { font-family: var(--clockfont); font-weight: 500; font-size: 1.3rem; color: var(--ink); font-variant-numeric: tabular-nums; }
 .nextline.auto { border-color: rgba(111,227,180,0.45); } .nextline.auto b, .nextline.auto .vb { color: var(--ok); }
-.nextline.soon { border-color: rgba(255,194,114,0.5); } .nextline.soon b, .nextline.soon .vb { color: var(--toss); }
+.nextline.soon { border-color: rgba(255,211,25,0.55); } .nextline.soon b, .nextline.soon .vb { color: #ffd319; }
+.nextline.cd-red { border-color: rgba(255,59,48,0.65); } .nextline.cd-red b, .nextline.cd-red .vb { color: #ff3b30; }
 .nextline.is-run { border-color: rgba(111,227,180,0.45); } .nextline.is-run b { color: var(--ok); }
 .tin { font-family: var(--clockfont); font-weight: 500; }
 .tin.big input[type="text"], .tin.big .colon { font-family: var(--clockfont); font-weight: 300; letter-spacing: 0; }
@@ -754,6 +755,12 @@ details > summary { border-radius: var(--radius); }
 
 /* bolder main clocks: slightly wider digit slots so the heavier numbers don't crowd */
 .b-clock .mono-d, .mini-clock .mono-d { width: 0.64em; }
+
+/* countdown stages before hit play */
+.b-count.cd-yellow { background: rgba(255,211,25,0.09); border-color: rgba(255,211,25,0.55); }
+.b-count.cd-yellow .b-lab, .b-count.cd-yellow .b-big { color: #ffd319; }
+.b-count.cd-red { background: rgba(255,59,48,0.11); border-color: rgba(255,59,48,0.65); }
+.b-count.cd-red .b-lab, .b-count.cd-red .b-big { color: #ff3b30; }
 </style>
 </head>
 <body>
@@ -1866,8 +1873,12 @@ details > summary { border-radius: var(--radius); }
 
     // phase color: amber in the last minute before hit play, green while the session runs
     var cb = $("bCountBox");
-    cb.classList.toggle("is-soon", !ast.fires && el < 0 && el >= -60);
-    cb.classList.toggle("is-auto", ast.fires && el < 0);
+    // countdown colors match the Big Counter: yellow in the last 2 minutes, red in the last 30 seconds
+    var cdRed = el < 0 && -el <= 30, cdYellow = el < 0 && !cdRed && -el <= 120;
+    cb.classList.remove("is-soon");
+    cb.classList.toggle("cd-yellow", cdYellow);
+    cb.classList.toggle("cd-red", cdRed);
+    cb.classList.toggle("is-auto", ast.fires && el < 0 && !cdYellow && !cdRed);
     cb.classList.toggle("is-run", el >= 0 && el <= L);
     cb.classList.toggle("is-counter", el >= 0 && el <= L);
     if (!(el >= 0 && el <= L)) cb.classList.remove("cnt-yellow", "cnt-red");
@@ -2534,7 +2545,7 @@ details > summary { border-radius: var(--radius); }
         } else {
           var ast = autoStatus(key);
           var verb = ast.fires ? "Auto-start" : ast.level === "none" ? "ProTools start" : "Hit play";
-          if (ast.fires) cls += " auto"; else if (left <= 60) cls += " soon";
+          if (left <= 30) cls += " cd-red"; else if (left <= 120) cls += " soon"; else if (ast.fires) cls += " auto";
           html = '<span class="nv">' + esc(name) + '</span><span class="nv"><span class="vb">' + verb + (left > 64800 ? " at" : " in") + "</span> <b>" +
             (left > 64800 ? monoHtml(msClock(startAt).replace(/ (AM|PM)$/, "")) + " " + msClock(startAt).slice(-2) : monoHtml(fmtHMS(Math.ceil(left)))) + "</b></span>";
         }
