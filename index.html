@@ -749,6 +749,8 @@ details > summary { border-radius: var(--radius); }
 .b-count.is-counter.cnt-yellow .b-big, .b-count.is-counter.cnt-yellow .b-lab { color: #ffd319; text-shadow: 0 0 22px rgba(255,211,25,0.35); }
 .b-count.is-counter.cnt-red { border-color: rgba(255,59,48,0.65); }
 .b-count.is-counter.cnt-red .b-big, .b-count.is-counter.cnt-red .b-lab { color: #ff3b30; text-shadow: 0 0 24px rgba(255,59,48,0.5); }
+.lcs-time .drop-t, .dropcall b { color: #ff3b30; text-shadow: 0 0 12px rgba(255,59,48,0.35); }
+.lcs-row.drop.past .lcs-time .drop-t { text-shadow: none; }
 </style>
 </head>
 <body>
@@ -1577,7 +1579,8 @@ details > summary { border-radius: var(--radius); }
     var rt = "<thead><tr><th>Cue</th><th>Relative</th><th>Elapsed</th></tr></thead><tbody>";
     cues.forEach(function (c) {
       var el = c.rel - startRel;
-      rt += '<tr class="' + c.cls + '"><td>' + esc(c.label) + "</td><td>" + fmtSigned(c.rel) + '</td><td class="' + (el >= 0 ? "" : "dim") + '">' + (el >= 0 ? fmtDur(el) : "before play") + "</td></tr>";
+      var dropRow = c.cls.indexOf("drop") > -1;
+      rt += '<tr class="' + c.cls + '"><td>' + esc(c.label) + "</td><td>" + (dropRow ? "" : fmtSigned(c.rel)) + '</td><td class="' + (el >= 0 ? "" : "dim") + '">' + (el >= 0 ? fmtDur(el) : "before play") + "</td></tr>";
     });
     $("relTable").innerHTML = rt + "</tbody>";
 
@@ -1653,12 +1656,15 @@ details > summary { border-radius: var(--radius); }
       rows.forEach(function (r) {
         var c = r.c, k = c.cls;
         var kind = k.indexOf("toss") > -1 ? " toss" : k.indexOf("hit") > -1 ? " hit" : k.indexOf("final") > -1 ? " final" : k.indexOf("drop") > -1 ? " drop" : k.indexOf("svc") > -1 ? " svc" : "";
-        var meta = r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
+        // the screen drop is only ever shown as the ProTools time to press the button
+        var isDrop = k.indexOf("drop") > -1;
+        var meta = isDrop ? "On the ProTools counter" : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
         if (c.extra) meta += ", " + c.extra.toLowerCase();
         var tm = msClock(r.t), sp = tm.lastIndexOf(" ");
+        var right = isDrop ? '<span class="drop-t">' + monoHtml(fmtDur(r.pt)) + "</span>" : monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small>";
         h += '<li class="lcs-row' + kind + '"><span class="lcs-dot" aria-hidden="true"></span><div class="lcs-main"><div class="lcs-label">' + esc(c.label) +
-          '</div><div class="lcs-meta">' + esc(meta) + '</div></div><div class="lcs-right"><div class="lcs-time">' + monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) +
-          '</small></div><div class="lcs-in"></div></div></li>';
+          '</div><div class="lcs-meta">' + esc(meta) + '</div></div><div class="lcs-right"><div class="lcs-time">' + right +
+          '</div><div class="lcs-in"></div></div></li>';
       });
       host.innerHTML = h + "</ol></div>";
     }
