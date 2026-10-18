@@ -890,6 +890,19 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .v-list .vt small { font-size: 0.8em; margin-left: 2px; }
 .v-foot { color: var(--ink-3); font-weight: 600; font-size: 0.9rem; text-align: center; margin: 4px 0 0; min-height: 1.2em; }
 .v-list-card[hidden], .v-now[hidden] { display: none !important; }
+
+/* ===== extremely basic shared view ===== */
+.viewer { min-height: 100vh; min-height: 100svh; justify-content: center; text-align: center; gap: clamp(28px, 6vh, 56px); padding-top: calc(env(safe-area-inset-top, 0px) + 14px); }
+.viewer .v-brand, .viewer #vListCard, .viewer #vNowSub, .viewer #vNextSub { display: none !important; }
+.viewer .v-top { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 18px; right: 18px; justify-content: space-between; align-items: center; }
+.viewer .v-svc { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 18px); left: 18px; font-size: 0.95rem; color: var(--ink-3); }
+.viewer .v-top .v-clock { margin-left: auto; font-size: 1.15rem; font-weight: 600; color: var(--ink-2); }
+.viewer .v-card { background: none; border: 0; padding: 0; border-radius: 0; box-shadow: none; }
+.viewer .v-k { font-size: 1rem; color: var(--ink-3); font-weight: 700; }
+.viewer .v-now .v-name { font-size: clamp(2.6rem, 12vw, 5rem); line-height: 1.05; }
+.viewer .v-next .v-name { font-size: clamp(1.4rem, 6vw, 2rem); color: var(--ink-2); font-weight: 700; }
+.viewer .v-next .v-cd { font-size: clamp(4rem, 22vw, 8rem); margin-top: 4px; }
+.viewer .v-foot { font-size: 1rem; }
 </style>
 </head>
 <body>
@@ -3036,7 +3049,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     if ($("vFoot").textContent !== foot) $("vFoot").textContent = foot;
   }
   function applyViewMode() {
-    var on = /^#view$/i.test(location.hash);
+    var on = !!window.START_TIMES_VIEW || /^#view$/i.test(location.hash);
     document.body.classList.toggle("view-mode", on);
     $("viewer").hidden = !on;
     if (on) { if (booth.open) closeBooth(); document.title = "Start Times (live)"; renderViewer(); }
