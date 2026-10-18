@@ -924,6 +924,47 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .vt-row.cur .lcs-dot { background: var(--accent-2); border-color: var(--accent-2); }
 @media (prefers-reduced-motion: no-preference) { .vt-row.cur .lcs-dot { animation: lcsPulse 1.6s ease-in-out infinite; } }
 .vt-row.hands .vt-n { letter-spacing: 0.04em; }
+
+/* ===== shared view, designed ===== */
+.vx { max-width: 480px; margin: 0 auto; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; gap: 14px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px); }
+.vx-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 2px; }
+.vx-svc, .vx-clock { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 999px; font-family: var(--clockfont); font-weight: 600; font-size: 0.92rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vx-svc { color: var(--sun); background: rgba(180,165,255,0.12); border: 1px solid rgba(180,165,255,0.28); }
+.vx-clock { gap: 0; color: var(--ink-2); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10); }
+.vx-clock .mono-d { width: 0.6em; }
+.vx-clock small { font-size: 0.75em; color: var(--ink-3); margin-left: 3px; }
+.vx-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); flex: none; }
+.vx-svc.is-live .vx-dot, .vx-upd .vx-dot { background: var(--ok); }
+@media (prefers-reduced-motion: no-preference) {
+  .vx-svc.is-live .vx-dot, .vx-upd .vx-dot { animation: vxPing 1.8s ease-out infinite; }
+}
+@keyframes vxPing { 0% { box-shadow: 0 0 0 0 rgba(111,227,180,0.55); } 70% { box-shadow: 0 0 0 7px rgba(111,227,180,0); } 100% { box-shadow: 0 0 0 0 rgba(111,227,180,0); } }
+.vx-card { border-radius: 26px; padding: 20px 22px; background: linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025)); border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 24px 50px -32px rgba(0,0,0,0.95); }
+.vx-card[hidden] { display: none !important; }
+.vx-k { display: flex; justify-content: space-between; align-items: baseline; color: var(--ink-3); font-size: 0.82rem; font-weight: 700; }
+.vx-k small { font-size: 0.85em; margin-left: 2px; }
+.vx-now-name { font-size: clamp(2.2rem, 10.5vw, 3.1rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.04; margin-top: 8px; }
+.vx-bar { height: 6px; margin-top: 18px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.vx-bar > span { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.vx-now.is-done .vx-bar > span { background: var(--ok); }
+.vx-next { text-align: center; padding: 22px 22px 20px; transition: border-color 0.3s; }
+.vx-next-k { color: var(--ink-2); font-weight: 600; font-size: 1.05rem; }
+.vx-next-k b { color: var(--ink); font-weight: 800; }
+.vx-cd { font-family: var(--clockfont); font-weight: 700; font-size: clamp(4rem, 22vw, 6.4rem); line-height: 1; margin: 10px 0 8px; font-variant-numeric: tabular-nums; }
+.vx-cd .mono-d { width: 0.6em; }
+.vx-at { color: var(--ink-3); font-weight: 600; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.vx-at small { font-size: 0.85em; margin-left: 2px; }
+.vx-next.cd-yellow { border-color: rgba(255,211,25,0.45); } .vx-next.cd-yellow .vx-cd { color: #ffd319; }
+.vx-next.cd-red { border-color: rgba(255,59,48,0.55); } .vx-next.cd-red .vx-cd { color: #ff3b30; }
+.vx-panel { padding: 14px 10px 10px; }
+.vx-panel-h { display: flex; justify-content: space-between; align-items: center; padding: 2px 12px 10px; color: var(--ink-3); font-size: 0.82rem; font-weight: 700; }
+.vx-upd { display: inline-flex; align-items: center; gap: 7px; }
+.vx .v-line { max-width: none; margin: 0; }
+.vx .vt-row { padding: 9px 12px 9px 42px; font-size: 0.95rem; }
+.vx-foot { text-align: center; color: var(--ink-3); font-size: 0.88rem; font-weight: 600; margin: 2px 0 0; }
+.vx-foot:empty { display: none; }
 </style>
 </head>
 <body>
@@ -1095,14 +1136,26 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   </div>
 </div>
 
-<div id="viewer" class="viewer" hidden aria-live="off">
-  <div class="v-top"><span class="v-brand">Start Times</span><span class="v-clock" id="vClock"></span></div>
-  <div class="v-svc" id="vSvc"></div>
-  <section class="v-card v-now" id="vNow"><div class="v-k">Now</div><div class="v-name" id="vNowName"></div><div class="v-sub" id="vNowSub"></div></section>
-  <section class="v-card v-next" id="vNext"><div class="v-k" id="vNextK">Up next</div><div class="v-name" id="vNextName"></div><div class="v-cd" id="vNextCd"></div><div class="v-sub" id="vNextSub"></div></section>
-  <section class="v-line" id="vLine" aria-label="Service timeline"></section>
-  <section class="v-card v-list-card" id="vListCard"><div class="v-k">Coming up</div><ol class="v-list" id="vList"></ol></section>
-  <p class="v-foot" id="vFoot"></p>
+<div id="viewer" class="vx" hidden>
+  <header class="vx-top">
+    <span class="vx-svc" id="vSvc"><span class="vx-dot" aria-hidden="true"></span><span id="vSvcT"></span></span>
+    <span class="vx-clock" id="vClock"></span>
+  </header>
+  <section class="vx-card vx-now" id="vNow" hidden>
+    <div class="vx-k"><span>Now</span><span id="vNowSub"></span></div>
+    <div class="vx-now-name" id="vNowName"></div>
+    <div class="vx-bar" aria-hidden="true"><span id="vBar"></span></div>
+  </section>
+  <section class="vx-card vx-next" id="vNext" hidden>
+    <div class="vx-next-k" id="vNextK"></div>
+    <div class="vx-cd" id="vNextCd"></div>
+    <div class="vx-at" id="vNextSub"></div>
+  </section>
+  <section class="vx-card vx-panel" id="vPanel">
+    <div class="vx-panel-h"><span>Timeline</span><span class="vx-upd"><span class="vx-dot" aria-hidden="true"></span>Updates live</span></div>
+    <div class="v-line" id="vLine" aria-label="Service timeline"></div>
+  </section>
+  <p class="vx-foot" id="vFoot"></p>
 </div>
 
 <div id="booth" class="booth" hidden role="dialog" aria-modal="true" aria-labelledby="bSvc">
@@ -3061,45 +3114,48 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     if (!document.body.classList.contains("view-mode")) return;
     var now = nowMs(), cp = centralParts(now);
     setHtml($("vClock"), monoHtml(cp.t) + "<small>" + cp.ap + "</small>");
-    if (!lastCalc || !lastCalc.svcs.length) { $("vSvc").textContent = ""; $("vNowName").textContent = "No services scheduled"; return; }
+    if (!lastCalc || !lastCalc.svcs.length) { $("vSvcT").textContent = "No services scheduled"; return; }
     var occ = occurrences(now), pick = null;
     occ.forEach(function (o) { if (!pick && now < o.t + ((lastCalc.tail || lastCalc.msg || 0) + 5) * 1000) pick = o; });
     var focus = pick ? sheetFocus(now, pick) : heldOcc(now);
     if (!focus) focus = occ[0];
-    $("vSvc").textContent = focus.sv.day + " " + svcClock(focus.sv.sec) + " service";
     var rows = viewRows(focus), nextI = -1;
     rows.forEach(function (r, i) { if (nextI < 0 && r.t > now) nextI = i; });
-    var started = rows.length && now >= rows[0].t;
-    // Now
-    $("vNow").hidden = !started;
+    var started = rows.length && now >= rows[0].t, done = started && nextI < 0;
+    var svcT = focus.sv.day + " " + svcClock(focus.sv.sec);
+    if ($("vSvcT").textContent !== svcT) $("vSvcT").textContent = svcT;
+    $("vSvc").classList.toggle("is-live", started && !done);
+
+    // Now: the moment we're in, with progress toward the next one
+    var nowCard = $("vNow");
+    nowCard.hidden = !started;
     if (started) {
-      var cur = rows[nextI < 0 ? rows.length - 1 : nextI - 1];
-      $("vNowName").textContent = nextI < 0 ? "Service complete" : cur.n;
-      setHtml($("vNowSub"), nextI < 0 ? "" : "since " + vTime(cur.t));
+      var cur = rows[done ? rows.length - 1 : nextI - 1];
+      var nm = done ? "Service complete" : cur.n;
+      if ($("vNowName").textContent !== nm) $("vNowName").textContent = nm;
+      setHtml($("vNowSub"), done ? "" : "since " + vTime(cur.t));
+      var pct = done ? 100 : Math.min(100, Math.max(0, (now - cur.t) / (rows[nextI].t - cur.t) * 100));
+      $("vBar").style.width = pct.toFixed(2) + "%";
+      nowCard.classList.toggle("is-done", done);
     }
-    // Up next + coming up
+
+    // Up next: plain phrase + big countdown
     var nx = $("vNext");
-    if (nextI >= 0) {
+    nx.hidden = done || !rows.length;
+    if (!nx.hidden) {
       var r = rows[nextI], left = Math.ceil((r.t - now) / 1000);
-      nx.hidden = false;
-      $("vNextK").textContent = started ? "Up next" : "First up";
-      $("vNextName").textContent = r.n;
+      setHtml($("vNextK"), (started ? "" : "First up: ") + "<b>" + esc(r.n) + "</b> in");
       setHtml($("vNextCd"), monoHtml(left >= 3600 ? fmtHMS(left) : fmtMMSS(left)));
       setHtml($("vNextSub"), "at " + vTime(r.t));
       nx.classList.toggle("cd-red", left <= 30);
       nx.classList.toggle("cd-yellow", left > 30 && left <= 120);
-      var li = "";
-      rows.slice(nextI + 1, nextI + 4).forEach(function (x) { li += "<li><span>" + esc(x.n) + '</span><span class="vt">' + vTime(x.t) + "</span></li>"; });
-      setHtml($("vList"), li);
-      $("vListCard").hidden = !li;
-    } else {
-      nx.hidden = true; $("vListCard").hidden = true;
     }
+
     renderViewLine($("vLine"), rows, now, nextI);
-    // next service, once this one is wrapping up
+
     var foot = "";
     if (pick && keyOf(pick) !== keyOf(focus)) foot = "Next service: " + pick.sv.day + " " + svcClock(pick.sv.sec);
-    else if (nextI < 0 && occ.length > 1) foot = "Next service: " + occ[1].sv.day + " " + svcClock(occ[1].sv.sec);
+    else if (done && occ.length > 1) foot = "Next service: " + occ[1].sv.day + " " + svcClock(occ[1].sv.sec);
     if ($("vFoot").textContent !== foot) $("vFoot").textContent = foot;
   }
   function applyViewMode() {
