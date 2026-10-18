@@ -630,7 +630,7 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
 .nextline b { font-family: var(--clockfont); font-weight: 500; font-size: 1.3rem; color: var(--ink); font-variant-numeric: tabular-nums; }
 .nextline.auto { border-color: rgba(111,227,180,0.45); } .nextline.auto b, .nextline.auto .vb { color: var(--ok); }
 .nextline.soon { border-color: rgba(255,194,114,0.5); } .nextline.soon b, .nextline.soon .vb { color: var(--toss); }
-.nextline.run { border-color: rgba(111,227,180,0.45); } .nextline.run b { color: var(--ok); }
+.nextline.is-run { border-color: rgba(111,227,180,0.45); } .nextline.is-run b { color: var(--ok); }
 .tin { font-family: var(--clockfont); font-weight: 500; }
 .tin.big input[type="text"], .tin.big .colon { font-family: var(--clockfont); font-weight: 300; letter-spacing: 0; }
 .svc-table td.c-play, .svc-table td.c-toss { font-family: var(--clockfont); font-weight: 500; }
@@ -641,6 +641,89 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
 .sum b { font-family: var(--clockfont); font-weight: 400; }
 .b-cues .bp, .b-cues .bc { font-family: var(--clockfont); }
 .tin input, .svc-table td, .step .sc, .rib-wrap b, .dropcall b { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* ===== polish pass ===== */
+:root {
+  --glass-a: rgba(255, 255, 255, 0.075);
+  --glass-b: rgba(255, 255, 255, 0.03);
+  --glass-line: rgba(255, 255, 255, 0.10);
+  --glass-hi: rgba(255, 255, 255, 0.12);
+  --radius: 22px;
+}
+body::before {
+  background:
+    radial-gradient(48% 38% at 8% 0%, rgba(96, 92, 240, 0.32), transparent 65%),
+    radial-gradient(40% 34% at 100% 12%, rgba(46, 190, 222, 0.14), transparent 65%),
+    radial-gradient(46% 40% at 80% 100%, rgba(150, 70, 200, 0.14), transparent 65%);
+}
+.glass { border-radius: var(--radius); box-shadow: inset 0 1px 0 var(--glass-hi), 0 18px 48px -32px rgba(0, 0, 0, 0.9); }
+.card { padding: 22px; margin-bottom: 18px; }
+.hero { box-shadow: inset 0 1px 0 var(--glass-hi), 0 24px 60px -36px rgba(104, 98, 255, 0.55); }
+h2 { font-size: 1.3rem; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.card-head h2 { margin: 0; }
+.card-meta { display: flex; align-items: center; gap: 8px; }
+.card-meta .daychip { font-size: 0.95rem; padding: 2px 12px; }
+.live-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; color: var(--ok); background: rgba(111,227,180,0.12); border: 1px solid rgba(111,227,180,0.4); }
+.live-badge .ld { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+@media (prefers-reduced-motion: no-preference) { .live-badge .ld { animation: ldBlink 1.6s ease-in-out infinite; } }
+@keyframes ldBlink { 50% { opacity: 0.25; } }
+.live-badge[hidden] { display: none; }
+button.ghost, button.solid { border-radius: 12px; }
+.modes { border-radius: 18px; }
+.modes button { border-radius: 14px; }
+details > summary { border-radius: var(--radius); }
+#status:not(.bad) { display: none; }
+.svc-table tr.row td { height: 58px; background: rgba(255,255,255,0.035); }
+.svc-table tr.row:hover td { background: rgba(255,255,255,0.06); }
+.dropcall { background: rgba(255,255,255,0.035); }
+
+/* ===== live cue sheet ===== */
+.lcs { position: relative; }
+.lcs-rail { position: absolute; left: 15px; width: 2px; border-radius: 2px; background: rgba(255,255,255,0.10); }
+.lcs-fill { position: absolute; left: 0; top: 0; width: 100%; border-radius: 2px; background: linear-gradient(180deg, var(--accent), var(--accent-2)); }
+.lcs-now { position: absolute; left: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 0 4px rgba(111,227,238,0.22), 0 0 18px rgba(111,227,238,0.8); display: none; z-index: 2; }
+.lcs.is-live .lcs-now { display: block; }
+.lcs-list { list-style: none; margin: 0; padding: 0; position: relative; }
+.lcs-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 14px; align-items: center; padding: 11px 14px 11px 42px; border-radius: 14px; transition: background-color 0.3s; }
+.lcs-row + .lcs-row { margin-top: 2px; }
+.lcs-dot { position: absolute; left: 10px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: var(--bg); border: 2px solid rgba(255,255,255,0.28); z-index: 1; transition: background-color 0.3s, border-color 0.3s; }
+.lcs-label { font-weight: 700; min-width: 0; }
+.lcs-meta { color: var(--ink-3); font-size: 0.8rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lcs-right { text-align: right; }
+.lcs-time { font-family: var(--clockfont); font-weight: 500; font-size: 1.15rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lcs-time small { font-size: 0.6em; color: var(--ink-3); margin-left: 3px; font-weight: 600; }
+.lcs-in { font-family: var(--clockfont); font-size: 0.88rem; font-weight: 600; color: var(--accent-2); white-space: nowrap; margin-top: 1px; }
+.lcs-in:empty { display: none; }
+.lcs-in .lcs-inl { font-family: var(--body); font-weight: 600; }
+.lcs-row.past .lcs-label, .lcs-row.past .lcs-time { opacity: 0.42; }
+.lcs-row.past .lcs-meta { opacity: 0.55; }
+.lcs-row.past .lcs-dot { background: var(--accent); border-color: var(--accent); }
+.lcs-row.next { background: rgba(157,176,255,0.09); box-shadow: inset 0 0 0 1px rgba(157,176,255,0.30); }
+.lcs-row.next .lcs-dot { border-color: var(--accent-2); background: var(--bg); }
+@media (prefers-reduced-motion: no-preference) { .lcs-row.next .lcs-dot { animation: lcsPulse 1.6s ease-in-out infinite; } }
+@keyframes lcsPulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(111,227,238,0.18); } 50% { box-shadow: 0 0 0 7px rgba(111,227,238,0.04); } }
+.lcs-row.hit .lcs-time { font-size: 1.3rem; }
+.lcs-row.toss .lcs-label, .lcs-row.toss .lcs-time { color: var(--toss); }
+.lcs-row.toss .lcs-dot { border-color: var(--toss); }
+.lcs-row.toss.past .lcs-dot { background: var(--toss); }
+.lcs-row.toss.next { background: var(--toss-soft); box-shadow: inset 0 0 0 1px var(--toss-line); }
+.lcs-row.final .lcs-label, .lcs-row.final .lcs-time { color: var(--accent-2); }
+.lcs-row.svc .lcs-label { color: var(--ink-2); }
+@media (max-width: 440px) { .lcs-row { padding: 10px 10px 10px 38px; } .lcs-dot { left: 9px; } .lcs-rail { left: 14px; } .lcs-time { font-size: 1.05rem; } }
+
+/* ===== booth: clock and controls on the left, live cue sheet on the right ===== */
+.b-grid { display: flex; flex-direction: column; gap: 16px; }
+.b-left { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.b-right { min-width: 0; padding: 18px; border-radius: var(--radius); background: rgba(255,255,255,0.04); border: 1px solid var(--glass-line); }
+.b-right .lcs-time { font-size: 1.3rem; }
+.b-right .lcs-row.hit .lcs-time { font-size: 1.45rem; }
+@media (min-width: 1100px) {
+  .b-in { max-width: 1320px; }
+  .b-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(380px, 1fr); gap: 28px; align-items: start; }
+  .b-right { position: sticky; top: 16px; max-height: calc(100vh - 110px); overflow-y: auto; }
+  .b-clock { font-size: clamp(5rem, 9vw, 9.5rem); }
+}
 </style>
 </head>
 <body>
@@ -779,7 +862,10 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
     </section>
 
     <section class="card glass" aria-labelledby="cue-h" style="order:7">
-      <h2 id="cue-h">Cue sheet</h2>
+      <div class="card-head">
+        <h2 id="cue-h">Cue sheet</h2>
+        <div class="card-meta"><span class="live-badge" id="sheetLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="sheetSvc"></span></div>
+      </div>
       <div id="sheet"></div>
     </section>
 
@@ -809,6 +895,8 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
       <button type="button" class="ghost" id="bFull">Full screen</button>
       <button type="button" class="ghost" id="bClose">Close</button>
     </div>
+    <div class="b-grid">
+    <div class="b-left">
     <div class="b-main">
       <div class="b-clock" id="bClock"></div>
       <div class="b-clocksub"><span id="bZone">Central time</span><button type="button" class="linkbtn" id="bAdjBtn" aria-expanded="false" aria-controls="bAdj">Adjust clock</button></div>
@@ -826,7 +914,6 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
       <div class="b-big" id="bBig"></div>
       <div class="b-sub" id="bSub"></div>
     </div>
-    <div class="b-checks" id="bChecks" hidden></div>
     <div class="b-next" id="bNext"></div>
     <div class="b-note" id="bNote" role="status"></div>
     <div class="b-actions">
@@ -835,8 +922,13 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
       <button type="button" class="ghost" id="bSkip" hidden>Skip auto-start</button>
       <button type="button" class="ghost danger" id="bHoldStop" hidden>Hold to stop ProTools</button>
     </div>
-    <ol class="b-cues" id="bCues"></ol>
     <p class="b-keys">Space: Started. Up and down arrows: adjust the clock. F: full screen. Esc: close.</p>
+    </div>
+    <div class="b-right">
+      <div class="card-head"><h2>Cue sheet</h2><div class="card-meta"><span class="live-badge" id="bLive" hidden><span class="ld"></span>Live</span></div></div>
+      <div id="bSheet"></div>
+    </div>
+    </div>
   </div>
 </div>
 
@@ -1395,7 +1487,9 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
     add("Final downbeat", finalRel, "final");
     // the screen must be fully down at the final downbeat, so press the button `lower` seconds before it
     add("Drop screen", finalRel - v.lower, "extra drop");
-    add("Take satellite", v.sat, "extra");
+    add("Stagetime", v.msg - v.stage, "svc");
+    add("Take satellite", v.sat, "extra svc");
+    add("Message", v.msg, "svc msg");
     cues.sort(function (a, b) { return a.rel - b.rel || a.o - b.o; });
     var tosses = cues.filter(function (c) { return c.cls === "toss"; });
 
@@ -1450,19 +1544,7 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
     lastCalc = { startRel: startRel, finalRel: finalRel, len: v.len, lower: v.lower, sat: v.sat, stage: v.stage, msg: v.msg, cues: cues, svcs: svcs };
     $("dropCall").innerHTML = '<span class="dl">Drop screen</span><b>' + (dropPT >= 0 ? fmtDur(dropPT) : "\u2014") + '</b><span class="dn">on ProTools</span>';
 
-    // cue sheet for the selected service
-    var sh = "";
-    if (svcs.length) {
-      var cur = svcs[state.sel];
-      sh += '<div class="sheet-head"><span class="daychip ' + (cur.day === "Saturday" ? "sat" : "sun") + '">' + cur.day + '</span><span class="nm">' + svcClock(cur.sec) + '</span></div><div class="run">';
-      cues.forEach(function (c) {
-        var cl = c.cls === "base" ? "" : " " + c.cls;
-        var isDrop = c.cls.indexOf("drop") > -1;
-        sh += '<div class="step' + cl + '"><span class="sl">' + esc(c.label) + '</span><span class="sr">' + (isDrop ? "ProTools time" : fmtSigned(c.rel) + (c.extra ? ", " + esc(c.extra.toLowerCase()) : "")) + '</span><span class="sc">' + (isDrop ? fmtDur(c.rel - startRel) : clockHtml(cur.sec + c.rel)) + "</span></div>";
-      });
-      sh += "</div>";
-    }
-    $("sheet").innerHTML = sh;
+    // the cue sheet itself is drawn live by renderTop()
 
     // relative table
     var rt = "<thead><tr><th>Cue</th><th>Relative</th><th>Elapsed</th></tr></thead><tbody>";
@@ -1520,6 +1602,68 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
       (hasToss ? '<li><span class="sw" style="background:var(--toss)"></span>Toss</li>' : "");
   }
 
+  // ---------- live cue sheet (main page and booth) ----------
+  function sheetRows(occ) {
+    var key = keyOf(occ), live = state.live && state.live.key === key ? state.live.at : null;
+    var startAt = live !== null ? live : occ.t + lastCalc.startRel * 1000;
+    var rows = lastCalc.cues.map(function (c) {
+      var svcAnchored = c.cls.indexOf("svc") > -1;
+      return { c: c, t: svcAnchored ? occ.t + c.rel * 1000 : startAt + (c.rel - lastCalc.startRel) * 1000, pt: svcAnchored ? null : c.rel - lastCalc.startRel };
+    }).sort(function (a, b) { return a.t - b.t || a.c.o - b.c.o; });
+    return { rows: rows, key: key, startAt: startAt };
+  }
+  function renderLiveSheet(host, occ, now, badge) {
+    if (!host) return;
+    if (!lastCalc || !occ) { if (host._sig) { host.innerHTML = ""; host._sig = ""; } if (badge) badge.hidden = true; return; }
+    var sr = sheetRows(occ), rows = sr.rows;
+    var sig = sr.key + "|" + Math.round(sr.startAt) + "|" + rows.map(function (r) { return r.c.label + "@" + Math.round(r.t) + r.c.extra; }).join(",");
+    if (host._sig !== sig) {
+      host._sig = sig;
+      var h = '<div class="lcs"><div class="lcs-rail" aria-hidden="true"><div class="lcs-fill"></div><div class="lcs-now"></div></div><ol class="lcs-list">';
+      rows.forEach(function (r) {
+        var c = r.c, k = c.cls;
+        var kind = k.indexOf("toss") > -1 ? " toss" : k.indexOf("hit") > -1 ? " hit" : k.indexOf("final") > -1 ? " final" : k.indexOf("drop") > -1 ? " drop" : k.indexOf("svc") > -1 ? " svc" : "";
+        var meta = r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
+        if (c.extra) meta += ", " + c.extra.toLowerCase();
+        var tm = msClock(r.t), sp = tm.lastIndexOf(" ");
+        h += '<li class="lcs-row' + kind + '"><span class="lcs-dot" aria-hidden="true"></span><div class="lcs-main"><div class="lcs-label">' + esc(c.label) +
+          '</div><div class="lcs-meta">' + esc(meta) + '</div></div><div class="lcs-right"><div class="lcs-time">' + monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) +
+          '</small></div><div class="lcs-in"></div></div></li>';
+      });
+      host.innerHTML = h + "</ol></div>";
+    }
+    var lis = host.querySelectorAll(".lcs-row"), nextI = -1;
+    rows.forEach(function (r, i) {
+      var past = now >= r.t;
+      if (!past && nextI < 0) nextI = i;
+      if (lis[i].classList.contains("past") !== past) lis[i].classList.toggle("past", past);
+    });
+    Array.prototype.forEach.call(lis, function (li, i) {
+      var isNext = i === nextI, inEl = li.querySelector(".lcs-in"), txt = "";
+      if (li.classList.contains("next") !== isNext) li.classList.toggle("next", isNext);
+      if (isNext) { var left = Math.ceil((rows[i].t - now) / 1000); if (left <= 5400) txt = '<span class="lcs-inl">in</span> ' + monoHtml(fmtHMS(left)); }
+      if (inEl._t !== txt) { inEl.innerHTML = txt; inEl._t = txt; }
+    });
+    // the progress line on the left follows the clock between cues
+    var wrap = host.querySelector(".lcs"), rail = host.querySelector(".lcs-rail"), fill = host.querySelector(".lcs-fill"), nowEl = host.querySelector(".lcs-now");
+    if (!lis.length) return;
+    var base = wrap.getBoundingClientRect().top;
+    var ys = Array.prototype.map.call(lis, function (li) { var d = li.querySelector(".lcs-dot").getBoundingClientRect(); return d.top + d.height / 2 - base; });
+    var top = ys[0], bot = ys[ys.length - 1], y;
+    if (nextI === 0) y = top;
+    else if (nextI < 0) y = bot;
+    else {
+      var a = rows[nextI - 1].t, b = rows[nextI].t, f = b > a ? Math.min(1, Math.max(0, (now - a) / (b - a))) : 1;
+      y = ys[nextI - 1] + (ys[nextI] - ys[nextI - 1]) * f;
+    }
+    rail.style.top = top + "px"; rail.style.height = Math.max(0, bot - top) + "px";
+    fill.style.height = Math.max(0, y - top) + "px"; nowEl.style.top = Math.max(0, y - top) + "px";
+    var running = nextI !== 0 && nextI !== -1;
+    wrap.classList.toggle("is-live", running);
+    if (badge) badge.hidden = !(running || (nextI === 0 && rows[0].t - now < 3600000));
+    if (badge) badge.lastChild.nodeValue = running ? "Live" : "Up next";
+  }
+
   // ---------- booth mode ----------
   var lastCalc = null;
   // the app's clock: this device's clock (kept accurate by the Mac's automatic time) plus any wall-clock adjustment
@@ -1574,7 +1718,7 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
     if (!lastCalc || !occ.length) {
       $("bSvc").textContent = "";
       $("bLab").textContent = lastCalc ? "Add a service time first." : "Enter the ProTools set duration first.";
-      $("bBig").innerHTML = ""; $("bSub").textContent = ""; $("bNext").innerHTML = ""; $("bNote").textContent = ""; $("bCues").innerHTML = "";
+      $("bBig").innerHTML = ""; $("bSub").textContent = ""; $("bNext").innerHTML = ""; $("bNote").textContent = ""; renderLiveSheet($("bSheet"), null, now, $("bLive"));
       return;
     }
     var cur = null;
@@ -1608,7 +1752,8 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
       var e = Math.floor(el);
       $("bLab").textContent = e <= L ? (linked !== null ? "ProTools, linked" : "ProTools") : "Past the final downbeat";
       $("bBig").innerHTML = monoHtml(fmtDur(e));
-      $("bSub").textContent = "of " + fmtDur(L) + ", final downbeat at " + msClock(startAt + L * 1000);
+      var intoS = Math.floor((now - cur.t) / 1000);
+      $("bSub").textContent = (intoS >= 0 ? "+" + fmtDur(intoS) + " into service. " : "of " + fmtDur(L) + ". ") + "Final downbeat at " + msClock(startAt + L * 1000);
     }
 
     // phase color: amber in the last minute before hit play, green while the session runs
@@ -1616,22 +1761,6 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
     cb.classList.toggle("is-soon", !ast.fires && el < 0 && el >= -60);
     cb.classList.toggle("is-auto", ast.fires && el < 0);
     cb.classList.toggle("is-run", el >= 0 && el <= L);
-
-    // service checkpoints once service time has passed
-    var into = (now - cur.t) / 1000, chk = $("bChecks"), msgRel = lastCalc.msg || 1380;
-    if (into >= 0 && into <= msgRel + 60) {
-      var marks = [
-        { n: "Final downbeat", t: startAt + L * 1000 },
-        { n: "Stagetime", t: cur.t + (msgRel - (lastCalc.stage || 300)) * 1000 },
-        { n: "Satellite", t: cur.t + (lastCalc.sat || 1260) * 1000 },
-        { n: "Message", t: cur.t + msgRel * 1000 }
-      ].sort(function (a, b) { return a.t - b.t; });
-      var nm = marks.filter(function (m) { return m.t > now; })[0];
-      chk.hidden = false;
-      chk.innerHTML = '<div><div class="ck">Into service</div><div class="cv">' + monoHtml("+" + fmtDur(Math.floor(into))) + '</div><div class="cs">since ' + svcClock(cur.sv.sec) + "</div></div>" +
-        (nm ? '<div><div class="ck">Next: ' + nm.n + '</div><div class="cv">' + monoHtml(fmtDur(Math.ceil((nm.t - now) / 1000))) + '</div><div class="cs">at ' + msClock(nm.t) + "</div></div>"
-            : '<div><div class="ck">Message</div><div class="cv">Now</div><div class="cs">since ' + msClock(cur.t + msgRel * 1000) + "</div></div>");
-    } else chk.hidden = true;
 
     // late-start correction
     var note = $("bNote");
@@ -1673,16 +1802,8 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
     }
     $("bNext").innerHTML = nx;
 
-    // every cue with its ProTools time and clock time
-    var list = "", marked = false;
-    lastCalc.cues.forEach(function (c) {
-      var ce = c.rel - lastCalc.startRel;
-      var past = el >= 0 && ce < el - 0.5;
-      var isNext = !past && !marked && (el < 0 || ce > el);
-      if (isNext) marked = true;
-      list += '<li class="' + (past ? "past " : "") + (isNext ? "next " : "") + (c.cls.indexOf("toss") > -1 ? "toss" : "") + '"><span class="bl">' + esc(c.label) + '</span><span class="bp">' + (ce >= 0 ? fmtDur(ce) : "") + '</span><span class="bc">' + msClock(startAt + ce * 1000) + "</span></li>";
-    });
-    $("bCues").innerHTML = list;
+    // live cue sheet
+    renderLiveSheet($("bSheet"), cur, now, $("bLive"));
   }
   function lockScreen() {
     try { if (navigator.wakeLock && navigator.wakeLock.request) navigator.wakeLock.request("screen").then(function (l) { booth.lock = l; }, function () {}); } catch (e) {}
@@ -2222,8 +2343,9 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
     var r = e.target.closest ? e.target.closest("tr.row") : null;
     if (!r) return;
     state.sel = parseInt(r.getAttribute("data-i"), 10) || 0;
+    selManualAt = Date.now();
     persist(); compute();
-    var again = $("tiles").querySelector('tr.row[data-i="' + state.sel + '"] .rowbtn'); if (again) again.focus();
+    if (e.detail === 0) { var again = $("tiles").querySelector('tr.row[data-i="' + state.sel + '"] .rowbtn'); if (again) again.focus(); }
   });
 
   $("copy").addEventListener("click", function () {
@@ -2261,16 +2383,16 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
     var now = nowMs(), cp = centralParts(now);
     var ch = monoHtml(cp.t) + "<small>" + cp.ap + "</small>", mc = $("mClock");
     if (mc._h !== ch) { mc.innerHTML = ch; mc._h = ch; }
-    var nb = $("mNext"), html = "", cls = "nextline";
+    var nb = $("mNext"), html = "", cls = "nextline", pick = null;
     if (lastCalc) {
-      var occ = occurrences(now), pick = null;
+      var occ = occurrences(now);
       occ.forEach(function (o) { var pt = o.t + lastCalc.startRel * 1000; if (!pick && now < o.t + lastCalc.finalRel * 1000) pick = { o: o, pt: pt }; });
       if (pick) {
         var key = keyOf(pick.o), name = pick.o.sv.day + " " + svcClock(pick.o.sv.sec);
         var live = state.live && state.live.key === key ? state.live.at : null;
         var startAt = live !== null ? live : pick.pt, left = (startAt - now) / 1000;
         if (left <= 0) {
-          cls += " run";
+          cls += " is-run";
           html = '<span class="nv">' + esc(name) + '</span><span class="nv">ProTools <b>' + monoHtml(fmtDur(Math.floor(-left))) + "</b></span>";
         } else {
           var ast = autoStatus(key);
@@ -2283,6 +2405,28 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
     }
     if (nb._h !== html || nb.className !== cls) { nb.innerHTML = html; nb._h = html; nb.className = cls; }
     nb.hidden = !html;
+    renderMainSheet(now, pick ? pick.o : null);
+  }
+  var selManualAt = 0;
+  function renderMainSheet(now, autoOcc) {
+    var occ = null, sv = null;
+    if (autoOcc && Date.now() - selManualAt > 1800000) { occ = autoOcc; sv = autoOcc.sv; }
+    else {
+      sv = lastCalc && lastCalc.svcs[state.sel];
+      if (sv) occurrences(now).forEach(function (o) { if (!occ && o.sv.day === sv.day && o.sv.sec === sv.sec) occ = o; });
+    }
+    // keep the table's highlighted row on the service the sheet is showing
+    if (sv && lastCalc) {
+      var idx = -1; lastCalc.svcs.forEach(function (x, i) { if (idx < 0 && x.day === sv.day && x.sec === sv.sec) idx = i; });
+      Array.prototype.forEach.call(document.querySelectorAll("#tiles tr.row"), function (tr) {
+        var on = +tr.getAttribute("data-i") === idx;
+        if (tr.classList.contains("sel") !== on) { tr.classList.toggle("sel", on); var bt = tr.querySelector(".rowbtn"); if (bt) bt.setAttribute("aria-pressed", on ? "true" : "false"); }
+      });
+    }
+    var chip = $("sheetSvc"), ct = sv ? sv.day + " " + svcClock(sv.sec) : "", cc = "daychip " + (sv && sv.day === "Saturday" ? "sat" : "sun");
+    if (chip.textContent !== ct) chip.textContent = ct;
+    if (chip.className !== cc) chip.className = cc;
+    renderLiveSheet($("sheet"), occ, now, $("sheetLive"));
   }
   $("mNext").addEventListener("click", openBooth);
   setInterval(renderTop, 200);
