@@ -827,9 +827,8 @@ details > summary { border-radius: var(--radius); }
           <div class="field"><label for="b2f-m">“Begins Now” to first downbeat</label><div id="b2f"></div></div>
           <div class="field"><label for="walkBackup-m">Walk-in backup</label><div id="walkBackup"></div></div>
           <div class="field"><label for="cutoff-m">Final downbeat no later than</label><div id="cutoff"></div></div>
-          <div class="field"><label for="sat-m">Take satellite</label><div id="sat"></div></div>
           <div class="field"><label for="stage-m">Stagetime</label><div id="stage"></div></div>
-          <div class="field"><label for="msg-m">Message starts</label><div id="msg"></div></div>
+          <div class="field"><label for="msg-m">Go to Message</label><div id="msg"></div></div>
           <div class="field"><label for="lower-m">Screen takes to lower</label><div id="lower"></div></div>
         
         </div>
@@ -1024,7 +1023,7 @@ details > summary { border-radius: var(--radius); }
   }
 
   // ---------- main inputs ----------
-  var durKeys = ["len", "target", "walkin", "set", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower"];
+  var durKeys = ["len", "target", "walkin", "set", "countdown", "b2f", "walkBackup", "cutoff", "stage", "msg", "lower"];
   var signedOK = { downBy: 1 };
   var optional = { walkin: 1, set: 1 };
   var NAMES = { len: "ProTools set duration", target: "Final downbeat target", walkin: "Walk-in song", set: "First to final downbeat", countdown: "Countdown", b2f: "Begins Now to first downbeat", walkBackup: "Walk-in backup", cutoff: "Latest final downbeat", sat: "Take satellite", lower: "Screen lower time", stage: "Stagetime", msg: "Message starts" };
@@ -1487,9 +1486,9 @@ details > summary { border-radius: var(--radius); }
     add("Final downbeat", finalRel, "final");
     // the screen must be fully down at the final downbeat, so press the button `lower` seconds before it
     add("Drop screen", finalRel - v.lower, "extra drop");
-    add("Stagetime", v.msg - v.stage, "svc");
-    add("Take satellite", v.sat, "extra svc");
-    add("Message", v.msg, "svc msg");
+    // Stagetime runs its full length and lands exactly on the message (18:00 + 5:00 = 23:00 by default)
+    add("Stagetime", v.msg - v.stage, "svc", "Lasts " + fmtDur(v.stage));
+    add("Go to Message", v.msg, "svc msg");
     cues.sort(function (a, b) { return a.rel - b.rel || a.o - b.o; });
     var tosses = cues.filter(function (c) { return c.cls === "toss"; });
 
@@ -2386,14 +2385,19 @@ details > summary { border-radius: var(--radius); }
     var nb = $("mNext"), html = "", cls = "nextline", pick = null;
     if (lastCalc) {
       var occ = occurrences(now);
-      occ.forEach(function (o) { var pt = o.t + lastCalc.startRel * 1000; if (!pick && now < o.t + lastCalc.finalRel * 1000) pick = { o: o, pt: pt }; });
+      occ.forEach(function (o) { var pt = o.t + lastCalc.startRel * 1000; if (!pick && now < o.t + (Math.max(lastCalc.finalRel, lastCalc.msg || 0) + 60) * 1000) pick = { o: o, pt: pt }; });
       if (pick) {
         var key = keyOf(pick.o), name = pick.o.sv.day + " " + svcClock(pick.o.sv.sec);
         var live = state.live && state.live.key === key ? state.live.at : null;
         var startAt = live !== null ? live : pick.pt, left = (startAt - now) / 1000;
         if (left <= 0) {
           cls += " is-run";
-          html = '<span class="nv">' + esc(name) + '</span><span class="nv">ProTools <b>' + monoHtml(fmtDur(Math.floor(-left))) + "</b></span>";
+          // after the session ends, count down to Stagetime and Go to Message instead
+          var after = null;
+          if (-left > lastCalc.len) lastCalc.cues.forEach(function (c) { var ct = pick.o.t + c.rel * 1000; if (!after && c.cls.indexOf("svc") > -1 && ct > now) after = { n: c.label, t: ct }; });
+          html = after
+            ? '<span class="nv">' + esc(name) + '</span><span class="nv">' + esc(after.n) + ' in <b>' + monoHtml(fmtDur(Math.ceil((after.t - now) / 1000))) + "</b></span>"
+            : '<span class="nv">' + esc(name) + '</span><span class="nv">ProTools <b>' + monoHtml(fmtDur(Math.floor(-left))) + "</b></span>";
         } else {
           var ast = autoStatus(key);
           var verb = ast.fires ? "Auto-start" : ast.level === "none" ? "ProTools start" : "Hit play";
