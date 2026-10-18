@@ -819,6 +819,15 @@ details > summary { border-radius: var(--radius); }
 .bp.yellow { border-color: rgba(255,211,25,0.55); background: rgba(255,211,25,0.08); } .bp.yellow .bpt { color: #ffd319; }
 .bp.red { border-color: rgba(255,59,48,0.65); background: rgba(255,59,48,0.10); } .bp.red .bpt { color: #ff3b30; }
 .bp.done { opacity: 0.5; } .bp.done .bpt { color: var(--ink-2); }
+
+/* booth: message start adjust */
+.b-msgadj { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; padding: 12px 16px; border-radius: 18px; background: rgba(180,165,255,0.08); border: 1px solid rgba(180,165,255,0.35); }
+.b-msgadj[hidden] { display: none; }
+.ma-l { font-weight: 700; color: var(--ink-2); }
+.ma-l b { font-family: var(--clockfont); font-weight: 700; color: var(--sun); margin-left: 6px; }
+.ma-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.ma-btns button { min-height: 48px; }
+.part-row .tin.has-step { min-width: 12em; }
 </style>
 </head>
 <body>
@@ -1019,6 +1028,14 @@ details > summary { border-radius: var(--radius); }
       <div class="b-sub" id="bSub"></div>
     </div>
     <div class="b-parts" id="bParts" hidden></div>
+    <div class="b-msgadj" id="bMsgAdj" hidden>
+      <span class="ma-l">Message start <b id="maVal">on time</b></span>
+      <div class="ma-btns">
+        <button type="button" class="ghost" id="maMinus" aria-label="Message started 1 second earlier">\u22121 s</button>
+        <button type="button" class="ghost" id="maPlus" aria-label="Message started 1 second later">+1 s</button>
+        <button type="button" class="solid" id="maNow">Started now</button>
+      </div>
+    </div>
     <div class="b-next" id="bNext"></div>
     <div class="b-note" id="bNote" role="status"></div>
     <div class="b-actions">
@@ -1455,7 +1472,7 @@ details > summary { border-radius: var(--radius); }
     var last = itemEls[itemEls.length - 1]; if (last && last.focusFirst) last.focusFirst();
   });
 
-  var lastCalcHands = null;
+  var lastCalcHands = null, lastFocusKey = null;
   // ---------- message parts editor ----------
   var partEls = [];
   function renderParts() {
@@ -1468,8 +1485,8 @@ details > summary { border-radius: var(--radius); }
       nm.addEventListener("input", function () { pt.name = nm.value; persist(); compute(); });
       var nmL = String(pt.name || "").toLowerCase();
       var tph = /prayer/.test(nmL) ? ["31", "00"] : /^message\s*start/.test(nmL) ? ["0", "00"] : /key/.test(nmL) ? ["29", "00"] : /hand/.test(nmL) ? ["35", "00"] : ["0", "00"];
-      var tm = makeTime({ id: "part" + i, label: (pt.name || "Message part") + " time", value: pt.at, ph: tph,
-        onChange: function (str) { pt.at = str; persist(); compute(); } });
+      var tm = makeTime({ id: "part" + i, label: (pt.name || "Message part") + " time", value: pt.at, ph: tph, stepper: /^message\s*start/.test(nmL),
+        onChange: function (str) { pt.at = str; if (/^message\s*start/.test(nmL)) state.msgLateKey = lastFocusKey; persist(); compute(); } });
       var del = document.createElement("button");
       del.type = "button"; del.className = "ghost icon-btn"; del.textContent = "\u00d7";
       del.setAttribute("aria-label", "Remove " + (pt.name || "message part"));
@@ -1643,14 +1660,19 @@ details > summary { border-radius: var(--radius); }
     add("Go to Message", v.msg, "svc msg");
     // message parts from Resi, measured from Go to Message; a blank time leaves the part off the sheet
     var tail = Math.max(finalRel, v.msg), partBad = false;
+    // how late the message started (Message Start); every Resi time counts from it
+    var mS = 0;
+    state.msgParts.forEach(function (pt) { if (/^message\s*start/i.test(String(pt.name || "").trim())) { var x = parseDur(String(pt.at || "").trim()); if (x !== null && x >= 0) mS = x; } });
     state.msgParts.forEach(function (pt, i) {
       var raw = String(pt.at || "").trim(), n = raw ? parseDur(raw) : null;
       var bad = !!raw && (n === null || n < 0);
       if (partEls[i]) partEls[i].classList.toggle("bad", bad);
       if (bad) { partBad = true; return; }
       if (n === null) return;
-      add((pt.name || "").trim() || "Message part", v.msg + n, "svc part");
-      tail = Math.max(tail, v.msg + n);
+      var isStartPart = /^message\s*start/i.test(String(pt.name || "").trim());
+      var prel = v.msg + (isStartPart ? n : mS + n);
+      add((pt.name || "").trim() || "Message part", prel, "svc part" + (isStartPart ? " mstart" : ""));
+      tail = Math.max(tail, prel);
     });
     if (partBad) flags.push("A message part time isn\u2019t a valid m:ss, so it was left off the cue sheet.");
     // message length check: Message Start to Hands, usually 30 to 38 minutes
@@ -1663,16 +1685,16 @@ details > summary { border-radius: var(--radius); }
     });
     var ms = $("msgSum");
     if (mHands !== null) {
-      var mLen = mHands - (mStart || 0), odd = mLen < 1800 || mLen > 2280;
+      var mLen = mHands, odd = mLen < 1800 || mLen > 2280;
       ms.textContent = "Message runs " + fmtDur(mLen) + ", start to hands" + (odd ? ". That\u2019s outside the usual 30 to 38 minutes, so double-check the times." : ".");
       ms.className = "msg-sum" + (odd ? " odd" : "");
     } else { ms.textContent = ""; ms.className = "msg-sum"; }
-    lastCalcHands = mHands !== null ? v.msg + mHands : null;
+    lastCalcHands = mHands !== null ? v.msg + mS + mHands : null;
     var msgList = [];
     state.msgParts.forEach(function (pt) {
       var n = parseDur(String(pt.at || "").trim()), nm = String(pt.name || "").trim();
       if (n === null || n < 0 || /^message\s*start/i.test(nm)) return;
-      msgList.push({ name: nm || "Message part", rel: v.msg + n, hands: /hand/i.test(nm) });
+      msgList.push({ name: nm || "Message part", rel: v.msg + mS + n, hands: /hand/i.test(nm) });
     });
     msgList.sort(function (a, b) { return a.rel - b.rel; });
     var handsRel = lastCalcHands !== null ? lastCalcHands : (msgList.length ? msgList[msgList.length - 1].rel : null);
@@ -1816,7 +1838,7 @@ details > summary { border-radius: var(--radius); }
         // the screen drop is only ever shown as the ProTools time to press the button
         var isDrop = k.indexOf("drop") > -1;
         var isPart = k.indexOf("part") > -1;
-        var meta = isPart ? fmtDur(c.rel - lastCalc.msg) + " into the message" : isDrop ? "On the ProTools counter" : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
+        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message") : isDrop ? "On the ProTools counter" : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
         if (c.extra) meta += ", " + c.extra.toLowerCase();
         var tm = msClock(r.t), sp = tm.lastIndexOf(" ");
         var right = isDrop ? '<span class="drop-t">' + monoHtml(fmtDur(r.pt)) + "</span>" : monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small>";
@@ -2052,6 +2074,17 @@ details > summary { border-radius: var(--radius); }
       if ($("bParts")._h !== ph) { $("bParts").innerHTML = ph; $("bParts")._h = ph; }
     }
     $("bParts").hidden = !msgMode;
+    // message start controls: from Stagetime until a minute after Hands
+    var aOcc = booth.manual ? cur : (sheetFocus(now, cur) || cur), showAdj = false;
+    if (aOcc && lastCalc.msg) {
+      var stgT = aOcc.t + (lastCalc.msg - (lastCalc.stage || 300)) * 1000;
+      var endT = aOcc.t + ((lastCalc.handsRel !== null && lastCalc.handsRel !== undefined ? lastCalc.handsRel : lastCalc.msg) + 60) * 1000;
+      showAdj = now >= stgT && now <= endT;
+      booth.msgOcc = aOcc;
+      var late = Math.round(lastCalc.mStartRel - lastCalc.msg), lt = late > 0 ? "+" + fmtDur(late) + " late" : "on time";
+      if ($("maVal").textContent !== lt) $("maVal").textContent = lt;
+    }
+    $("bMsgAdj").hidden = !showAdj;
     if (msgMode) $("bNext").innerHTML = "";
 
     // phase color: amber in the last minute before hit play, green while the session runs
@@ -2163,6 +2196,23 @@ details > summary { border-radius: var(--radius); }
     renderBooth();
   }
   $("openBooth").addEventListener("click", openBooth);
+  // set how late the message started (seconds after +23:00); Keys, Prayer, Hands follow
+  function setMsgStart(sec) {
+    sec = Math.max(0, Math.round(sec));
+    var idx = -1;
+    state.msgParts.forEach(function (pt, i) { if (idx < 0 && /^message\s*start/i.test(String(pt.name || "").trim())) idx = i; });
+    if (idx < 0) { state.msgParts.unshift({ name: "Message Start", at: "0:00" }); idx = 0; }
+    state.msgParts[idx].at = fmtDur(sec);
+    state.msgLateKey = booth.msgOcc ? keyOf(booth.msgOcc) : lastFocusKey;
+    persist(); renderParts(); compute(); renderBooth();
+  }
+  function msgLate() { return lastCalc ? Math.round(lastCalc.mStartRel - lastCalc.msg) : 0; }
+  $("maMinus").addEventListener("click", function () { setMsgStart(msgLate() - 1); });
+  $("maPlus").addEventListener("click", function () { setMsgStart(msgLate() + 1); });
+  $("maNow").addEventListener("click", function () {
+    if (!lastCalc || !booth.msgOcc) return;
+    setMsgStart((nowMs() - (booth.msgOcc.t + lastCalc.msg * 1000)) / 1000);
+  });
   $("bAdjBtn").addEventListener("click", function () {
     var a = $("bAdj"); a.hidden = !a.hidden;
     this.setAttribute("aria-expanded", a.hidden ? "false" : "true");
@@ -2497,7 +2547,7 @@ details > summary { border-radius: var(--radius); }
   var FB_VERSION = "10.12.2";
   // every device unlocks with one shared password for this sign-in
   var SYNC_LOGIN = window.START_TIMES_LOGIN || "booth@northland-start-times.app";
-  var SHARED = ["msgParts", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips"];
+  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips"];
   var sync = { ready: false, applying: false, user: null, db: null, timer: null, device: "", role: "", peers: {}, booth: null, lastTele: "", teleAt: 0, err: "", offs: [] };
   try { sync.device = localStorage.getItem("st-device") || ""; } catch (e) {}
   if (!sync.device) { sync.device = "d" + Math.random().toString(36).slice(2, 10); try { localStorage.setItem("st-device", sync.device); } catch (e) {} }
@@ -2750,6 +2800,14 @@ details > summary { border-radius: var(--radius); }
       }
     }
     nb.hidden = !html;
+    var focusOcc = pick ? sheetFocus(now, pick.o) : heldOcc(now);
+    lastFocusKey = focusOcc ? keyOf(focusOcc) : null;
+    // a late message start belongs to one service: reset it when the next service's sheet loads
+    if (state.msgLateKey && lastFocusKey && lastFocusKey !== state.msgLateKey) {
+      state.msgLateKey = null;
+      state.msgParts.forEach(function (pt) { if (/^message\s*start/i.test(String(pt.name || "").trim())) pt.at = "0:00"; });
+      persist(); renderParts(); compute();
+    }
     renderMainSheet(now, pick ? sheetFocus(now, pick.o) : heldOcc(now));
     renderRibbonLive(now, pick ? sheetFocus(now, pick.o) : heldOcc(now));
   }
