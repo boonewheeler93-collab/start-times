@@ -856,6 +856,10 @@ details > summary { border-radius: var(--radius); }
 .b-parts .bpa { font-family: var(--clockfont); font-weight: 600; font-size: 0.9rem; color: var(--ink-3); }
 .b-parts .bpa small { font-size: 0.85em; margin-left: 2px; }
 .b-parts .bp.hands .bpn { font-weight: 800; letter-spacing: 0.06em; color: var(--ink); }
+
+/* the current cue stays bright even though its time has passed */
+.lcs-row.past.next .lcs-label, .lcs-row.past.next .lcs-time, .lcs-row.past.next .lcs-meta { opacity: 1; }
+.lcs-row.past.next .lcs-dot { background: var(--accent-2); border-color: var(--accent-2); }
 </style>
 </head>
 <body>
@@ -1919,9 +1923,11 @@ details > summary { border-radius: var(--radius); }
       if (!past && nextI < 0) nextI = i;
       if (lis[i].classList.contains("past") !== past) lis[i].classList.toggle("past", past);
     });
+    // the highlight stays on the cue we're in (the last one reached); before hit play it sits on Hit play
+    var curI = nextI === -1 ? lis.length - 1 : Math.max(0, nextI - 1);
     Array.prototype.forEach.call(lis, function (li, i) {
-      var isNext = i === nextI, inEl = li.querySelector(".lcs-in"), txt = "";
-      if (li.classList.contains("next") !== isNext) li.classList.toggle("next", isNext);
+      var isNext = i === nextI, isCur = i === curI, inEl = li.querySelector(".lcs-in"), txt = "";
+      if (li.classList.contains("next") !== isCur) li.classList.toggle("next", isCur);
       if (inEl) {
         if (isNext) { var left = Math.ceil((rows[i].t - now) / 1000); if (left <= 5400) txt = '<span class="lcs-inl">in</span> ' + monoHtml(fmtHMS(left)); }
         if (inEl._t !== txt) { inEl.innerHTML = txt; inEl._t = txt; }
