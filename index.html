@@ -848,6 +848,14 @@ details > summary { border-radius: var(--radius); }
 .part-row.has-step { grid-template-columns: minmax(0, 1fr) auto; }
 .part-row.has-step .tin { grid-column: 1 / -1; grid-row: 2; width: 100%; }
 .tin .sign-txt { font-weight: 700; color: var(--sun); min-width: 0.5em; text-align: right; }
+
+/* message view: the three section timers are the main display */
+.b-parts .bp { padding: 16px 12px 14px; border-radius: 20px; }
+.b-parts .bpn { font-size: 1rem; letter-spacing: 0.01em; }
+.b-parts .bpt { font-size: clamp(2.4rem, 7.5vw, 4.4rem); line-height: 1.05; margin: 4px 0 2px; }
+.b-parts .bpa { font-family: var(--clockfont); font-weight: 600; font-size: 0.9rem; color: var(--ink-3); }
+.b-parts .bpa small { font-size: 0.85em; margin-left: 2px; }
+.b-parts .bp.hands .bpn { font-weight: 800; letter-spacing: 0.06em; color: var(--ink); }
 </style>
 </head>
 <body>
@@ -1900,7 +1908,7 @@ details > summary { border-radius: var(--radius); }
         var rightBox = isPart
           ? '<div class="lcs-time lcs-cd"></div><div class="lcs-at">' + monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small></div>"
           : '<div class="lcs-time">' + right + '</div><div class="lcs-in"></div>';
-        h += '<li class="lcs-row' + kind + '"><span class="lcs-dot" aria-hidden="true"></span><div class="lcs-main"><div class="lcs-label">' + esc(c.label) +
+        h += '<li class="lcs-row' + kind + '"><span class="lcs-dot" aria-hidden="true"></span><div class="lcs-main"><div class="lcs-label">' + esc(/^hands$/i.test(c.label) ? "HANDS" : c.label) +
           '</div><div class="lcs-meta">' + esc(meta) + '</div></div><div class="lcs-right">' + rightBox + "</div></li>";
       });
       host.innerHTML = h + "</ol></div>";
@@ -2138,11 +2146,14 @@ details > summary { border-radius: var(--radius); }
         var left = Math.max(0, Math.ceil((mOcc.t + pt.rel * 1000 - now) / 1000));
         var st = left === 0 ? " done" : left <= 30 ? " red" : left <= 120 ? " yellow" : "";
         var isNext = left > 0 && !seenNext; if (isNext) seenNext = true;
-        ph += '<div class="bp' + st + (isNext ? " next" : "") + '"><div class="bpn">' + esc(pt.name) + '</div><div class="bpt">' + monoHtml(fmtMMSS(left)) + "</div></div>";
+        var ptT = msClock(mOcc.t + pt.rel * 1000), ptS = ptT.lastIndexOf(" ");
+        ph += '<div class="bp' + st + (isNext ? " next" : "") + (pt.hands ? " hands" : "") + '"><div class="bpn">' + esc(pt.hands ? "HANDS" : pt.name) + '</div><div class="bpt">' + monoHtml(fmtMMSS(left)) + '</div><div class="bpa">' + ptT.slice(0, ptS) + "<small>" + ptT.slice(ptS + 1) + "</small></div></div>";
       });
       if ($("bParts")._h !== ph) { $("bParts").innerHTML = ph; $("bParts")._h = ph; }
     }
     $("bParts").hidden = !msgMode;
+    // during the message the three section timers replace the big countdown
+    $("bCountBox").hidden = msgMode;
     // message start controls: from Stagetime until a minute after Hands
     var aOcc = booth.manual ? cur : (sheetFocus(now, cur) || cur), showAdj = false;
     if (aOcc && lastCalc.msg) {
@@ -2182,7 +2193,11 @@ details > summary { border-radius: var(--radius); }
     } else {
       note.textContent = el >= 0 ? "Assuming you hit play on time" : "";
     }
-    if (msgMode) { note.textContent = ""; note.className = "b-note"; }
+    if (msgMode) {
+      var nxt = mOcc && keyOf(mOcc) !== keyOf(cur) ? "Next: " + cur.sv.day + " " + svcClock(cur.sv.sec) + ", ProTools start at " + msClock(startAt) : "";
+      if (note.textContent !== nxt) note.textContent = nxt;
+      note.className = "b-note";
+    }
     $("bReset").hidden = live === null;
     var goTxt = ast.fires && live === null ? "Started manually" : "Started";
     if ($("bGo").textContent !== goTxt) $("bGo").textContent = goTxt;
