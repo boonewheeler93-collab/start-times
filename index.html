@@ -965,6 +965,33 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .vx .vt-row { padding: 9px 12px 9px 42px; font-size: 0.95rem; }
 .vx-foot { text-align: center; color: var(--ink-3); font-size: 0.88rem; font-weight: 600; margin: 2px 0 0; }
 .vx-foot:empty { display: none; }
+
+/* ===== shared view: color by part of the service ===== */
+[data-g="pre"]     { --g: #6fe3ee; --gbg: rgba(111,227,238,0.12); --gbd: rgba(111,227,238,0.40); }
+[data-g="worship"] { --g: #9db0ff; --gbg: rgba(157,176,255,0.13); --gbd: rgba(157,176,255,0.45); }
+[data-g="toss"]    { --g: #ffc272; --gbg: rgba(255,194,114,0.13); --gbd: rgba(255,194,114,0.45); }
+[data-g="stage"]   { --g: #ffc272; --gbg: rgba(255,194,114,0.13); --gbd: rgba(255,194,114,0.45); }
+[data-g="msg"]     { --g: #b4a5ff; --gbg: rgba(180,165,255,0.14); --gbd: rgba(180,165,255,0.50); }
+[data-g="hands"]   { --g: #ff8a7a; --gbg: rgba(255,138,122,0.13); --gbd: rgba(255,138,122,0.50); }
+[data-g="done"]    { --g: #7fe3b4; --gbg: rgba(127,227,180,0.12); --gbd: rgba(127,227,180,0.45); }
+.vx-chip { display: inline-flex; align-items: center; padding: 3px 12px; border-radius: 999px; background: var(--gbg); border: 1px solid var(--gbd); color: var(--g); font-weight: 800; line-height: 1.4; }
+.vx-chip-sm { font-size: 0.74rem; padding: 2px 10px; font-weight: 700; }
+.vx-next-k { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.vx-next-k .vx-chip { font-size: 1.05rem; padding: 4px 14px; }
+/* Now card picks up the color of the part we're in */
+.vx-now[data-g] { border-color: var(--gbd); box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 24px 50px -32px rgba(0,0,0,0.95), 0 0 0 1px var(--gbg); }
+.vx-now[data-g] .vx-k > span:first-child { display: inline-flex; align-items: center; gap: 7px; padding: 3px 12px; border-radius: 999px; background: var(--gbg); border: 1px solid var(--gbd); color: var(--g); font-weight: 800; }
+.vx-now[data-g] .vx-k > span:first-child::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--g); }
+.vx-now[data-g] .vx-bar > span { background: linear-gradient(90deg, color-mix(in srgb, var(--g) 70%, white 0%), var(--g)); background: var(--g); box-shadow: 0 0 12px var(--gbd); }
+/* timeline: section labels, dots, and the current row in their color */
+.vt-sec { margin: 12px 0 4px 40px; }
+.vt-sec:first-child { margin-top: 0; }
+.vt-row[data-g] .lcs-dot { border-color: var(--g); }
+.vt-row.past[data-g] .lcs-dot { background: var(--g); border-color: var(--g); opacity: 0.55; }
+.vt-row.cur[data-g] { background: var(--gbg); box-shadow: inset 0 0 0 1px var(--gbd); }
+.vt-row.cur[data-g] .lcs-dot { background: var(--g); border-color: var(--g); }
+.vt-row.cur[data-g] .vt-n { color: var(--g); }
+.vt-row[data-g="hands"] .vt-n { color: var(--g); }
 </style>
 </head>
 <body>
@@ -3072,7 +3099,8 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     sheetRows(occ).rows.forEach(function (r) {
       var n = viewLabel(r.c); if (!n) return;
       if (n === "Message") msgT = r.t;
-      rows.push({ n: n, t: r.t });
+      var g = /^Countdown|^Walk-in|^Begins/.test(n) ? "pre" : n === "Stagetime" ? "stage" : n === "HANDS" ? "hands" : /^Message|^Keys|^Prayer/.test(n) ? "msg" : /^Toss/.test(n) ? "toss" : "worship";
+      rows.push({ n: n, t: r.t, g: g });
     });
     // "Message starts" only shows when it differs from the planned Message time
     return rows.filter(function (r) { return !(r.n === "Message starts" && msgT !== null && Math.abs(r.t - msgT) < 2000); });
@@ -3081,12 +3109,15 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   // the slim timeline on the basic view: line fills between moments, current moment pulses
   function renderViewLine(host, rows, now, nextI) {
     if (!rows.length) { if (host._sig) { host.innerHTML = ""; host._sig = ""; } return; }
-    var sig = rows.map(function (r) { return r.n + "@" + Math.round(r.t); }).join(",");
+    var sig = rows.map(function (r) { return r.n + "@" + Math.round(r.t) + r.g; }).join(",");
     if (host._sig !== sig) {
       host._sig = sig;
+      var lastSec = "";
       var h = '<div class="vt-wrap"><div class="lcs-rail" aria-hidden="true"><div class="lcs-fill"></div><div class="lcs-now"></div></div><ol class="vt-list">';
       rows.forEach(function (r) {
-        h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + '</span><span class="vt-t">' + vTime(r.t) + "</span></li>";
+        var sec = r.g === "pre" ? "Before service" : (r.g === "worship" || r.g === "toss") ? "Worship" : "Message";
+        if (sec !== lastSec) { lastSec = sec; h += '<li class="vt-sec" aria-hidden="true"><span class="vx-chip vx-chip-sm" data-g="' + (sec === "Before service" ? "pre" : sec === "Worship" ? "worship" : "msg") + '">' + sec + "</span></li>"; }
+        h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + '" data-g="' + r.g + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + '</span><span class="vt-t">' + vTime(r.t) + "</span></li>";
       });
       host.innerHTML = h + "</ol></div>";
     }
@@ -3137,6 +3168,8 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       var pct = done ? 100 : Math.min(100, Math.max(0, (now - cur.t) / (rows[nextI].t - cur.t) * 100));
       $("vBar").style.width = pct.toFixed(2) + "%";
       nowCard.classList.toggle("is-done", done);
+      var ng = done ? "done" : cur.g;
+      if (nowCard.getAttribute("data-g") !== ng) nowCard.setAttribute("data-g", ng);
     }
 
     // Up next: plain phrase + big countdown
@@ -3144,7 +3177,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     nx.hidden = done || !rows.length;
     if (!nx.hidden) {
       var r = rows[nextI], left = Math.ceil((r.t - now) / 1000);
-      setHtml($("vNextK"), (started ? "" : "First up: ") + "<b>" + esc(r.n) + "</b> in");
+      setHtml($("vNextK"), (started ? "" : "First up ") + '<span class="vx-chip" data-g="' + r.g + '">' + esc(r.n) + "</span> in");
       setHtml($("vNextCd"), monoHtml(left >= 3600 ? fmtHMS(left) : fmtMMSS(left)));
       setHtml($("vNextSub"), "at " + vTime(r.t));
       nx.classList.toggle("cd-red", left <= 30);
