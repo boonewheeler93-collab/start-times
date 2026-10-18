@@ -1059,7 +1059,7 @@ details > summary { border-radius: var(--radius); }
   var STORE = "weekend-start-times-v4";
   var DEFAULTS = {
     mode: "normal",
-    len: "28:14", target: "17:45",
+    len: "28:14", target: "17:40",
     pre: "", set: "", walkin: "", countdown: "5:00", b2f: "0:27", walkBackup: "4:00", live: null, skips: {}, clockOff: 0, cueLead: "30", stage: "5:00", msg: "23:00", auto: false, ptOut: "", ptIn: "", ptStart: "00:00:00:00", ptRate: "30",
     items: [
       { t: "song", label: "", len: "4:51" },
@@ -1094,13 +1094,15 @@ details > summary { border-radius: var(--radius); }
       Object.keys(state.skips).forEach(function (k) { var t = +String(k).split("|")[2]; if (!t || t < Date.now() - 172800000) delete state.skips[k]; });
       // move saved values off the old defaults
       if (state.target === "17:50") state.target = "17:45";
+      // 17:40 is the standard final downbeat target; move old defaults to it once, then leave any edit alone
+      if (!state.tgt1740) { if (state.target === "17:45" || state.target === "17:50") state.target = "17:40"; state.tgt1740 = true; }
       if (state.lower === "0:30") state.lower = "0:38";
     }
   } catch (e) {}
   function persist() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} syncPush(); }
 
   // this weekend's message times from Resi, pushed with the app; each device picks them up once
-  var WEEK = { id: "2026-10-18", len: "27:45", target: "17:40", msgParts: [
+  var WEEK = { id: "2026-10-18", len: "27:45", msgParts: [
     { name: "Message Start", at: "0:00" },
     { name: "Keys", at: "30:36" },
     { name: "Prayer Start", at: "31:52" },
@@ -1179,7 +1181,7 @@ details > summary { border-radius: var(--radius); }
   var signedOK = { downBy: 1 };
   var optional = { walkin: 1, set: 1 };
   var NAMES = { len: "ProTools set duration", target: "Final downbeat target", walkin: "Walk-in song", set: "First to final downbeat", countdown: "Countdown", b2f: "Begins Now to first downbeat", walkBackup: "Walk-in backup", cutoff: "Latest final downbeat", sat: "Take satellite", lower: "Screen lower time", stage: "Stagetime", msg: "Message starts" };
-  var PH = { len: ["28", "14"], target: ["17", "45"], walkin: ["4", "00"], set: ["18", "57"], countdown: ["5", "00"], b2f: ["0", "27"], walkBackup: ["4", "00"], cutoff: ["18", "00"], sat: ["21", "00"], lower: ["0", "38"], stage: ["5", "00"], msg: ["23", "00"] };
+  var PH = { len: ["28", "14"], target: ["17", "40"], walkin: ["4", "00"], set: ["18", "57"], countdown: ["5", "00"], b2f: ["0", "27"], walkBackup: ["4", "00"], cutoff: ["18", "00"], sat: ["21", "00"], lower: ["0", "38"], stage: ["5", "00"], msg: ["23", "00"] };
 
   // minutes : seconds input with a fixed colon between the two boxes
   function makeTime(o) {
