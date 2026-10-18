@@ -2203,6 +2203,11 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
   renderItems();
   renderServices();
   compute();
+
+  // a link ending in #booth opens straight into booth mode (bookmark it on the booth computer)
+  function hashBooth() { if (/^#booth$/i.test(location.hash) && !booth.open) openBooth(); }
+  window.addEventListener("hashchange", hashBooth);
+  hashBooth();
 })();
 </script>
 </body>
