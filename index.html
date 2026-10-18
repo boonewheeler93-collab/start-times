@@ -754,13 +754,32 @@ details > summary { border-radius: var(--radius); }
 .lcs-row.drop.past .lcs-time .drop-t { text-shadow: none; }
 
 /* bolder main clocks: slightly wider digit slots so the heavier numbers don't crowd */
-.b-clock .mono-d, .mini-clock .mono-d { width: 0.64em; }
+.b-clock .mono-d, .mini-clock .mono-d { width: 0.6em; }
 
 /* countdown stages before hit play */
 .b-count.cd-yellow { background: rgba(255,211,25,0.09); border-color: rgba(255,211,25,0.55); }
 .b-count.cd-yellow .b-lab, .b-count.cd-yellow .b-big { color: #ffd319; }
 .b-count.cd-red { background: rgba(255,59,48,0.11); border-color: rgba(255,59,48,0.65); }
 .b-count.cd-red .b-lab, .b-count.cd-red .b-big { color: #ff3b30; }
+
+/* every number uses the Big Counter's font (bold San Francisco); weight and color vary by role */
+.b-big, .b-count .b-big { font-weight: 700; }
+.b-clock { font-weight: 700; }
+.mini-clock { font-weight: 700; }
+.tin, .tin input[type="text"] { font-family: var(--clockfont); font-weight: 600; }
+.tin.big input[type="text"], .tin.big .colon { font-family: var(--clockfont); font-weight: 600; letter-spacing: 0; }
+.svc-table td.c-play, .svc-table td.c-toss { font-family: var(--clockfont); font-weight: 600; }
+.rowbtn { font-family: var(--clockfont); font-weight: 600; }
+.lcs-time { font-family: var(--clockfont); font-weight: 600; }
+.lcs-in { font-family: var(--clockfont); font-weight: 700; }
+.dropcall b { font-family: var(--clockfont); font-weight: 700; }
+.rib-wrap b { font-family: var(--clockfont); font-weight: 600; }
+.rib-pill { font-family: var(--clockfont); font-weight: 700; }
+.nextline b, .b-next .nt { font-family: var(--clockfont); font-weight: 700; }
+.sum b { font-family: var(--clockfont); font-weight: 600; }
+.daychip, .b-svc { font-family: var(--clockfont); font-weight: 600; letter-spacing: 0; }
+.ctable td { font-family: var(--clockfont); }
+.drop-t { font-family: var(--clockfont); font-weight: 700; }
 </style>
 </head>
 <body>
