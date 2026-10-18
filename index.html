@@ -1663,22 +1663,22 @@ details > summary { border-radius: var(--radius); }
     if (badge) badge.lastChild.nodeValue = running ? "Live" : "Up next";
   }
 
-  // the cue sheet stays on a service until 1:10 after its ProTools start time, then the next one loads
+  // the cue sheet stays on a service until 1:10 after its service time (10:00 service -> 11:10), then the next one loads
   var HOLD_MS = 70 * 60000;
   function heldOcc(now) {
     if (!lastCalc) return null;
     var best = null;
-    occurrences(now - HOLD_MS - 60000).forEach(function (o) {
+    occurrences(now - HOLD_MS - 3600000).forEach(function (o) {
       var pt = o.t + lastCalc.startRel * 1000;
-      if (pt <= now && now < pt + HOLD_MS && (!best || pt > best.pt)) best = { o: o, pt: pt };
+      if (pt <= now && now < o.t + HOLD_MS && (!best || pt > best.pt)) best = { o: o, pt: pt };
     });
     return best ? best.o : null;
   }
-  // which service a cue sheet should show: the held one, unless the next start is under 10 minutes away
+  // which service a cue sheet should show: the held one, unless the next start is under 5 minutes away
   function sheetFocus(now, nextOcc) {
     var held = heldOcc(now);
     if (!held) return nextOcc;
-    if (nextOcc && keyOf(nextOcc) !== keyOf(held) && nextOcc.t + lastCalc.startRel * 1000 - now < 600000) return nextOcc;
+    if (nextOcc && keyOf(nextOcc) !== keyOf(held) && nextOcc.t + lastCalc.startRel * 1000 - now < 300000) return nextOcc;
     return held;
   }
 
