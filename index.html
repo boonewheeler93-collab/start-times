@@ -844,6 +844,10 @@ details > summary { border-radius: var(--radius); }
 
 .b-right { padding-top: 0; }
 .b-right .card-head { position: sticky; top: 0; z-index: 5; margin: 0 -18px 10px; padding: 16px 18px 12px; background: #11151f; border-bottom: 1px solid var(--glass-line); }
+
+.part-row.has-step { grid-template-columns: minmax(0, 1fr) auto; }
+.part-row.has-step .tin { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+.tin .sign-txt { font-weight: 700; color: var(--sun); min-width: 0.5em; text-align: right; }
 </style>
 </head>
 <body>
@@ -1214,13 +1218,17 @@ details > summary { border-radius: var(--radius); }
       sv = init[3] == null ? "00" : pad(Math.min(59, parseInt(init[3], 10)));
     }
     var signBtn = null;
-    if (o.signed) {
+    if (o.signed && o.stepper) {
+      // with - / + buttons, the sign is just shown in front of the number
+      signBtn = document.createElement("span"); signBtn.className = "sign-txt"; signBtn.setAttribute("aria-hidden", "true");
+    } else if (o.signed) {
       signBtn = document.createElement("button");
       signBtn.type = "button"; signBtn.className = "sign";
       root.appendChild(signBtn);
     }
     function paintSign() {
       if (!signBtn) return;
+      if (o.stepper) { signBtn.textContent = neg ? "\u2212" : ""; return; }
       signBtn.textContent = neg ? "\u2212" : "+";
       signBtn.setAttribute("aria-label", o.label + " is " + (neg ? "before" : "after") + " service time. Tap to switch.");
     }
@@ -1246,6 +1254,7 @@ details > summary { border-radius: var(--radius); }
       plusBtn.textContent = "+"; plusBtn.setAttribute("aria-label", o.label + ", 1 second later");
       root.appendChild(minusBtn);
     }
+    if (signBtn && o.stepper) mid.appendChild(signBtn);
     mid.appendChild(mEl); mid.appendChild(colon); mid.appendChild(sEl);
     if (o.stepper) { root.appendChild(mid); root.appendChild(plusBtn); }
     paintSign();
@@ -1296,8 +1305,9 @@ details > summary { border-radius: var(--radius); }
     if (signBtn) signBtn.addEventListener("click", function () { neg = !neg; paintSign(); emit(); });
     // − / + buttons: one second per tap, keeps stepping while held
     function stepBy(delta) {
-      var total = (parseInt(mEl.value, 10) || 0) * 60 + (parseInt(sEl.value, 10) || 0) + delta;
-      if (total < 0) total = 0;
+      var total = ((parseInt(mEl.value, 10) || 0) * 60 + (parseInt(sEl.value, 10) || 0)) * (o.signed && neg ? -1 : 1) + delta;
+      if (o.signed) { neg = total < 0; paintSign(); total = Math.abs(total); }
+      else if (total < 0) total = 0;
       if (total > 999 * 60 + 59) total = 999 * 60 + 59;
       mEl.value = String(Math.floor(total / 60)); sEl.value = pad(total % 60);
       emit();
@@ -1515,12 +1525,13 @@ details > summary { border-radius: var(--radius); }
       nm.addEventListener("input", function () { pt.name = nm.value; persist(); compute(); });
       var nmL = String(pt.name || "").toLowerCase();
       var tph = /prayer/.test(nmL) ? ["31", "00"] : /^message\s*start/.test(nmL) ? ["0", "00"] : /key/.test(nmL) ? ["29", "00"] : /hand/.test(nmL) ? ["35", "00"] : ["0", "00"];
-      var tm = makeTime({ id: "part" + i, label: (pt.name || "Message part") + " time", value: pt.at, ph: tph, stepper: /^message\s*start/.test(nmL),
+      var tm = makeTime({ id: "part" + i, label: (pt.name || "Message part") + " time", value: pt.at, ph: tph, stepper: /^message\s*start/.test(nmL), signed: /^message\s*start/.test(nmL),
         onChange: function (str) { pt.at = str; if (/^message\s*start/.test(nmL)) state.msgLateKey = lastFocusKey; persist(); compute(); } });
       var del = document.createElement("button");
       del.type = "button"; del.className = "ghost icon-btn"; del.textContent = "\u00d7";
       del.setAttribute("aria-label", "Remove " + (pt.name || "message part"));
       del.addEventListener("click", function () { state.msgParts.splice(i, 1); persist(); renderParts(); compute(); });
+      if (/^message\s*start/.test(nmL)) row.className += " has-step";
       row.appendChild(nm); row.appendChild(tm); row.appendChild(del);
       host.appendChild(row); partEls.push(tm);
     });
@@ -1692,10 +1703,10 @@ details > summary { border-radius: var(--radius); }
     var tail = Math.max(finalRel, v.msg), partBad = false;
     // how late the message started (Message Start); every Resi time counts from it
     var mS = 0;
-    state.msgParts.forEach(function (pt) { if (/^message\s*start/i.test(String(pt.name || "").trim())) { var x = parseDur(String(pt.at || "").trim()); if (x !== null && x >= 0) mS = x; } });
+    state.msgParts.forEach(function (pt) { if (/^message\s*start/i.test(String(pt.name || "").trim())) { var x = parseDur(String(pt.at || "").trim()); if (x !== null) mS = x; } });
     state.msgParts.forEach(function (pt, i) {
       var raw = String(pt.at || "").trim(), n = raw ? parseDur(raw) : null;
-      var bad = !!raw && (n === null || n < 0);
+      var bad = !!raw && (n === null || (n < 0 && !/^message\s*start/i.test(String(pt.name || "").trim())));
       if (partEls[i]) partEls[i].classList.toggle("bad", bad);
       if (bad) { partBad = true; return; }
       if (n === null) return;
@@ -1709,7 +1720,7 @@ details > summary { border-radius: var(--radius); }
     var mStart = null, mHands = null;
     state.msgParts.forEach(function (pt) {
       var n = parseDur(String(pt.at || "").trim()), nm = String(pt.name || "").toLowerCase();
-      if (n === null || n < 0) return;
+      if (n === null || (n < 0 && !/^message\s*start/.test(nm))) return;
       if (/^message\s*start/.test(nm) && mStart === null) mStart = n;
       if (/hand/.test(nm)) mHands = n;
     });
@@ -1882,7 +1893,7 @@ details > summary { border-radius: var(--radius); }
         // the screen drop is only ever shown as the ProTools time to press the button
         var isDrop = k.indexOf("drop") > -1;
         var isPart = k.indexOf("part") > -1;
-        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message") : isDrop ? "On the ProTools counter" : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
+        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : c.rel - lastCalc.msg < 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " early" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message") : isDrop ? "On the ProTools counter" : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
         if (c.extra) meta += ", " + c.extra.toLowerCase();
         var tm = msClock(r.t), sp = tm.lastIndexOf(" ");
         var right = isDrop ? '<span class="drop-t">' + monoHtml(fmtDur(r.pt)) + "</span>" : monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small>";
@@ -2139,7 +2150,7 @@ details > summary { border-radius: var(--radius); }
       var endT = aOcc.t + ((lastCalc.handsRel !== null && lastCalc.handsRel !== undefined ? lastCalc.handsRel : lastCalc.msg) + 60) * 1000;
       showAdj = now >= stgT && now <= endT;
       booth.msgOcc = aOcc;
-      var late = Math.round(lastCalc.mStartRel - lastCalc.msg), lt = late > 0 ? "+" + fmtDur(late) + " late" : "on time";
+      var late = Math.round(lastCalc.mStartRel - lastCalc.msg), lt = late > 0 ? "+" + fmtDur(late) + " late" : late < 0 ? "\u2212" + fmtDur(late) + " early" : "on time";
       if ($("maVal").textContent !== lt) $("maVal").textContent = lt;
     }
     $("bMsgAdj").hidden = !showAdj;
@@ -2256,11 +2267,11 @@ details > summary { border-radius: var(--radius); }
   $("openBooth").addEventListener("click", openBooth);
   // set how late the message started (seconds after +23:00); Keys, Prayer, Hands follow
   function setMsgStart(sec) {
-    sec = Math.max(0, Math.round(sec));
+    sec = Math.round(sec);
     var idx = -1;
     state.msgParts.forEach(function (pt, i) { if (idx < 0 && /^message\s*start/i.test(String(pt.name || "").trim())) idx = i; });
     if (idx < 0) { state.msgParts.unshift({ name: "Message Start", at: "0:00" }); idx = 0; }
-    state.msgParts[idx].at = fmtDur(sec);
+    state.msgParts[idx].at = (sec < 0 ? "-" : "") + fmtDur(sec);
     state.msgLateKey = booth.msgOcc ? keyOf(booth.msgOcc) : lastFocusKey;
     persist(); renderParts(); compute(); renderBooth();
   }
