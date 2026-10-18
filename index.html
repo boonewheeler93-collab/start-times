@@ -614,11 +614,42 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
 .mono-c { display: inline-block; width: 0.3em; text-align: center; position: relative; top: -0.05em; }
 .mono-s { display: inline-block; width: 0.22em; }
 .b-clock small, .b-big small { font-family: var(--clockfont); font-weight: 500; letter-spacing: 0.02em; }
+
+/* main page: live clock + next start, booth-style numbers */
+.topbar { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 4px 18px; margin: 4px 0 10px; }
+.topbar h1 { margin: 0; }
+.mini-clock { font-family: var(--clockfont); font-weight: 300; font-size: clamp(1.9rem, 8.5vw, 3.4rem); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; padding-bottom: 4px; }
+.mini-clock small { font-size: 0.36em; color: var(--ink-3); margin-left: 5px; font-weight: 500; }
+.nextline {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 14px; width: 100%;
+  margin: 0 0 16px; padding: 12px 16px; border-radius: 16px; cursor: pointer; text-align: left;
+  font: inherit; font-weight: 600; color: var(--ink-2); background: rgba(255,255,255,0.05); border: 1px solid var(--glass-line);
+}
+.nextline:hover { background: rgba(255,255,255,0.08); }
+.nextline .nv { white-space: nowrap; }
+.nextline b { font-family: var(--clockfont); font-weight: 500; font-size: 1.3rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+.nextline.auto { border-color: rgba(111,227,180,0.45); } .nextline.auto b, .nextline.auto .vb { color: var(--ok); }
+.nextline.soon { border-color: rgba(255,194,114,0.5); } .nextline.soon b, .nextline.soon .vb { color: var(--toss); }
+.nextline.run { border-color: rgba(111,227,180,0.45); } .nextline.run b { color: var(--ok); }
+.tin { font-family: var(--clockfont); font-weight: 500; }
+.tin.big input[type="text"], .tin.big .colon { font-family: var(--clockfont); font-weight: 300; letter-spacing: 0; }
+.svc-table td.c-play, .svc-table td.c-toss { font-family: var(--clockfont); font-weight: 500; }
+.dropcall b { font-family: var(--clockfont); font-weight: 300; letter-spacing: 0; }
+.step .sc { font-family: var(--clockfont); font-weight: 500; }
+.step.hit .sc { font-family: var(--clockfont); font-weight: 300; }
+.rib-wrap b { font-family: var(--clockfont); font-weight: 500; }
+.sum b { font-family: var(--clockfont); font-weight: 400; }
+.b-cues .bp, .b-cues .bc { font-family: var(--clockfont); }
+.tin input, .svc-table td, .step .sc, .rib-wrap b, .dropcall b { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Start Times</h1>
+  <div class="topbar">
+    <h1>Start Times</h1>
+    <div class="mini-clock" id="mClock" aria-label="Central time"></div>
+  </div>
+  <button type="button" class="nextline" id="mNext" hidden></button>
   <div class="layout">
     <div class="col-a">
 
@@ -2224,6 +2255,38 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
   renderItems();
   renderServices();
   compute();
+
+  // live clock and next start at the top of the main page
+  function renderTop() {
+    var now = nowMs(), cp = centralParts(now);
+    var ch = monoHtml(cp.t) + "<small>" + cp.ap + "</small>", mc = $("mClock");
+    if (mc._h !== ch) { mc.innerHTML = ch; mc._h = ch; }
+    var nb = $("mNext"), html = "", cls = "nextline";
+    if (lastCalc) {
+      var occ = occurrences(now), pick = null;
+      occ.forEach(function (o) { var pt = o.t + lastCalc.startRel * 1000; if (!pick && now < o.t + lastCalc.finalRel * 1000) pick = { o: o, pt: pt }; });
+      if (pick) {
+        var key = keyOf(pick.o), name = pick.o.sv.day + " " + svcClock(pick.o.sv.sec);
+        var live = state.live && state.live.key === key ? state.live.at : null;
+        var startAt = live !== null ? live : pick.pt, left = (startAt - now) / 1000;
+        if (left <= 0) {
+          cls += " run";
+          html = '<span class="nv">' + esc(name) + '</span><span class="nv">ProTools <b>' + monoHtml(fmtDur(Math.floor(-left))) + "</b></span>";
+        } else {
+          var ast = autoStatus(key);
+          var verb = ast.fires ? "Auto-start" : ast.level === "none" ? "ProTools start" : "Hit play";
+          if (ast.fires) cls += " auto"; else if (left <= 60) cls += " soon";
+          html = '<span class="nv">' + esc(name) + '</span><span class="nv"><span class="vb">' + verb + (left > 64800 ? " at" : " in") + "</span> <b>" +
+            (left > 64800 ? monoHtml(msClock(startAt).replace(/ (AM|PM)$/, "")) + " " + msClock(startAt).slice(-2) : monoHtml(fmtHMS(Math.ceil(left)))) + "</b></span>";
+        }
+      }
+    }
+    if (nb._h !== html || nb.className !== cls) { nb.innerHTML = html; nb._h = html; nb.className = cls; }
+    nb.hidden = !html;
+  }
+  $("mNext").addEventListener("click", openBooth);
+  setInterval(renderTop, 200);
+  renderTop();
 
   // a link ending in #booth opens straight into booth mode (bookmark it on the booth computer)
   function hashBooth() { if (/^#booth$/i.test(location.hash) && !booth.open) openBooth(); }
