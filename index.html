@@ -1345,12 +1345,27 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   function persist() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} syncPush(); }
 
   // this weekend's message times from Resi, pushed with the app; each device picks them up once
-  var WEEK = { id: "2026-10-18", len: "27:45", msgParts: [
-    { name: "Message Start", at: "0:00" },
-    { name: "Keys", at: "30:36" },
-    { name: "Prayer Start", at: "31:52" },
-    { name: "Hands", at: "36:34" }
-  ] };
+  // this weekend's session (from the ProTools markers), applied once per device
+  var WEEK = { id: "2026-10-24", len: "27:02", countdown: "4:52", mode: "song",
+    items: [
+      { t: "song", label: "Alleluia", len: "4:22" },
+      { t: "song", label: "Thank God I\u2019m Free", len: "4:56" },
+      { t: "song", label: "Way Maker", len: "4:21" },
+      { t: "song", label: "Trust In God", len: "4:01" }
+    ],
+    // Resi times come later in the week; until then only Message Start shows
+    msgParts: [
+      { name: "Message Start", at: "0:00" },
+      { name: "Keys", at: "" },
+      { name: "Prayer Start", at: "" },
+      { name: "Hands", at: "" }
+    ] };
+  if (WEEK.items && state.weekItems !== WEEK.id) {
+    state.mode = WEEK.mode; state.items = JSON.parse(JSON.stringify(WEEK.items));
+    if (WEEK.countdown) state.countdown = WEEK.countdown;
+    state.walkin = ""; state.weekItems = WEEK.id;
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
+  }
   // this weekend's final downbeat target, applied once per device
   if (WEEK.target && state.weekTarget !== WEEK.id + "|" + WEEK.target) {
     state.target = WEEK.target;
