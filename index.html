@@ -992,6 +992,22 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .vt-row.cur[data-g] .lcs-dot { background: var(--g); border-color: var(--g); }
 .vt-row.cur[data-g] .vt-n { color: var(--g); }
 .vt-row[data-g="hands"] .vt-n { color: var(--g); }
+
+/* ===== Weekend | SWITCH tabs ===== */
+.progs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 12px; border-radius: 18px; }
+.progs button { font: inherit; font-weight: 800; font-size: 1.02rem; color: var(--ink-2); background: transparent; border: 0; border-radius: 14px; min-height: 56px; padding: 8px 10px; cursor: pointer; line-height: 1.2; }
+.progs button small { display: block; font-weight: 600; font-size: 0.76rem; color: var(--ink-3); margin-top: 2px; }
+.progs button[aria-pressed="true"] { color: #0a1030; background: linear-gradient(135deg, #c9bcff, #8fe8f2); box-shadow: 0 8px 24px -10px rgba(180,165,255,0.8); }
+.progs button[aria-pressed="true"] small { color: rgba(10,16,48,0.7); }
+.progs button[data-progbtn="switch"][aria-pressed="true"] { background: linear-gradient(135deg, #a8f0c8, #6fe3ee); }
+.wed .daychip, .daychip.wed { color: var(--ok); background: rgba(127,227,180,0.12); }
+.svc-table tbody.wed { --dayc: var(--ok); }
+.sw-start { display: grid; gap: 8px; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--glass-line); }
+.sw-start label { font-weight: 700; }
+.sw-sec { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 8px; }
+.sw-sec:first-child { margin-top: 0; }
+.sw-row .tin { min-width: 7.5em; }
+.lcs-row.sw .lcs-label { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -1004,12 +1020,28 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   <div class="layout">
     <div class="col-a">
 
-    <div class="modes glass" role="group" aria-label="Weekend type" style="order:1">
+    <div class="progs glass" role="group" aria-label="Which service" style="order:0">
+      <button type="button" data-progbtn="weekend" aria-pressed="true">Weekend<small>Saturday and Sunday</small></button>
+      <button type="button" data-progbtn="switch" aria-pressed="false">SWITCH<small>Wednesday nights</small></button>
+    </div>
+
+    <section class="card glass" id="swCard" data-prog="switch" style="order:2" hidden aria-labelledby="sw-h">
+      <div class="card-head"><h2 id="sw-h">SWITCH run of show</h2><span class="card-note">From Planning Center</span></div>
+      <div class="sw-start">
+        <label for="swStart-m">Start ProTools</label>
+        <div id="swStartBox"></div>
+        <span class="hint" id="swStartHint"></span>
+      </div>
+      <div id="swItems"></div>
+      <p class="msg-sum" id="swSum"></p>
+    </section>
+
+    <div class="modes glass" role="group" aria-label="Weekend type" style="order:1" data-prog="weekend">
       <button type="button" data-mode="normal" aria-pressed="true">Normal Weekend</button>
       <button type="button" data-mode="song" aria-pressed="false">Song-Specific Weekend</button>
     </div>
 
-    <section class="card glass hero" aria-labelledby="len-l" style="order:2">
+    <section class="card glass hero" aria-labelledby="len-l" style="order:2" data-prog="weekend">
       <label id="len-l" class="hero-label" for="len-m">ProTools set duration</label>
       <div id="len"></div>
       <div class="target-row">
@@ -1027,7 +1059,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       <div id="flags" class="flags" aria-live="polite"></div>
     </div>
 
-    <section class="card glass" id="msgCard" style="order:5" aria-labelledby="msg-h">
+    <section class="card glass" id="msgCard" style="order:5" aria-labelledby="msg-h" data-prog="weekend">
       <div class="card-head"><h2 id="msg-h">Message</h2><div class="card-meta"><span class="card-note">Times from Resi, from Message Start (+23:00)</span></div></div>
       <div id="msgParts"></div>
       <p class="msg-sum" id="msgSum"></p>
@@ -1094,7 +1126,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       </div>
     </details>
 
-    <details style="order:12">
+    <details style="order:12" data-prog="weekend">
       <summary>Other timings</summary>
       <div class="body">
         <div class="fields">
@@ -1143,7 +1175,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       <div id="sheet"></div>
     </section>
 
-    <section class="card glass" aria-labelledby="tl-h" style="order:8">
+    <section class="card glass" aria-labelledby="tl-h" style="order:8" data-prog="weekend">
       <div class="card-head">
         <h2 id="tl-h">The ProTools session</h2>
         <div class="card-meta"><span class="live-badge" id="ribLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="ribSvc"></span></div>
@@ -1256,6 +1288,25 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     msgParts: [{ name: "Message Start", at: "0:00" }, { name: "Keys", at: "" }, { name: "Prayer Start", at: "" }, { name: "Hands", at: "" }],
     cutoff: "18:00", sat: "21:00", lower: "0:38", downBy: "0:00",
     sel: 0,
+    swStart: "-10:00",
+    swServices: [{ day: "Wednesday", time: "19:00" }],
+    swItems: [
+      { sec: "Pre-Experience", name: "10-Minute Countdown", len: "10:00" },
+      { sec: "Opener/Introduction", name: "Welcome", len: "2:00" },
+      { sec: "Opener/Introduction", name: "Begins Now", len: "1:00" },
+      { sec: "Worship", name: "I Thank God", len: "3:50" },
+      { sec: "Worship", name: "I Was But God", len: "4:34" },
+      { sec: "Worship", name: "At The Altar", len: "7:17" },
+      { sec: "Message", name: "Transition out of Worship", len: "1:30" },
+      { sec: "Message", name: "Offering + Videos", len: "2:00" },
+      { sec: "Message", name: "Switch 180", len: "3:00" },
+      { sec: "Message", name: "Small Group Discussion", len: "5:00" },
+      { sec: "Message", name: "Message Video", len: "20:00" },
+      { sec: "Wrap-Up", name: "Momentum/Next Steps", len: "3:00" },
+      { sec: "Wrap-Up", name: "Set Up Switch Groups", len: "1:30" },
+      { sec: "Post-Experience", name: "Switch Group Time", len: "30:00" },
+      { sec: "Post-Experience", name: "Dismiss From Switch", len: "0:30" }
+    ],
     services: [
       { day: "Saturday", time: "17:00" },
       { day: "Sunday", time: "08:30" },
@@ -1274,6 +1325,9 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       if (!Array.isArray(state.services)) state.services = JSON.parse(JSON.stringify(DEFAULTS.services));
       if (!state.skips || typeof state.skips !== "object") state.skips = {};
       if (!Array.isArray(state.msgParts)) state.msgParts = JSON.parse(JSON.stringify(DEFAULTS.msgParts));
+      if (!Array.isArray(state.swItems)) state.swItems = JSON.parse(JSON.stringify(DEFAULTS.swItems));
+      if (!Array.isArray(state.swServices)) state.swServices = JSON.parse(JSON.stringify(DEFAULTS.swServices));
+      if (state.swStart == null) state.swStart = DEFAULTS.swStart;
       // Message Start lines up with +23:00 unless a time was entered
       state.msgParts.forEach(function (pt) { if (/^message start$/i.test(String(pt.name).trim()) && !String(pt.at || "").trim()) pt.at = "0:00"; });
       // forget skips for services more than two days old
@@ -1309,6 +1363,31 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   if (state.weekApplied !== WEEK.id) {
     state.msgParts = JSON.parse(JSON.stringify(WEEK.msgParts));
     state.weekApplied = WEEK.id;
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
+  }
+
+  // this Wednesday's SWITCH plan from Planning Center, applied once per device
+  var WEEK_SW = { id: "2026-10-21", items: [
+    { sec: "Pre-Experience", name: "Line Dancing (No Countdown)", len: "10:00" },
+    { sec: "Cover/Walk-In", name: "Cotton Eye Joe", len: "4:00" },
+    { sec: "Opener/Introduction", name: "Welcome / Game", len: "5:00" },
+    { sec: "Opener/Introduction", name: "Begins Now", len: "1:00" },
+    { sec: "Worship", name: "Thank God I\u2019m Free", len: "5:01" },
+    { sec: "Worship", name: "I Was But God", len: "4:34" },
+    { sec: "Worship", name: "Way Maker", len: "8:15" },
+    { sec: "Message", name: "Transition out of Worship", len: "1:30" },
+    { sec: "Message", name: "Offering + Videos", len: "2:00" },
+    { sec: "Message", name: "Switch 180", len: "3:00" },
+    { sec: "Message", name: "Small Group Discussion", len: "5:00" },
+    { sec: "Message", name: "Message Video", len: "20:00" },
+    { sec: "Wrap-Up", name: "Momentum/Next Steps", len: "3:00" },
+    { sec: "Wrap-Up", name: "Set Up Switch Groups", len: "1:30" },
+    { sec: "Post-Experience", name: "Switch Group Time", len: "30:00" },
+    { sec: "Post-Experience", name: "Dismiss From Switch", len: "0:30" }
+  ] };
+  if (state.swWeek !== WEEK_SW.id) {
+    state.swItems = JSON.parse(JSON.stringify(WEEK_SW.items));
+    state.swWeek = WEEK_SW.id;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
 
@@ -1354,7 +1433,13 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     var h12 = h24 % 12; if (h12 === 0) h12 = 12;
     return h12 + ":" + pad(mm) + " " + ap(h24);
   }
-  function dayRank(d) { return d === "Saturday" ? 0 : 1; }
+  function dayRank(d) { return d === "Saturday" ? 0 : d === "Sunday" ? 1 : 2; }
+  function dayCls(d) { return d === "Saturday" ? "sat" : d === "Sunday" ? "sun" : "wed"; }
+  // which set of services the app is running: SWITCH Monday to Wednesday, the weekend Thursday to Sunday (tabs override)
+  var progManual = null;
+  function autoProg() { var d = new Date(Date.now() + (+state.clockOff || 0)).getDay(); return d >= 1 && d <= 3 ? "switch" : "weekend"; }
+  function prog() { return progManual || autoProg(); }
+  function svcList() { return prog() === "switch" ? state.swServices : state.services; }
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function ago(sec, word) { // "3:44 after service time"
@@ -1521,10 +1606,26 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     Array.prototype.forEach.call(modeBtns, function (b) {
       b.setAttribute("aria-pressed", b.getAttribute("data-mode") === state.mode ? "true" : "false");
     });
+    var sw = prog() === "switch";
     Array.prototype.forEach.call(document.querySelectorAll("[data-only]"), function (n) {
-      n.hidden = n.getAttribute("data-only") !== state.mode;
+      n.hidden = sw || n.getAttribute("data-only") !== state.mode;
     });
   }
+  var lastProg = null;
+  function applyProgram() {
+    var p = prog(); lastProg = p;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-progbtn]"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-progbtn") === p ? "true" : "false"); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-prog]"), function (n) { n.hidden = n.getAttribute("data-prog") !== p; });
+    applyMode();
+    if (!document.body.classList.contains("view-mode")) document.title = p === "switch" ? "SWITCH Start Times" : "Weekend Start Times";
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-progbtn]"), function (b) {
+    b.addEventListener("click", function () {
+      var p = b.getAttribute("data-progbtn");
+      progManual = p === autoProg() ? null : p;
+      state.sel = 0; applyProgram(); renderServices(); compute();
+    });
+  });
   Array.prototype.forEach.call(modeBtns, function (b) {
     b.addEventListener("click", function () {
       state.mode = b.getAttribute("data-mode");
@@ -1711,11 +1812,12 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   // ---------- services editor ----------
   function renderServices() {
     var host = $("svcEditor"); host.innerHTML = "";
-    state.services.forEach(function (svc, i) {
+    var list = svcList(), days = prog() === "switch" ? ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] : ["Saturday", "Sunday"];
+    list.forEach(function (svc, i) {
       var row = document.createElement("div"); row.className = "srow";
       var sel = document.createElement("select");
       sel.setAttribute("aria-label", "Day for service " + (i + 1));
-      ["Saturday", "Sunday"].forEach(function (d) {
+      days.forEach(function (d) {
         var o = document.createElement("option"); o.value = d; o.textContent = d;
         if (svc.day === d) o.selected = true; sel.appendChild(o);
       });
@@ -1727,16 +1829,134 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       var del = document.createElement("button");
       del.type = "button"; del.className = "ghost"; del.textContent = "Remove";
       del.setAttribute("aria-label", "Remove service " + (i + 1));
-      del.addEventListener("click", function () { state.services.splice(i, 1); persist(); renderServices(); compute(); });
+      del.addEventListener("click", function () { list.splice(i, 1); persist(); renderServices(); compute(); });
       row.appendChild(sel); row.appendChild(t); row.appendChild(del);
       host.appendChild(row);
     });
-    if (!state.services.length) host.innerHTML = '<p class="note" style="margin-top:0">No services yet. Add one to see its times.</p>';
+    if (!list.length) host.innerHTML = '<p class="note" style="margin-top:0">No services yet. Add one to see its times.</p>';
   }
   $("addSvc").addEventListener("click", function () {
-    state.services.push({ day: "Sunday", time: "09:00" });
+    svcList().push(prog() === "switch" ? { day: "Wednesday", time: "19:00" } : { day: "Sunday", time: "09:00" });
     persist(); renderServices(); compute();
   });
+
+  // ---------- SWITCH run of show ----------
+  var swEls = [], swStartComp = null;
+  function secG(sec) {
+    sec = String(sec || "").toLowerCase();
+    if (/pre-?exp|walk|cover|opener|intro/.test(sec)) return "pre";
+    if (/worship/.test(sec)) return "worship";
+    if (/message/.test(sec)) return "msg";
+    if (/wrap/.test(sec)) return "stage";
+    return "done";
+  }
+  function renderSwitch() {
+    var box = $("swStartBox");
+    if (!swStartComp) {
+      swStartComp = makeTime({ id: "swStart", label: "Start ProTools, before or after service time", value: state.swStart, signed: true, stepper: true, ph: ["10", "00"],
+        onChange: function (str) { state.swStart = str; persist(); compute(); } });
+      box.appendChild(swStartComp);
+    } else swStartComp.setValue(state.swStart);
+    var host = $("swItems"); host.innerHTML = ""; swEls = [];
+    var lastSec = null;
+    state.swItems.forEach(function (it, i) {
+      if (it.sec !== lastSec) {
+        lastSec = it.sec;
+        var hd = document.createElement("div"); hd.className = "sw-sec";
+        hd.innerHTML = '<span class="vx-chip vx-chip-sm" data-g="' + secG(it.sec) + '">' + esc(it.sec || "Section") + "</span>";
+        var add = document.createElement("button"); add.type = "button"; add.className = "linkbtn"; add.textContent = "Add";
+        add.setAttribute("aria-label", "Add an item to " + (it.sec || "this section"));
+        (function (sec) {
+          add.addEventListener("click", function () {
+            var at = -1; state.swItems.forEach(function (x, j) { if (x.sec === sec) at = j; });
+            state.swItems.splice(at + 1, 0, { sec: sec, name: "", len: "" });
+            persist(); renderSwitch(); compute();
+            var el = swEls[at + 1]; if (el && el.nameEl) el.nameEl.focus();
+          });
+        })(it.sec);
+        hd.appendChild(add);
+        host.appendChild(hd);
+      }
+      var row = document.createElement("div"); row.className = "part-row sw-row";
+      var nm = document.createElement("input");
+      nm.type = "text"; nm.className = "pname"; nm.value = it.name; nm.placeholder = "Item"; nm.autocomplete = "off";
+      nm.setAttribute("aria-label", "Name of item " + (i + 1));
+      nm.addEventListener("input", function () { it.name = nm.value; persist(); compute(); });
+      var tm = makeTime({ id: "sw" + i, label: (it.name || "Item " + (i + 1)) + " length", value: it.len, ph: ["0", "00"],
+        onChange: function (str) { it.len = str; persist(); compute(); } });
+      var del = document.createElement("button");
+      del.type = "button"; del.className = "ghost icon-btn"; del.textContent = "\u00d7";
+      del.setAttribute("aria-label", "Remove " + (it.name || "item " + (i + 1)));
+      del.addEventListener("click", function () { state.swItems.splice(i, 1); persist(); renderSwitch(); compute(); });
+      row.appendChild(nm); row.appendChild(tm); row.appendChild(del);
+      tm.nameEl = nm;
+      host.appendChild(row); swEls.push(tm);
+    });
+    if (!state.swItems.length) host.innerHTML = '<p class="note" style="margin-top:0">No items yet.</p>';
+  }
+  function computeSwitch() {
+    $("flags").innerHTML = "";
+    var off = parseDur(state.swStart);
+    if (swStartComp) swStartComp.classList.toggle("bad", off === null);
+    if (off === null) return bailOut("Enter a time for Start ProTools.");
+    var cues = [], order = 0, t = off, wEnd = null, bad = false, lastSec = "";
+    function add(label, r, cls, extra, sec) { cues.push({ label: label, rel: r, cls: cls || "", o: order++, extra: extra || "", sec: sec || "" }); }
+    add("Hit play", off, "hit", "", (state.swItems[0] || {}).sec || "Pre-Experience");
+    state.swItems.forEach(function (it, i) {
+      var raw = String(it.len || "").trim(), n = raw === "" ? 0 : parseDur(raw);
+      var invalid = n === null || n < 0;
+      if (swEls[i]) swEls[i].classList.toggle("bad", invalid);
+      if (invalid) { bad = true; return; }
+      var nm = String(it.name || "").trim() || "Item " + (i + 1);
+      if (i === 0) cues[0].extra = nm + (n ? ", " + fmtDur(n) : "");
+      else add(nm, t, "sw", n ? "Lasts " + fmtDur(n) : "", it.sec);
+      t += n; lastSec = it.sec;
+      if (/worship/i.test(it.sec || "")) wEnd = t;
+    });
+    if (wEnd === null) wEnd = t;
+    add("Worship ends", wEnd, "final", "", "Worship");
+    add("End of SWITCH", t, "sw end", "", lastSec);
+    cues.sort(function (a, b) { return a.rel - b.rel || (b.cls === "final") - (a.cls === "final") || a.o - b.o; });
+    cues.forEach(function (c, i) { c.o = i; });
+    if (bad) $("flags").innerHTML = '<div class="status glass bad">An item length isn\u2019t a valid m:ss, so it was left out.</div>';
+    var svcs = state.swServices.map(function (x) { return { day: x.day, sec: parseClock(x.time) }; })
+      .filter(function (x) { return x.sec !== null; })
+      .sort(function (a, b) { return a.sec - b.sec; });
+    if (state.sel >= svcs.length || state.sel < 0) state.sel = 0;
+    var statusEl = $("status"); statusEl.className = "status glass";
+    statusEl.textContent = "Hit play " + ago(off, "service time") + ".";
+    // table
+    var copy = ["SWITCH start times", ""];
+    var tb = '<div class="tbl-wrap"><table class="svc-table"><thead><tr><th scope="col">Service</th><th scope="col">Hit play</th></tr></thead>';
+    var byDay = {};
+    svcs.forEach(function (sv, i) { sv.i = i; (byDay[sv.day] = byDay[sv.day] || []).push(sv); });
+    Object.keys(byDay).forEach(function (day) {
+      tb += '<tbody class="' + dayCls(day) + '"><tr class="grp"><th scope="colgroup" colspan="2"><span class="daychip">SWITCH, ' + esc(day) + "</span></th></tr>";
+      byDay[day].forEach(function (sv) {
+        tb += '<tr class="row' + (sv.i === state.sel ? " sel" : "") + '" data-i="' + sv.i + '"><td class="c-svc"><button type="button" class="rowbtn" aria-pressed="' + (sv.i === state.sel) + '">' + svcClock(sv.sec) + "</button></td>" +
+          '<td class="c-play">' + clockHtml(sv.sec + off) + "</td></tr>";
+        copy.push(sv.day + " " + svcClock(sv.sec));
+        cues.forEach(function (c) { copy.push("  " + c.label + ": " + clockText(sv.sec + c.rel)); });
+        copy.push("");
+      });
+      tb += "</tbody>";
+    });
+    tb += "</table></div>";
+    $("tiles").innerHTML = svcs.length ? tb : '<p class="note" style="margin-top:0">Add a service time under Service times to see results.</p>';
+    lastText = copy.join("\n").replace(/\n+$/, "");
+    $("dropCall").innerHTML = "";
+    var first = svcs[0];
+    $("swStartHint").textContent = first ? "ProTools plays at " + clockText(first.sec + off) + ", " + (off < 0 ? fmtDur(off) + " before" : off > 0 ? fmtDur(off) + " after" : "right at") + " service time" : "";
+    $("swSum").textContent = first ? "Worship ends at " + clockText(first.sec + wEnd) + " (" + fmtDur(wEnd - off) + " on ProTools). SWITCH wraps at " + clockText(first.sec + t) + "." : "";
+    // relative table
+    var rt = "<thead><tr><th>Cue</th><th>Relative</th><th>Elapsed</th></tr></thead><tbody>";
+    cues.forEach(function (c) { var el = c.rel - off; rt += "<tr><td>" + esc(c.label) + "</td><td>" + fmtSigned(c.rel) + '</td><td class="' + (el >= 0 ? "" : "dim") + '">' + fmtDur(el) + "</td></tr>"; });
+    $("relTable").innerHTML = rt + "</tbody>";
+    $("ribbon").innerHTML = ""; $("legend").innerHTML = ""; ribTotal = 0;
+    lastCalcHands = null;
+    lastCalc = { program: "switch", startRel: off, finalRel: wEnd, len: Math.max(0, wEnd - off), lower: 0, noDrop: true, cues: cues, svcs: svcs, tail: t,
+      msg: null, stage: null, mStartRel: null, handsRel: null, parts: [] };
+  }
 
   // ---------- compute + render ----------
   var lastText = "";
@@ -1752,6 +1972,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   }
 
   function compute() {
+    if (prog() === "switch") return computeSwitch();
     var song = state.mode === "song";
     var v = {}, bad = [];
     durKeys.forEach(function (k) {
@@ -1956,7 +2177,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     tb += "</table></div>";
     $("tiles").innerHTML = svcs.length ? tb : '<p class="note" style="margin-top:0">Add a service time under Service times to see results.</p>';
     var dropPT = v.len - v.lower;
-    lastCalc = { mStartRel: v.msg + (mStart || 0), handsRel: handsRel, parts: msgList, tail: tail, startRel: startRel, finalRel: finalRel, len: v.len, lower: v.lower, sat: v.sat, stage: v.stage, msg: v.msg, cues: cues, svcs: svcs };
+    lastCalc = { program: "weekend", mStartRel: v.msg + (mStart || 0), handsRel: handsRel, parts: msgList, tail: tail, startRel: startRel, finalRel: finalRel, len: v.len, lower: v.lower, sat: v.sat, stage: v.stage, msg: v.msg, cues: cues, svcs: svcs };
     $("dropCall").innerHTML = '<span class="dl">Drop screen</span><b>' + (dropPT >= 0 ? fmtDur(dropPT) : "\u2014") + '</b><span class="dn">on ProTools</span>';
 
     // the cue sheet itself is drawn live by renderTop()
@@ -2055,12 +2276,12 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       var h = '<div class="lcs"><div class="lcs-rail" aria-hidden="true"><div class="lcs-fill"></div><div class="lcs-now"></div></div><ol class="lcs-list">';
       rows.forEach(function (r) {
         var c = r.c, k = c.cls;
-        var kind = k.indexOf("part") > -1 ? " svc part" : k.indexOf("toss") > -1 ? " toss" : k.indexOf("hit") > -1 ? " hit" : k.indexOf("final") > -1 ? " final" : k.indexOf("drop") > -1 ? " drop" : k.indexOf("svc") > -1 ? " svc" : "";
+        var kind = /\bsw\b/.test(k) ? " sw" : k.indexOf("part") > -1 ? " svc part" : k.indexOf("toss") > -1 ? " toss" : k.indexOf("hit") > -1 ? " hit" : k.indexOf("final") > -1 ? " final" : k.indexOf("drop") > -1 ? " drop" : k.indexOf("svc") > -1 ? " svc" : "";
         // the screen drop is only ever shown as the ProTools time to press the button
         var isDrop = k.indexOf("drop") > -1;
         var isPart = k.indexOf("part") > -1;
-        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : c.rel - lastCalc.msg < 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " early" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message") : isDrop ? "On the ProTools counter" : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
-        if (c.extra) meta += ", " + c.extra.toLowerCase();
+        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : c.rel - lastCalc.msg < 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " early" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message") : isDrop ? "On the ProTools counter" : lastCalc.program === "switch" ? fmtSigned(c.rel) : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
+        if (c.extra) meta += ", " + (lastCalc.program === "switch" ? c.extra.replace(/^Lasts/, "lasts") : c.extra.toLowerCase());
         var tm = msClock(r.t), sp = tm.lastIndexOf(" ");
         var right = isDrop ? '<span class="drop-t">' + monoHtml(fmtDur(r.pt)) + "</span>" : monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small>";
         var rightBox = isPart
@@ -2153,7 +2374,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       if ($("ribStartT")) $("ribStartT").innerHTML = ap(startAt);
       if ($("ribEndT")) $("ribEndT").innerHTML = ap(startAt + lastCalc.len * 1000);
       chip.textContent = sv.day + " " + svcClock(sv.sec);
-      chip.className = "daychip " + (sv.day === "Saturday" ? "sat" : "sun");
+      chip.className = "daychip " + dayCls(sv.day);
     }
     // playhead: ProTools' own position when linked, otherwise the clock
     var el = (now - startAt) / 1000, linked = live !== null ? linkElapsed() : null;
@@ -2200,7 +2421,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     return h ? h + ":" + pad(Math.floor((sec % 3600) / 60)) + ":" + pad(sec % 60) : fmtDur(sec);
   }
   var booth = { open: false, key: null, timer: null, lock: null, alerted: {} };
-  var DOW = { Saturday: 6, Sunday: 0 };
+  var DOW = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
   function msClock(ms) { var d = new Date(ms); return clockText(d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()); }
   function msClockHtml(ms) { var d = new Date(ms); return clockHtml(d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()); }
   function keyOf(o) { return o.sv.day + "|" + o.sv.sec + "|" + o.t; }
@@ -2265,14 +2486,14 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
         $("bLab").textContent = linked !== null ? "ProTools, linked" : "ProTools";
         // the Big Counter draws itself every frame so the milliseconds run smoothly
         booth.cStart = linked !== null ? now - linked * 1000 : startAt;
-        booth.cDrop = dropEl;
+        booth.cDrop = lastCalc.noDrop ? 1e9 : dropEl;
         if (!booth.cOn) { booth.cOn = true; $("bBig")._h = ""; requestAnimationFrame(counterFrame); }
-        var dropHtml = 'Drop screen at <span class="drop-t">' + fmtDur(dropEl) + "</span>";
+        var dropHtml = lastCalc.noDrop ? "Worship ends at " + msClock(startAt + L * 1000) : 'Drop screen at <span class="drop-t">' + fmtDur(dropEl) + "</span>";
         if ($("bSub")._h !== dropHtml) { $("bSub").innerHTML = dropHtml; $("bSub")._h = dropHtml; }
       } else {
         booth.cOn = false;
         var after = null;
-        lastCalc.cues.forEach(function (c) { var ct2 = cur.t + c.rel * 1000; if (!after && c.cls.indexOf("svc") > -1 && ct2 > now) after = { n: c.label, t: ct2 }; });
+        lastCalc.cues.forEach(function (c) { var isSw = /\bsw\b/.test(c.cls), ct2 = isSw ? startAt + (c.rel - lastCalc.startRel) * 1000 : cur.t + c.rel * 1000; if (!after && (isSw || c.cls.indexOf("svc") > -1) && ct2 > now) after = { n: c.label, t: ct2 }; });
       }
       if (el > L && after) {
         $("bLab").textContent = after.n + " in";
@@ -2375,7 +2596,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       var nextC = null;
       lastCalc.cues.forEach(function (c) { var ce = c.rel - lastCalc.startRel; if (!nextC && c.cls !== "hit" && ce > el) nextC = { label: c.label, cls: c.cls, el: ce }; });
       var toDrop = dropEl - el;
-      if (toDrop <= 0 && toDrop > -6) {
+      if (!lastCalc.noDrop && toDrop <= 0 && toDrop > -6) {
         root.classList.add("alert");
         nx = '<span><span class="nl">Drop screen now</span><span class="nk">ProTools ' + fmtDur(dropEl) + "</span></span>";
         var ak = booth.key + "|" + (live || 0);
@@ -2389,7 +2610,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 
     // live cue sheet
     var sheetOcc = booth.manual ? cur : (sheetFocus(now, cur) || cur);
-    var bs = $("bSheetSvc"), bst = sheetOcc.sv.day + " " + svcClock(sheetOcc.sv.sec), bsc = "daychip " + (sheetOcc.sv.day === "Saturday" ? "sat" : "sun");
+    var bs = $("bSheetSvc"), bst = sheetOcc.sv.day + " " + svcClock(sheetOcc.sv.sec), bsc = "daychip " + dayCls(sheetOcc.sv.day);
     if (bs.textContent !== bst) bs.textContent = bst;
     if (bs.className !== bsc) bs.className = bsc;
     renderLiveSheet($("bSheet"), sheetOcc, now, $("bLive"));
@@ -2791,7 +3012,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   var FB_VERSION = "10.12.2";
   // every device unlocks with one shared password for this sign-in
   var SYNC_LOGIN = window.START_TIMES_LOGIN || "booth@northland-start-times.app";
-  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips"];
+  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems"];
   var sync = { ready: false, applying: false, user: null, db: null, timer: null, device: "", role: "", peers: {}, booth: null, lastTele: "", teleAt: 0, err: "", offs: [] };
   try { sync.device = localStorage.getItem("st-device") || ""; } catch (e) {}
   if (!sync.device) { sync.device = "d" + Math.random().toString(36).slice(2, 10); try { localStorage.setItem("st-device", sync.device); } catch (e) {} }
@@ -2846,7 +3067,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     sync.applying = true;
     SHARED.forEach(function (k) {
       var x = v[k];
-      if (k === "items" || k === "services" || k === "msgParts") {
+      if (k === "items" || k === "services" || k === "msgParts" || k === "swItems" || k === "swServices") {
         x = !x ? [] : Array.isArray(x) ? x.filter(Boolean) : Object.keys(x).sort(function (a, b) { return a - b; }).map(function (i) { return x[i]; });
       } else if (k === "skips") x = x || {};
       else if (k === "live") x = x || null;
@@ -2855,7 +3076,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     });
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
     durKeys.forEach(function (k) { if (comps[k] && comps[k].setValue) comps[k].setValue(state[k]); });
-    applyMode(); renderItems(); renderParts(); renderServices();
+    applyProgram(); renderItems(); renderParts(); renderServices(); renderSwitch();
     $("ptLeadSel").value = String(state.cueLead || "30");
     compute(); updOffNote(); renderLink(); renderBooth();
     if (link.watch && state.skips[link.watch.key]) cancelScheduled(link.watch.key);
@@ -2997,7 +3218,8 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     } catch (e) { fallback(); }
   });
 
-  applyMode();
+  renderSwitch();
+  applyProgram();
   renderItems();
   renderParts();
   renderServices();
@@ -3005,6 +3227,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 
   // live clock and next start at the top of the main page
   function renderTop() {
+    if (prog() !== lastProg) { state.sel = 0; applyProgram(); renderServices(); compute(); }
     var now = nowMs(), cp = centralParts(now);
     var ch = monoHtml(cp.t) + "<small>" + cp.ap + "</small>", mc = $("mClock");
     if (mc._h !== ch) { mc.innerHTML = ch; mc._h = ch; }
@@ -3020,7 +3243,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
           cls += " is-run";
           // after the session ends, count down to Stagetime and Go to Message instead
           var after = null;
-          if (-left > lastCalc.len) lastCalc.cues.forEach(function (c) { var ct = pick.o.t + c.rel * 1000; if (!after && c.cls.indexOf("svc") > -1 && ct > now) after = { n: c.label, t: ct }; });
+          if (-left > lastCalc.len) lastCalc.cues.forEach(function (c) { var isSw = /\bsw\b/.test(c.cls), ct = isSw ? startAt + (c.rel - lastCalc.startRel) * 1000 : pick.o.t + c.rel * 1000; if (!after && (isSw || c.cls.indexOf("svc") > -1) && ct > now) after = { n: c.label, t: ct }; });
           html = after
             ? '<span class="nv">' + esc(name) + '</span><span class="nv">' + esc(after.n) + ' in <b>' + monoHtml(fmtDur(Math.ceil((after.t - now) / 1000))) + "</b></span>"
             : '<span class="nv">' + esc(name) + '</span><span class="nv">ProTools <b>' + monoHtml(fmtDur(Math.floor(-left))) + "</b></span>";
@@ -3071,7 +3294,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
         if (tr.classList.contains("sel") !== on) { tr.classList.toggle("sel", on); var bt = tr.querySelector(".rowbtn"); if (bt) bt.setAttribute("aria-pressed", on ? "true" : "false"); }
       });
     }
-    var chip = $("sheetSvc"), ct = sv ? sv.day + " " + svcClock(sv.sec) : "", cc = "daychip " + (sv && sv.day === "Saturday" ? "sat" : "sun");
+    var chip = $("sheetSvc"), ct = sv ? sv.day + " " + svcClock(sv.sec) : "", cc = "daychip " + (sv ? dayCls(sv.day) : "sun");
     if (chip.textContent !== ct) chip.textContent = ct;
     if (chip.className !== cc) chip.className = cc;
     renderLiveSheet($("sheet"), occ, now, $("sheetLive"));
@@ -3083,6 +3306,12 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   // ---------- view-only page (#view): just what's happening and what's next ----------
   function viewLabel(c) {
     var l = c.label, k = c.cls;
+    if (lastCalc && lastCalc.program === "switch") {
+      if (k.indexOf("hit") > -1) return (c.extra || "Countdown").replace(/, \d+:\d\d$/, "");
+      if (k.indexOf("final") > -1) return null;
+      if (/\bend\b/.test(k)) return "SWITCH ends";
+      return l;
+    }
     if (k.indexOf("drop") > -1) return null;
     if (k.indexOf("hit") > -1) return "Countdown starts";
     if (/^Walk-in/.test(l)) return "Walk-in song";
@@ -3099,6 +3328,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     sheetRows(occ).rows.forEach(function (r) {
       var n = viewLabel(r.c); if (!n) return;
       if (n === "Message") msgT = r.t;
+      if (r.c.sec) { rows.push({ n: n, t: r.t, g: n === "SWITCH ends" ? "done" : secG(r.c.sec), s: n === "SWITCH ends" ? "" : r.c.sec }); return; }
       var g = /^Countdown|^Walk-in|^Begins/.test(n) ? "pre" : n === "Stagetime" ? "stage" : n === "HANDS" ? "hands" : /^Message|^Keys|^Prayer/.test(n) ? "msg" : /^Toss/.test(n) ? "toss" : "worship";
       rows.push({ n: n, t: r.t, g: g });
     });
@@ -3115,8 +3345,9 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       var lastSec = "";
       var h = '<div class="vt-wrap"><div class="lcs-rail" aria-hidden="true"><div class="lcs-fill"></div><div class="lcs-now"></div></div><ol class="vt-list">';
       rows.forEach(function (r) {
-        var sec = r.g === "pre" ? "Before service" : (r.g === "worship" || r.g === "toss") ? "Worship" : "Message";
-        if (sec !== lastSec) { lastSec = sec; h += '<li class="vt-sec" aria-hidden="true"><span class="vx-chip vx-chip-sm" data-g="' + (sec === "Before service" ? "pre" : sec === "Worship" ? "worship" : "msg") + '">' + sec + "</span></li>"; }
+        var sec = r.s !== undefined ? r.s : r.g === "pre" ? "Before service" : (r.g === "worship" || r.g === "toss") ? "Worship" : "Message";
+        var secCol = r.s !== undefined ? r.g : sec === "Before service" ? "pre" : sec === "Worship" ? "worship" : "msg";
+        if (sec && sec !== lastSec) { lastSec = sec; h += '<li class="vt-sec" aria-hidden="true"><span class="vx-chip vx-chip-sm" data-g="' + secCol + '">' + esc(sec) + "</span></li>"; }
         h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + '" data-g="' + r.g + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + '</span><span class="vt-t">' + vTime(r.t) + "</span></li>";
       });
       host.innerHTML = h + "</ol></div>";
@@ -3153,7 +3384,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     var rows = viewRows(focus), nextI = -1;
     rows.forEach(function (r, i) { if (nextI < 0 && r.t > now) nextI = i; });
     var started = rows.length && now >= rows[0].t, done = started && nextI < 0;
-    var svcT = focus.sv.day + " " + svcClock(focus.sv.sec);
+    var svcT = (lastCalc.program === "switch" ? "SWITCH " : focus.sv.day + " ") + svcClock(focus.sv.sec);
     if ($("vSvcT").textContent !== svcT) $("vSvcT").textContent = svcT;
     $("vSvc").classList.toggle("is-live", started && !done);
 
