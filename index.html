@@ -1010,6 +1010,15 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .lcs-row.sw .lcs-label { color: var(--ink); }
 
 .sw-tag { grid-column: 1 / -1; margin-top: -2px; color: var(--accent-2); font-size: 0.8rem; font-weight: 700; }
+
+/* hold to play: a fill runs across while held */
+.hold-btn { position: relative; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
+.hold-btn::after { content: ""; position: absolute; left: 0; bottom: 0; height: 5px; width: 0; background: #0a3d22; opacity: 0.6; }
+.hold-btn.holding::after { width: 100%; transition: width 1s linear; }
+.b-go.b-play { color: #062414; background: linear-gradient(135deg, #a8f0c8, #6fe3b4); box-shadow: 0 14px 34px -14px rgba(111,227,180,0.9); }
+.b-go.b-play[hidden] { display: none; }
+.b-actions { flex-wrap: wrap; }
+.b-play-sm { color: var(--ok); border-color: rgba(111,227,180,0.5); }
 </style>
 </head>
 <body>
@@ -1154,6 +1163,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       <div class="actions">
         <button type="button" class="solid" id="openBooth">Booth mode</button>
         <button type="button" class="ghost" id="copy">Copy all times</button>
+        <button type="button" class="ghost b-play-sm hold-btn" id="mHoldPlay" hidden>Hold to play ProTools</button>
       </div>
       <p class="toast" id="toast" role="status" aria-live="polite"></p>
     </section>
@@ -1259,6 +1269,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     <div class="b-next" id="bNext"></div>
     <div class="b-note" id="bNote" role="status"></div>
     <div class="b-actions">
+      <button type="button" class="b-go b-play hold-btn" id="bHoldPlay" hidden>Hold to play ProTools</button>
       <button type="button" class="b-go" id="bGo">Started</button>
       <button type="button" class="ghost" id="bCue" hidden>Cue up</button>
       <button type="button" class="ghost" id="bReset" hidden>Reset</button>
@@ -3304,7 +3315,41 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     sync.db.ref("startTimes/commands").push({ type: type, by: sync.device, at: Date.now() });
     return true;
   }
+  // what "Hold to play" starts next: the top of the session, or the next SWITCH part
+  function playTarget() {
+    if (lastCalc && lastCalc.program === "switch") {
+      var segs = lastCalc.segs, key = booth.open && booth.swKey ? booth.swKey : lastFocusKey, lastP = 0;
+      if (!key) return null;
+      for (var k = 1; k < segs.length; k++) if (swPress(key, k)) lastP = k;
+      for (var j = lastP + 1; j < segs.length; j++) if (segs[j].pt !== null) return { sw: true, key: key, seg: j, name: segs[j].name, pt: segs[j].pt };
+      return null;
+    }
+    var n = nextAuto(nowMs()) || null, key2 = booth.open && booth.key ? booth.key : n ? n.key : nearestKey(nowMs());
+    var st = parseTc(state.ptStart);
+    return st ? { sw: false, key: key2, name: "from the top", pt: tcSecs(st) - tcSecs(parseTc("00:00:00:00")) } : null;
+  }
+  function playLabel(tg) { return !tg ? "Hold to play ProTools" : tg.sw ? "Hold to play " + tg.name + " (" + fmtDur(Math.floor(tg.pt)) + ")" : "Hold to play ProTools from the top"; }
+  function ptStartNext() {
+    var tg = playTarget(); if (!tg || !link.out) return false;
+    var tc = tg.sw ? secsToTc(tg.pt) : parseTc(state.ptStart);
+    ptSend(MMC_STOP, "Stop"); ptSend(mmcLocate(tc), "Go to " + fmtTc(tc));
+    setTimeout(function () {
+      ptSend(MMC_PLAY, "Play (" + (tg.sw ? tg.name : "from the top") + ")");
+      var now = nowMs();
+      if (tg.sw) {
+        // timecode marks the exact moment when it comes back; mark it now in case it doesn't
+        var a = state.swLive && state.swLive.key === tg.key && state.swLive.a ? state.swLive.a : {};
+        if (!a[tg.seg]) { a[tg.seg] = now; state.swLive = { key: tg.key, a: a }; persist(); }
+      } else if (tg.key) {
+        link.done[tg.key] = { cue: true, play: true };   // auto-start stands down for this service
+        if (!(state.live && state.live.key === tg.key)) { state.live = { key: tg.key, at: now }; persist(); }
+      }
+      renderBooth();
+    }, 400);
+    return true;
+  }
   function runCommand(c) {
+    if (c.type === "play") { ptStartNext(); return; }
     if (c.type === "stop") ptSend(MMC_STOP, "Stop (from a phone)");
     else if (c.type === "check") checkLink();
   }
@@ -3356,6 +3401,38 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     b.addEventListener("contextmenu", function (e) { e.preventDefault(); });
   })();
   syncInit();
+  function holdToFire(el, fire) {
+    var t = null;
+    function end() { clearTimeout(t); el.classList.remove("holding"); }
+    el.addEventListener("pointerdown", function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      e.preventDefault(); el.classList.add("holding");
+      t = setTimeout(function () { el.classList.remove("holding"); fire(); }, 1000);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { el.addEventListener(ev, end); });
+    el.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    el.addEventListener("click", function (e) { if (e.detail === 0) fire(); });   // keyboard
+  }
+  function firePlay(el) {
+    var ok = link.out ? ptStartNext() : sendCommand("play");
+    var old = el.textContent;
+    el.textContent = ok ? (link.out ? "Playing ProTools" : "Play sent to the booth") : "Not connected to ProTools";
+    el._lock = Date.now() + 2500;
+  }
+  holdToFire($("bHoldPlay"), function () { firePlay($("bHoldPlay")); });
+  holdToFire($("mHoldPlay"), function () { firePlay($("mHoldPlay")); });
+  // show Hold to play when this device can reach ProTools and it isn't already playing
+  function paintPlayBtns() {
+    var rbs = remoteBooth(), can = !!link.out || !!(rbs && rbs.level !== "bad");
+    var playing = link.out ? ptMoving() : !!(rbs && rbs.playing);
+    var tg = can ? playTarget() : null, label = playLabel(tg);
+    ["bHoldPlay", "mHoldPlay"].forEach(function (id) {
+      var el = $(id), show = can && !playing && !!tg;
+      if (el.hidden !== !show) el.hidden = !show;
+      if (show && !(el._lock > Date.now()) && el.textContent !== label) el.textContent = label;
+    });
+  }
+  setInterval(paintPlayBtns, 250);
 
   // keep the start-time and service-time labels from overlapping
   function fitRib() {
