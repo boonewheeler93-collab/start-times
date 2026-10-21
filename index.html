@@ -1947,6 +1947,13 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     segs.forEach(function (sg, k) { var nx = segs[k + 1]; if (sg.pt !== null && nx && nx.pt !== null && (sg.ptEnd === null || sg.ptEnd > nx.pt)) sg.ptEnd = nx.pt; });
     if (wEnd === null) wEnd = t;
     add("Worship ends", wEnd, "final", "", "Worship", wSeg, null);
+    var lowerS = parseDur(state.lower); if (lowerS === null || lowerS < 0) lowerS = 38;
+    var wsg = segs[wSeg], dropPT = null;
+    if (wsg && wsg.pt !== null) {
+      var wPtEnd = wsg.pt + (wEnd - wsg.rel);
+      dropPT = wPtEnd - lowerS;
+      add("Drop screen", wEnd - lowerS, "extra drop", "", "Worship", wSeg, dropPT);
+    }
     add("End of SWITCH", t, "sw end", "", lastSec, segs.length - 1, null);
     cues.sort(function (a, b) { return a.rel - b.rel || (b.cls === "final") - (a.cls === "final") || a.o - b.o; });
     cues.forEach(function (c, i) { c.o = i; });
@@ -1978,7 +1985,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     tb += "</table></div>";
     $("tiles").innerHTML = svcs.length ? tb : '<p class="note" style="margin-top:0">Add a service time under Service times to see results.</p>';
     lastText = copy.join("\n").replace(/\n+$/, "");
-    $("dropCall").innerHTML = "";
+    $("dropCall").innerHTML = dropPT !== null ? '<span class="dl">Drop screen</span><b>' + fmtDur(Math.round(dropPT)) + '</b><span class="dn">on ProTools</span>' : "";
     var first = svcs[0];
     $("swStartHint").textContent = first ? segs[0].name + " at " + clockText(first.sec + off) + ", " + (off < 0 ? fmtDur(off) + " before" : off > 0 ? fmtDur(off) + " after" : "right at") + " service time" : "";
     var ptParts = segs.filter(function (sg) { return sg.pt !== null; }).map(function (sg) { return sg.name + " (ProTools " + fmtDur(Math.floor(sg.pt)) + (sg.ptEnd !== null ? " to " + fmtDur(Math.floor(sg.ptEnd)) : "") + ")"; });
@@ -1989,7 +1996,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     $("relTable").innerHTML = rt + "</tbody>";
     $("ribbon").innerHTML = ""; $("legend").innerHTML = ""; ribTotal = 0;
     lastCalcHands = null;
-    lastCalc = { program: "switch", segs: segs, startRel: firstPt.rel, finalRel: wEnd, len: Math.max(0, wEnd - firstPt.rel), lower: 0, noDrop: true, cues: cues, svcs: svcs, tail: t,
+    lastCalc = { program: "switch", segs: segs, dropPT: dropPT, wSeg: wSeg, startRel: firstPt.rel, finalRel: wEnd, len: Math.max(0, wEnd - firstPt.rel), lower: 0, noDrop: true, cues: cues, svcs: svcs, tail: t,
       msg: null, stage: null, mStartRel: null, handsRel: null, parts: [] };
   }
 
@@ -2687,12 +2694,14 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       counting = true;
       var sgc = segs[lastP];
       lab = linked !== null ? "ProTools, linked" : "ProTools";
-      booth.cStart = now - pos * 1000; booth.cDrop = sgc.ptEnd !== null ? sgc.ptEnd : 1e9;
+      var dropHere = lastP === lastCalc.wSeg && lastCalc.dropPT !== null;
+      booth.cStart = now - pos * 1000; booth.cDrop = dropHere ? lastCalc.dropPT : 1e9;
       if (!booth.cOn) { booth.cOn = true; $("bBig")._h = ""; requestAnimationFrame(counterFrame); }
       var endClock = sgc.ptEnd !== null ? msClock(now + (sgc.ptEnd - pos) * 1000) : "";
       sub = sgc.ptEnd === null ? sgc.name : nextSeg !== null && segs[nextSeg].pt !== null
         ? "Ends at " + fmtDur(Math.floor(sgc.ptEnd)) + ". Then stop and cue up " + segs[nextSeg].name + " (" + fmtDur(Math.floor(segs[nextSeg].pt)) + ")."
-        : "Worship ends at " + fmtDur(Math.floor(sgc.ptEnd)) + ", about " + endClock + ".";
+        : dropHere ? null : "Worship ends at " + fmtDur(Math.floor(sgc.ptEnd)) + ", about " + endClock + ".";
+      if (sub === null) sub = 'Drop screen at <span class="drop-t">' + fmtDur(Math.round(lastCalc.dropPT)) + "</span>";
     } else {
       booth.cOn = false;
       if (nextSeg !== null && segs[nextSeg].pt !== null) {
@@ -2715,13 +2724,29 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       if ($("bBig")._h !== bh) { $("bBig").innerHTML = bh; $("bBig")._h = bh; }
     }
     if ($("bLab").textContent !== lab) $("bLab").textContent = lab;
-    if ($("bSub").textContent !== sub) { $("bSub").textContent = sub; $("bSub")._h = ""; }
+    if ($("bSub")._h !== sub) { if (/<span/.test(sub)) $("bSub").innerHTML = sub; else $("bSub").textContent = sub; $("bSub")._h = sub; }
     cb.classList.toggle("is-run", counting); cb.classList.toggle("is-counter", counting);
     if (!counting) cb.classList.remove("cnt-yellow", "cnt-red");
     cb.classList.remove("is-auto", "is-soon");
     cb.classList.toggle("cd-red", !counting && cdLeft !== null && cdLeft <= 30);
     cb.classList.toggle("cd-yellow", !counting && cdLeft !== null && cdLeft > 30 && cdLeft <= 120);
-    cb.hidden = false; $("bParts").hidden = true; $("bMsgAdj").hidden = true; $("bNext").innerHTML = ""; $("bSkip").hidden = true;
+    cb.hidden = false; $("bParts").hidden = true; $("bMsgAdj").hidden = true; $("bSkip").hidden = true;
+    // screen drop callout, same as the weekend
+    var nx = "";
+    root.classList.remove("warn", "alert");
+    if (counting && lastP === lastCalc.wSeg && lastCalc.dropPT !== null) {
+      var toDrop = lastCalc.dropPT - pos;
+      if (toDrop <= 0 && toDrop > -6) {
+        root.classList.add("alert");
+        nx = '<span><span class="nl">Drop screen now</span><span class="nk">ProTools ' + fmtDur(Math.round(lastCalc.dropPT)) + "</span></span>";
+        var ak = key + "|drop";
+        if (!booth.alerted[ak]) { booth.alerted[ak] = 1; try { if (navigator.vibrate) navigator.vibrate([300, 120, 300]); } catch (err) {} }
+      } else if (toDrop > 0) {
+        if (toDrop <= 10) root.classList.add("warn");
+        nx = '<span><span class="nl">Drop screen</span><span class="nk">at ' + fmtDur(Math.round(lastCalc.dropPT)) + ' on ProTools</span></span><span class="nt">' + monoHtml(fmtDur(Math.ceil(toDrop))) + "</span>";
+      }
+    }
+    if ($("bNext")._h !== nx) { $("bNext").innerHTML = nx; $("bNext")._h = nx; }
     paintChip($("bMode"), { level: "manual", text: "Manual start", sub: "SWITCH starts when you press play" });
     // what was started, and when
     var notes = [];
@@ -3484,6 +3509,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       if (k.indexOf("hit") > -1) return (c.extra || "Countdown").replace(/, \d+:\d\d$/, "");
       if (k.indexOf("swstart") > -1 && /cover|walk/i.test(c.sec)) return l;
       if (k.indexOf("final") > -1) return null;
+      if (k.indexOf("drop") > -1) return null;
       if (/\bend\b/.test(k)) return "SWITCH ends";
       return l;
     }
