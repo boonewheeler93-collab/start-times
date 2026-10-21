@@ -1019,6 +1019,9 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .b-go.b-play[hidden] { display: none; }
 .b-actions { flex-wrap: wrap; }
 .b-play-sm { color: var(--ok); border-color: rgba(111,227,180,0.5); }
+
+.hold-btn.is-off { opacity: 0.45; filter: grayscale(0.6); }
+.hold-btn.is-off::after { display: none; }
 </style>
 </head>
 <body>
@@ -3414,6 +3417,10 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     el.addEventListener("click", function (e) { if (e.detail === 0) fire(); });   // keyboard
   }
   function firePlay(el) {
+    if (el.classList.contains("is-off")) {
+      el.textContent = navigator.requestMIDIAccess ? "Connect to ProTools first (ProTools link card)" : "Open the booth link in Chrome on the ProTools Mac mini";
+      el._lock = Date.now() + 3500; return;
+    }
     var ok = link.out ? ptStartNext() : sendCommand("play");
     var old = el.textContent;
     el.textContent = ok ? (link.out ? "Playing ProTools" : "Play sent to the booth") : "Not connected to ProTools";
@@ -3425,10 +3432,12 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   function paintPlayBtns() {
     var rbs = remoteBooth(), can = !!link.out || !!(rbs && rbs.level !== "bad");
     var playing = link.out ? ptMoving() : !!(rbs && rbs.playing);
-    var tg = can ? playTarget() : null, label = playLabel(tg);
+    var tg = playTarget(), label = can ? playLabel(tg) : playLabel(tg) + " (connect the ProTools link first)";
     ["bHoldPlay", "mHoldPlay"].forEach(function (id) {
-      var el = $(id), show = can && !playing && !!tg;
+      var el = $(id), show = !playing && !!tg && !!lastCalc;
       if (el.hidden !== !show) el.hidden = !show;
+      el.classList.toggle("is-off", !can);
+      el.setAttribute("aria-disabled", can ? "false" : "true");
       if (show && !(el._lock > Date.now()) && el.textContent !== label) el.textContent = label;
     });
   }
