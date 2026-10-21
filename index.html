@@ -3006,11 +3006,13 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       var t = performance.now(), gap = t - link.lastQF;
       link.lastQF = t; link.lastHeard = nowMs();
       var piece = d[1] >> 4; link.qf[piece] = d[1] & 0x0F;
+      if (gap > 500) link.qfSince = 0;
+      link.qfSince = (link.qfSince || 0) + 1;
       if (piece === 7) {
         var q = link.qf;
         link.fps = [24, 25, 29.97, 30][(q[7] >> 1) & 3];
         link.tc = { h: q[6] | ((q[7] & 1) << 4), m: q[4] | (q[5] << 4), s: q[2] | (q[3] << 4), f: q[0] | (q[1] << 4) };
-        if (link.pending) resolveStart();
+        if (link.pending && link.qfSince >= 8) resolveStart();
       }
       if (gap > 500) onPtStarted();
     } else if (d[0] === 0xF0 && d[1] === 0x7F && d[3] === 0x01 && d[4] === 0x01) {
