@@ -1008,6 +1008,8 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .sw-sec:first-child { margin-top: 0; }
 .sw-row .tin { min-width: 7.5em; }
 .lcs-row.sw .lcs-label { color: var(--ink); }
+
+.sw-tag { grid-column: 1 / -1; margin-top: -2px; color: var(--accent-2); font-size: 0.8rem; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -1028,7 +1030,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     <section class="card glass" id="swCard" data-prog="switch" style="order:2" hidden aria-labelledby="sw-h">
       <div class="card-head"><h2 id="sw-h">SWITCH run of show</h2><span class="card-note">From Planning Center</span></div>
       <div class="sw-start">
-        <label for="swStart-m">Start ProTools</label>
+        <label for="swStart-m">Pre-Experience starts</label>
         <div id="swStartBox"></div>
         <span class="hint" id="swStartHint"></span>
       </div>
@@ -1258,6 +1260,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     <div class="b-note" id="bNote" role="status"></div>
     <div class="b-actions">
       <button type="button" class="b-go" id="bGo">Started</button>
+      <button type="button" class="ghost" id="bCue" hidden>Cue up</button>
       <button type="button" class="ghost" id="bReset" hidden>Reset</button>
       <button type="button" class="ghost" id="bSkip" hidden>Skip auto-start</button>
       <button type="button" class="ghost danger" id="bHoldStop" hidden>Hold to stop ProTools</button>
@@ -1367,14 +1370,14 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   }
 
   // this Wednesday's SWITCH plan from Planning Center, applied once per device
-  var WEEK_SW = { id: "2026-10-21", items: [
+  var WEEK_SW = { id: "2026-10-21b", items: [
     { sec: "Pre-Experience", name: "Line Dancing (No Countdown)", len: "10:00" },
-    { sec: "Cover/Walk-In", name: "Cotton Eye Joe", len: "4:00" },
+    { sec: "Cover/Walk-In", name: "Cotton Eye Joe", len: "3:47", start: true, pt: 0 },
     { sec: "Opener/Introduction", name: "Welcome / Game", len: "5:00" },
-    { sec: "Opener/Introduction", name: "Begins Now", len: "1:00" },
-    { sec: "Worship", name: "Thank God I\u2019m Free", len: "5:01" },
-    { sec: "Worship", name: "I Was But God", len: "4:34" },
-    { sec: "Worship", name: "Way Maker", len: "8:15" },
+    { sec: "Opener/Introduction", name: "Begins Now", len: "0:26", start: true, pt: 227.273 },
+    { sec: "Worship", name: "Thank God I\u2019m Free", len: "4:56", pt: 253.273 },
+    { sec: "Worship", name: "I Was But God", len: "4:31", pt: 549.523 },
+    { sec: "Worship", name: "Way Maker", len: "6:39", pt: 820.334, ptEnd: 1219 },
     { sec: "Message", name: "Transition out of Worship", len: "1:30" },
     { sec: "Message", name: "Offering + Videos", len: "2:00" },
     { sec: "Message", name: "Switch 180", len: "3:00" },
@@ -1853,7 +1856,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   function renderSwitch() {
     var box = $("swStartBox");
     if (!swStartComp) {
-      swStartComp = makeTime({ id: "swStart", label: "Start ProTools, before or after service time", value: state.swStart, signed: true, stepper: true, ph: ["10", "00"],
+      swStartComp = makeTime({ id: "swStart", label: "Pre-Experience start, before or after service time", value: state.swStart, signed: true, stepper: true, ph: ["10", "00"],
         onChange: function (str) { state.swStart = str; persist(); compute(); } });
       box.appendChild(swStartComp);
     } else swStartComp.setValue(state.swStart);
@@ -1889,6 +1892,11 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       del.setAttribute("aria-label", "Remove " + (it.name || "item " + (i + 1)));
       del.addEventListener("click", function () { state.swItems.splice(i, 1); persist(); renderSwitch(); compute(); });
       row.appendChild(nm); row.appendChild(tm); row.appendChild(del);
+      if (it.start || it.pt != null) {
+        var tag = document.createElement("span"); tag.className = "sw-tag";
+        tag.textContent = (it.start ? "Starts when you press play. " : "") + (it.pt != null ? "ProTools " + fmtDur(Math.floor(it.pt)) + (it.ptEnd != null ? " to " + fmtDur(Math.floor(it.ptEnd)) : "") : "");
+        row.appendChild(tag);
+      }
       tm.nameEl = nm;
       host.appendChild(row); swEls.push(tm);
     });
@@ -1899,23 +1907,32 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     var off = parseDur(state.swStart);
     if (swStartComp) swStartComp.classList.toggle("bad", off === null);
     if (off === null) return bailOut("Enter a time for Start ProTools.");
-    var cues = [], order = 0, t = off, wEnd = null, bad = false, lastSec = "";
-    function add(label, r, cls, extra, sec) { cues.push({ label: label, rel: r, cls: cls || "", o: order++, extra: extra || "", sec: sec || "" }); }
-    add("Hit play", off, "hit", "", (state.swItems[0] || {}).sec || "Pre-Experience");
+    var cues = [], order = 0, t = off, wEnd = null, wSeg = 0, bad = false, lastSec = "";
+    // segment 0 runs from the planned Pre-Experience start; each part marked "starts when you press play" begins a new one
+    var segs = [{ rel: off, name: String((state.swItems[0] || {}).name || "Pre-Experience"), pt: null, ptEnd: null }];
+    function add(label, r, cls, extra, sec, seg, pt) { cues.push({ label: label, rel: r, cls: cls || "", o: order++, extra: extra || "", sec: sec || "", seg: seg || 0, pt: pt == null ? null : pt }); }
     state.swItems.forEach(function (it, i) {
       var raw = String(it.len || "").trim(), n = raw === "" ? 0 : parseDur(raw);
       var invalid = n === null || n < 0;
       if (swEls[i]) swEls[i].classList.toggle("bad", invalid);
       if (invalid) { bad = true; return; }
       var nm = String(it.name || "").trim() || "Item " + (i + 1);
-      if (i === 0) cues[0].extra = nm + (n ? ", " + fmtDur(n) : "");
-      else add(nm, t, "sw", n ? "Lasts " + fmtDur(n) : "", it.sec);
-      t += n; lastSec = it.sec;
-      if (/worship/i.test(it.sec || "")) wEnd = t;
+      var pt = it.pt == null || it.pt === "" ? null : +it.pt;
+      if (it.start) segs.push({ rel: t, name: nm, pt: pt, ptEnd: null });
+      var si = segs.length - 1, sg = segs[si];
+      var rel = pt !== null && sg.pt !== null ? sg.rel + (pt - sg.pt) : t;
+      add(nm, rel, "sw" + (it.start ? " swstart" : ""), n ? "Lasts " + fmtDur(n) : "", it.sec, si, pt);
+      var ptE = it.ptEnd != null ? +it.ptEnd : pt !== null ? pt + n : null;
+      t = ptE !== null && sg.pt !== null ? sg.rel + (ptE - sg.pt) : rel + n;
+      if (ptE !== null) sg.ptEnd = Math.max(sg.ptEnd || 0, ptE);
+      lastSec = it.sec;
+      if (/worship/i.test(it.sec || "")) { wEnd = t; wSeg = si; }
     });
+    // a ProTools part ends where the next one picks up in the session
+    segs.forEach(function (sg, k) { var nx = segs[k + 1]; if (sg.pt !== null && nx && nx.pt !== null && (sg.ptEnd === null || sg.ptEnd > nx.pt)) sg.ptEnd = nx.pt; });
     if (wEnd === null) wEnd = t;
-    add("Worship ends", wEnd, "final", "", "Worship");
-    add("End of SWITCH", t, "sw end", "", lastSec);
+    add("Worship ends", wEnd, "final", "", "Worship", wSeg, null);
+    add("End of SWITCH", t, "sw end", "", lastSec, segs.length - 1, null);
     cues.sort(function (a, b) { return a.rel - b.rel || (b.cls === "final") - (a.cls === "final") || a.o - b.o; });
     cues.forEach(function (c, i) { c.o = i; });
     if (bad) $("flags").innerHTML = '<div class="status glass bad">An item length isn\u2019t a valid m:ss, so it was left out.</div>';
@@ -1924,17 +1941,19 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       .sort(function (a, b) { return a.sec - b.sec; });
     if (state.sel >= svcs.length || state.sel < 0) state.sel = 0;
     var statusEl = $("status"); statusEl.className = "status glass";
-    statusEl.textContent = "Hit play " + ago(off, "service time") + ".";
+    statusEl.textContent = "ProTools starts when you press play. Times are estimates until it starts.";
+    $("res-h").textContent = "SWITCH times";
     // table
     var copy = ["SWITCH start times", ""];
-    var tb = '<div class="tbl-wrap"><table class="svc-table"><thead><tr><th scope="col">Service</th><th scope="col">Hit play</th></tr></thead>';
+    var firstPt = segs[1] || segs[0];
+    var tb = '<div class="tbl-wrap"><table class="svc-table"><thead><tr><th scope="col">Service</th><th scope="col">ProTools, about</th></tr></thead>';
     var byDay = {};
     svcs.forEach(function (sv, i) { sv.i = i; (byDay[sv.day] = byDay[sv.day] || []).push(sv); });
     Object.keys(byDay).forEach(function (day) {
       tb += '<tbody class="' + dayCls(day) + '"><tr class="grp"><th scope="colgroup" colspan="2"><span class="daychip">SWITCH, ' + esc(day) + "</span></th></tr>";
       byDay[day].forEach(function (sv) {
         tb += '<tr class="row' + (sv.i === state.sel ? " sel" : "") + '" data-i="' + sv.i + '"><td class="c-svc"><button type="button" class="rowbtn" aria-pressed="' + (sv.i === state.sel) + '">' + svcClock(sv.sec) + "</button></td>" +
-          '<td class="c-play">' + clockHtml(sv.sec + off) + "</td></tr>";
+          '<td class="c-play">' + clockHtml(sv.sec + firstPt.rel) + "</td></tr>";
         copy.push(sv.day + " " + svcClock(sv.sec));
         cues.forEach(function (c) { copy.push("  " + c.label + ": " + clockText(sv.sec + c.rel)); });
         copy.push("");
@@ -1946,15 +1965,16 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     lastText = copy.join("\n").replace(/\n+$/, "");
     $("dropCall").innerHTML = "";
     var first = svcs[0];
-    $("swStartHint").textContent = first ? "ProTools plays at " + clockText(first.sec + off) + ", " + (off < 0 ? fmtDur(off) + " before" : off > 0 ? fmtDur(off) + " after" : "right at") + " service time" : "";
-    $("swSum").textContent = first ? "Worship ends at " + clockText(first.sec + wEnd) + " (" + fmtDur(wEnd - off) + " on ProTools). SWITCH wraps at " + clockText(first.sec + t) + "." : "";
+    $("swStartHint").textContent = first ? segs[0].name + " at " + clockText(first.sec + off) + ", " + (off < 0 ? fmtDur(off) + " before" : off > 0 ? fmtDur(off) + " after" : "right at") + " service time" : "";
+    var ptParts = segs.filter(function (sg) { return sg.pt !== null; }).map(function (sg) { return sg.name + " (ProTools " + fmtDur(Math.floor(sg.pt)) + (sg.ptEnd !== null ? " to " + fmtDur(Math.floor(sg.ptEnd)) : "") + ")"; });
+    $("swSum").textContent = first ? (ptParts.length ? "Starts by hand: " + ptParts.join(", then ") + ". " : "") + "Worship ends about " + clockText(first.sec + wEnd) + ", and SWITCH wraps about " + clockText(first.sec + t) + "." : "";
     // relative table
     var rt = "<thead><tr><th>Cue</th><th>Relative</th><th>Elapsed</th></tr></thead><tbody>";
     cues.forEach(function (c) { var el = c.rel - off; rt += "<tr><td>" + esc(c.label) + "</td><td>" + fmtSigned(c.rel) + '</td><td class="' + (el >= 0 ? "" : "dim") + '">' + fmtDur(el) + "</td></tr>"; });
     $("relTable").innerHTML = rt + "</tbody>";
     $("ribbon").innerHTML = ""; $("legend").innerHTML = ""; ribTotal = 0;
     lastCalcHands = null;
-    lastCalc = { program: "switch", startRel: off, finalRel: wEnd, len: Math.max(0, wEnd - off), lower: 0, noDrop: true, cues: cues, svcs: svcs, tail: t,
+    lastCalc = { program: "switch", segs: segs, startRel: firstPt.rel, finalRel: wEnd, len: Math.max(0, wEnd - firstPt.rel), lower: 0, noDrop: true, cues: cues, svcs: svcs, tail: t,
       msg: null, stage: null, mStartRel: null, handsRel: null, parts: [] };
   }
 
@@ -1973,6 +1993,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 
   function compute() {
     if (prog() === "switch") return computeSwitch();
+    $("res-h").textContent = "Hit play at";
     var song = state.mode === "song";
     var v = {}, bad = [];
     durKeys.forEach(function (k) {
@@ -2243,7 +2264,19 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   }
 
   // ---------- live cue sheet (main page and booth) ----------
+  function swPress(key, seg) { return state.swLive && state.swLive.key === key && state.swLive.a ? state.swLive.a[seg] || null : null; }
+  // when a SWITCH segment starts: the press for it, or else planned from the one before
+  function swAnchor(occ, seg) {
+    var sg = lastCalc.segs[seg];
+    if (seg > 0) { var pr = swPress(keyOf(occ), seg); if (pr) return pr; return swAnchor(occ, seg - 1) + (sg.rel - lastCalc.segs[seg - 1].rel) * 1000; }
+    return occ.t + sg.rel * 1000;
+  }
   function sheetRows(occ) {
+    if (lastCalc && lastCalc.program === "switch") {
+      var swr = lastCalc.cues.map(function (c) { return { c: c, t: swAnchor(occ, c.seg) + (c.rel - lastCalc.segs[c.seg].rel) * 1000, pt: c.pt }; })
+        .sort(function (a, b) { return a.t - b.t || a.c.o - b.c.o; });
+      return { rows: swr, key: keyOf(occ), startAt: swAnchor(occ, Math.min(1, lastCalc.segs.length - 1)) };
+    }
     var key = keyOf(occ), live = state.live && state.live.key === key ? state.live.at : null;
     var startAt = live !== null ? live : occ.t + lastCalc.startRel * 1000;
     var rows = lastCalc.cues.map(function (c) {
@@ -2270,7 +2303,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     if (!host) return;
     if (!lastCalc || !occ) { if (host._sig) { host.innerHTML = ""; host._sig = ""; } if (badge) badge.hidden = true; return; }
     var sr = sheetRows(occ), rows = sr.rows;
-    var sig = sr.key + "|" + Math.round(sr.startAt) + "|" + rows.map(function (r) { return r.c.label + "@" + Math.round(r.t) + r.c.extra; }).join(",");
+    var sig = sr.key + "|" + Math.round(sr.startAt) + "|" + JSON.stringify(state.swLive || 0) + "|" + rows.map(function (r) { return r.c.label + "@" + Math.round(r.t) + r.c.extra; }).join(",");
     if (host._sig !== sig) {
       host._sig = sig;
       var h = '<div class="lcs"><div class="lcs-rail" aria-hidden="true"><div class="lcs-fill"></div><div class="lcs-now"></div></div><ol class="lcs-list">';
@@ -2280,7 +2313,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
         // the screen drop is only ever shown as the ProTools time to press the button
         var isDrop = k.indexOf("drop") > -1;
         var isPart = k.indexOf("part") > -1;
-        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : c.rel - lastCalc.msg < 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " early" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message") : isDrop ? "On the ProTools counter" : lastCalc.program === "switch" ? fmtSigned(c.rel) : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
+        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : c.rel - lastCalc.msg < 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " early" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message") : isDrop ? "On the ProTools counter" : lastCalc.program === "switch" ? (k.indexOf("swstart") > -1 ? "Starts when you press play" + (c.pt !== null ? ", ProTools " + fmtDur(Math.floor(c.pt)) : "") : c.pt !== null ? "ProTools " + fmtDur(Math.floor(c.pt)) : (swPress(sr.key, c.seg) || c.seg === 0 ? "" : "About ") + fmtSigned(Math.round((r.t - occ.t) / 1000))) : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
         if (c.extra) meta += ", " + (lastCalc.program === "switch" ? c.extra.replace(/^Lasts/, "lasts") : c.extra.toLowerCase());
         var tm = msClock(r.t), sp = tm.lastIndexOf(" ");
         var right = isDrop ? '<span class="drop-t">' + monoHtml(fmtDur(r.pt)) + "</span>" : monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small>";
@@ -2455,6 +2488,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     var cur = null;
     occ.forEach(function (o) { if (keyOf(o) === booth.key) cur = o; });
     if (!cur) { cur = occ[0]; booth.key = keyOf(cur); }
+    if (lastCalc.program === "switch") return renderBoothSwitch(now, cur, root);
     var d0 = new Date(now); d0.setHours(0, 0, 0, 0);
     var d1 = new Date(cur.t); d1.setHours(0, 0, 0, 0);
     var days = Math.round((d1 - d0) / 86400000);
@@ -2580,6 +2614,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       note.className = "b-note";
     }
     $("bReset").hidden = live === null;
+    $("bGo").hidden = false; $("bCue").hidden = true;
     var goTxt = ast.fires && live === null ? "Started manually" : "Started";
     if ($("bGo").textContent !== goTxt) $("bGo").textContent = goTxt;
     var skipped = !!(booth.key && state.skips[booth.key]);
@@ -2614,6 +2649,88 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     if (bs.textContent !== bst) bs.textContent = bst;
     if (bs.className !== bsc) bs.className = bsc;
     renderLiveSheet($("bSheet"), sheetOcc, now, $("bLive"));
+  }
+  function renderBoothSwitch(now, cur, root) {
+    var occ = booth.manual ? cur : (sheetFocus(now, cur) || cur), key = keyOf(occ), segs = lastCalc.segs;
+    booth.swKey = key; booth.cOn = booth.cOn && true;
+    $("bSvc").textContent = "SWITCH, " + occ.sv.day + " " + svcClock(occ.sv.sec);
+    var lastP = 0;
+    for (var k = 1; k < segs.length; k++) if (swPress(key, k)) lastP = k;
+    var nextSeg = lastP + 1 < segs.length ? lastP + 1 : null;
+    booth.swNext = nextSeg;
+    var cb = $("bCountBox"), lab = "", big = "", sub = "", counting = false, cdLeft = null;
+    var pos = null, linked = linkElapsed();
+    if (lastP > 0) {
+      var sg = segs[lastP];
+      pos = linked !== null && sg.pt !== null ? linked : (sg.pt || 0) + (now - swPress(key, lastP)) / 1000;
+      if (sg.ptEnd !== null && pos > sg.ptEnd + 0.5) pos = null;
+      if (sg.ptEnd === null && sg.pt === null) pos = null;
+    }
+    var rows = sheetRows(occ).rows, nextRow = null;
+    rows.forEach(function (r) { if (!nextRow && r.t > now) nextRow = r; });
+    if (pos !== null) {
+      counting = true;
+      var sgc = segs[lastP];
+      lab = linked !== null ? "ProTools, linked" : "ProTools";
+      booth.cStart = now - pos * 1000; booth.cDrop = sgc.ptEnd !== null ? sgc.ptEnd : 1e9;
+      if (!booth.cOn) { booth.cOn = true; $("bBig")._h = ""; requestAnimationFrame(counterFrame); }
+      var endClock = sgc.ptEnd !== null ? msClock(now + (sgc.ptEnd - pos) * 1000) : "";
+      sub = sgc.ptEnd === null ? sgc.name : nextSeg !== null && segs[nextSeg].pt !== null
+        ? "Ends at " + fmtDur(Math.floor(sgc.ptEnd)) + ". Then stop and cue up " + segs[nextSeg].name + " (" + fmtDur(Math.floor(segs[nextSeg].pt)) + ")."
+        : "Worship ends at " + fmtDur(Math.floor(sgc.ptEnd)) + ", about " + endClock + ".";
+    } else {
+      booth.cOn = false;
+      if (nextSeg !== null && segs[nextSeg].pt !== null) {
+        var plan = swAnchor(occ, nextSeg), left = Math.ceil((plan - now) / 1000);
+        if (left > 43200) { lab = "Next SWITCH"; big = occ.sv.day + " " + svcClock(occ.sv.sec); sub = segs[nextSeg].name + " planned about " + msClock(plan) + ". Press Started when ProTools starts."; }
+        else {
+        lab = segs[nextSeg].name + (left >= 0 ? " planned in" : " planned");
+        big = left >= 0 ? fmtHMS(left) : "+" + fmtDur(-left);
+        sub = lastP === 0 ? "Press Started when ProTools starts. Planned about " + msClock(plan) + "."
+          : "Cue up ProTools at " + fmtDur(Math.floor(segs[nextSeg].pt)) + " and press Started when the communicator leads in.";
+        if (left >= 0) cdLeft = left;
+        }
+      } else if (nextRow) {
+        var al = Math.ceil((nextRow.t - now) / 1000);
+        lab = nextRow.c.label + " in"; big = fmtHMS(al); sub = "at " + msClock(nextRow.t); cdLeft = al;
+      } else {
+        lab = "SWITCH is complete"; big = ""; sub = "";
+      }
+      var bh = /^[\d:+]+$/.test(big) ? monoHtml(big) : esc(big);
+      if ($("bBig")._h !== bh) { $("bBig").innerHTML = bh; $("bBig")._h = bh; }
+    }
+    if ($("bLab").textContent !== lab) $("bLab").textContent = lab;
+    if ($("bSub").textContent !== sub) { $("bSub").textContent = sub; $("bSub")._h = ""; }
+    cb.classList.toggle("is-run", counting); cb.classList.toggle("is-counter", counting);
+    if (!counting) cb.classList.remove("cnt-yellow", "cnt-red");
+    cb.classList.remove("is-auto", "is-soon");
+    cb.classList.toggle("cd-red", !counting && cdLeft !== null && cdLeft <= 30);
+    cb.classList.toggle("cd-yellow", !counting && cdLeft !== null && cdLeft > 30 && cdLeft <= 120);
+    cb.hidden = false; $("bParts").hidden = true; $("bMsgAdj").hidden = true; $("bNext").innerHTML = ""; $("bSkip").hidden = true;
+    paintChip($("bMode"), { level: "manual", text: "Manual start", sub: "SWITCH starts when you press play" });
+    // what was started, and when
+    var notes = [];
+    for (var j = 1; j <= lastP; j++) { var pr = swPress(key, j); if (pr) notes.push(segs[j].name + " started " + msClock(pr)); }
+    var nt = notes.join(". ");
+    if ($("bNote").textContent !== nt) $("bNote").textContent = nt;
+    $("bNote").className = "b-note";
+    var goTxt = nextSeg !== null ? "Started " + segs[nextSeg].name : "Started";
+    if ($("bGo").textContent !== goTxt) $("bGo").textContent = goTxt;
+    $("bGo").hidden = nextSeg === null;
+    $("bReset").hidden = lastP === 0;
+    var cueOn = !!(link.out && nextSeg !== null && segs[nextSeg].pt !== null && lastP > 0);
+    $("bCue").hidden = !cueOn;
+    if (cueOn) { var ct = "Cue up " + segs[nextSeg].name; if ($("bCue").textContent !== ct) $("bCue").textContent = ct; }
+    var rbs = remoteBooth();
+    $("bHoldStop").hidden = !(rbs && rbs.level !== "bad");
+    var bs = $("bSheetSvc"), bst = "SWITCH " + svcClock(occ.sv.sec);
+    if (bs.textContent !== bst) bs.textContent = bst;
+    if (bs.className !== "daychip wed") bs.className = "daychip wed";
+    renderLiveSheet($("bSheet"), occ, now, $("bLive"));
+  }
+  function secsToTc(sec) {
+    var fps = Math.round(+state.ptRate || 30), whole = Math.floor(sec);
+    return { h: Math.floor(whole / 3600), m: Math.floor((whole % 3600) / 60), s: whole % 60, f: Math.min(fps - 1, Math.floor((sec - whole) * fps)) };
   }
   function lockScreen() {
     try { if (navigator.wakeLock && navigator.wakeLock.request) navigator.wakeLock.request("screen").then(function (l) { booth.lock = l; }, function () {}); } catch (e) {}
@@ -2723,12 +2840,28 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   $("bClose").addEventListener("click", closeBooth);
   $("bPrev").addEventListener("click", function () { shiftSvc(-1); });
   $("bNextSvc").addEventListener("click", function () { shiftSvc(1); });
+  $("bCue").addEventListener("click", function () {
+    if (!lastCalc || lastCalc.program !== "switch" || booth.swNext == null) return;
+    var sg = lastCalc.segs[booth.swNext]; if (!sg || sg.pt === null) return;
+    ptSend(MMC_STOP, "Stop");
+    var tc = secsToTc(sg.pt); ptSend(mmcLocate(tc), "Go to " + fmtTc(tc) + " (" + sg.name + ")");
+  });
   $("bGo").addEventListener("click", function () {
+    if (lastCalc && lastCalc.program === "switch") {
+      if (!booth.swKey || booth.swNext == null) return;
+      var a = state.swLive && state.swLive.key === booth.swKey && state.swLive.a ? state.swLive.a : {};
+      a[booth.swNext] = nowMs();
+      state.swLive = { key: booth.swKey, a: a };
+      persist(); renderBooth(); return;
+    }
     if (!booth.key) return;
     state.live = { key: booth.key, at: nowMs() };
     persist(); renderBooth();
   });
-  $("bReset").addEventListener("click", function () { state.live = null; persist(); renderBooth(); });
+  $("bReset").addEventListener("click", function () {
+    if (lastCalc && lastCalc.program === "switch") state.swLive = null; else state.live = null;
+    persist(); renderBooth();
+  });
   document.addEventListener("keydown", function (e) { if (booth.open && e.key === "Escape") closeBooth(); });
   document.addEventListener("visibilitychange", function () { if (booth.open && document.visibilityState === "visible") lockScreen(); });
 
@@ -2736,6 +2869,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   var link = { midi: null, out: null, inp: null, qf: [0, 0, 0, 0, 0, 0, 0, 0], lastQF: 0, tc: null, fps: null, done: {}, skip: {}, watch: null, result: "", resultBad: false, err: "", lastHeard: 0 };
   // how this device will start ProTools for a service, and whether the MIDI link is healthy
   function autoStatus(key) {
+    if (lastCalc && lastCalc.program === "switch") return { fires: false, level: "manual", text: "Manual start", sub: "SWITCH starts when you press play" };
     var hasApi = !!navigator.requestMIDIAccess;
     if (!link.out) {
       var rb = remoteBooth();
@@ -2874,12 +3008,24 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   function resolveStart() {
     var ps = link.pending; link.pending = null;
     var e = tcElapsed();
+    if (lastCalc && lastCalc.program === "switch") {
+      // ProTools started near the top of a part: mark that part as started
+      var key = booth.swKey || lastFocusKey;
+      if (e === null || !key) return;
+      lastCalc.segs.forEach(function (sg, k) {
+        if (k > 0 && sg.pt !== null && e >= sg.pt - 2 && e < sg.pt + 20) {
+          var a = state.swLive && state.swLive.key === key && state.swLive.a ? state.swLive.a : {};
+          a[k] = ps.at - (e - sg.pt) * 1000; state.swLive = { key: key, a: a }; persist();
+        }
+      });
+      return;
+    }
     if (e === null || e < 0 || e >= 600) return;   // playing from somewhere else in the session
     var key = ps.key || nearestKey(ps.at);
     if (key) { state.live = { key: key, at: nowMs() - e * 1000 }; persist(); }
   }
   function nextAuto(now) {
-    if (!lastCalc) return null;
+    if (!lastCalc || lastCalc.program === "switch") return null;
     var n = null;
     occurrences(now).forEach(function (o) { var pt = o.t + lastCalc.startRel * 1000; if (!n && pt > now - 3000) n = { o: o, pt: pt, key: keyOf(o) }; });
     return n;
@@ -3012,7 +3158,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   var FB_VERSION = "10.12.2";
   // every device unlocks with one shared password for this sign-in
   var SYNC_LOGIN = window.START_TIMES_LOGIN || "booth@northland-start-times.app";
-  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems"];
+  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems", "swLive"];
   var sync = { ready: false, applying: false, user: null, db: null, timer: null, device: "", role: "", peers: {}, booth: null, lastTele: "", teleAt: 0, err: "", offs: [] };
   try { sync.device = localStorage.getItem("st-device") || ""; } catch (e) {}
   if (!sync.device) { sync.device = "d" + Math.random().toString(36).slice(2, 10); try { localStorage.setItem("st-device", sync.device); } catch (e) {} }
@@ -3266,6 +3412,19 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
         if (nb._h !== html || nb.className !== cls) { nb.innerHTML = html; nb._h = html; nb.className = cls; }
       }
     }
+    if (lastCalc && lastCalc.program === "switch") {
+      html = ""; cls = "nextline";
+      var foS = pick ? sheetFocus(now, pick.o) : heldOcc(now);
+      if (foS) {
+        var nr = null; sheetRows(foS).rows.forEach(function (r) { if (!nr && r.t > now) nr = r; });
+        if (nr) {
+          var nl = Math.ceil((nr.t - now) / 1000);
+          if (nl <= 30) cls += " cd-red"; else if (nl <= 120) cls += " soon";
+          html = '<span class="nv">SWITCH ' + esc(svcClock(foS.sv.sec)) + '</span><span class="nv"><span class="vb">' + esc(nr.c.label) + " in</span> <b>" + monoHtml(fmtHMS(nl)) + "</b></span>";
+        }
+      }
+      if (nb._h !== html || nb.className !== cls) { nb.innerHTML = html; nb._h = html; nb.className = cls; }
+    }
     nb.hidden = !html;
     var focusOcc = pick ? sheetFocus(now, pick.o) : heldOcc(now);
     lastFocusKey = focusOcc ? keyOf(focusOcc) : null;
@@ -3308,6 +3467,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     var l = c.label, k = c.cls;
     if (lastCalc && lastCalc.program === "switch") {
       if (k.indexOf("hit") > -1) return (c.extra || "Countdown").replace(/, \d+:\d\d$/, "");
+      if (k.indexOf("swstart") > -1 && /cover|walk/i.test(c.sec)) return l;
       if (k.indexOf("final") > -1) return null;
       if (/\bend\b/.test(k)) return "SWITCH ends";
       return l;
