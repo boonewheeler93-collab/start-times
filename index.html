@@ -1022,6 +1022,35 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 
 .hold-btn.is-off { opacity: 0.45; filter: grayscale(0.6); }
 .hold-btn.is-off::after { display: none; }
+
+/* booth: ProTools transport + Memory Locations */
+.b-pt { padding: 14px 16px 16px; border-radius: 20px; background: rgba(255,255,255,0.045); border: 1px solid var(--glass-line); display: grid; gap: 10px; }
+.b-pt[hidden] { display: none; }
+.b-pt-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.b-pt-k { font-weight: 800; }
+.b-pt-tc { font-family: var(--clockfont); font-weight: 700; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.b-pt-link { margin-left: auto; min-height: 40px; padding: 4px 14px; color: var(--ok); border-color: rgba(111,227,180,0.5); }
+.b-pt-link.is-off { color: var(--warn); border-color: rgba(255,157,138,0.55); background: var(--warn-soft); }
+.b-pt-note { margin: 0; color: var(--warn); font-weight: 700; font-size: 0.88rem; }
+.b-pt-note[hidden] { display: none; }
+.b-pt-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.b-pt-btns button { min-height: 54px; font-weight: 800; }
+.b-pt-btns button[hidden] { display: none; }
+.b-pt-play { color: var(--ok); border-color: rgba(111,227,180,0.5); }
+.b-pt-stop { color: var(--warn); border-color: rgba(255,157,138,0.55); }
+.b-mem-h { color: var(--ink-3); font-weight: 700; font-size: 0.82rem; }
+.b-mem { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.mem-btn { position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-height: 48px; padding: 8px 12px; border-radius: 12px; cursor: pointer;
+  font: inherit; font-weight: 700; color: var(--ink); background: rgba(255,255,255,0.06); border: 1px solid var(--glass-line); text-align: left; touch-action: manipulation; }
+.mem-btn .mem-t { font-family: var(--clockfont); font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.mem-btn.here { border-color: rgba(111,227,238,0.6); background: rgba(111,227,238,0.12); }
+.mem-btn.here .mem-t { color: var(--accent-2); }
+.mem-btn.sent { border-color: var(--ok); }
+.mem-btn.flash-off { border-color: var(--warn); }
+.mem-btn.is-off { opacity: 0.45; }
+.mem-btn::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: var(--accent-2); }
+.mem-btn.holding::after { width: 100%; transition: width 1s linear; }
+.b-pt-btns .hold-btn.is-off { opacity: 0.45; }
 </style>
 </head>
 <body>
@@ -1085,6 +1114,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       <div class="link-top">
         <button type="button" class="ghost" id="ptConnect">Connect to ProTools</button>
         <button type="button" class="auto-btn" id="ptAuto" aria-pressed="false" disabled>Auto-start off</button>
+        <button type="button" class="ghost" id="ptLinkTog" hidden>Turn link off</button>
       </div>
       <p class="link-status" id="ptStatus" role="status">Not connected</p>
       <div id="ptBody" hidden>
@@ -1279,6 +1309,21 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       <button type="button" class="ghost" id="bSkip" hidden>Skip auto-start</button>
       <button type="button" class="ghost danger" id="bHoldStop" hidden>Hold to stop ProTools</button>
     </div>
+    <section class="b-pt" id="bPt" hidden aria-label="ProTools controls">
+      <div class="b-pt-head">
+        <span class="b-pt-k">ProTools</span>
+        <span class="b-pt-tc" id="bPtTc">--:--:--</span>
+        <span class="pill-s" id="bPtPill">No timecode</span>
+        <button type="button" class="ghost b-pt-link" id="bLinkTog" aria-pressed="true">Link on</button>
+      </div>
+      <p class="b-pt-note" id="bPtNote"></p>
+      <div class="b-pt-btns">
+        <button type="button" class="ghost hold-btn b-pt-play" id="bPtPlay">Hold to play from here</button>
+        <button type="button" class="ghost hold-btn b-pt-stop" id="bPtStop">Hold to stop</button>
+      </div>
+      <div class="b-mem-h">Memory Locations</div>
+      <div class="b-mem" id="bMem"></div>
+    </section>
     <p class="b-keys">Space: Started. Up and down arrows: adjust the clock. F: full screen. Esc: close.</p>
     </div>
     <div class="b-right">
@@ -2506,8 +2551,69 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       return { sv: sv, t: t };
     }).sort(function (a, b) { return a.t - b.t; });
   }
+  // Memory Locations from each session's markers (seconds into the session)
+  var MARKERS = {
+    weekend: [
+      { n: "Start", t: 0 }, { n: "Cover", t: 292.0 }, { n: "Begins Now", t: 535.288 }, { n: "Alleluia", t: 562.488 },
+      { n: "Thank God I\u2019m Free", t: 823.608 }, { n: "Way Maker", t: 1119.858 }, { n: "Trust In God", t: 1381.034 }, { n: "End", t: 1621.845 }
+    ],
+    "switch": [
+      { n: "Cover", t: 0 }, { n: "Begins Now", t: 227.273 }, { n: "Thank God I\u2019m Free", t: 253.273 },
+      { n: "I Was But God", t: 549.523 }, { n: "Way Maker", t: 820.334 }
+    ]
+  };
+  function curMarkers() { return MARKERS[lastCalc && lastCalc.program === "switch" ? "switch" : "weekend"] || []; }
+  function locateTo(sec, name) {
+    var tc = secsToTc(sec);
+    return ptSend(mmcLocate(tc), "Go to " + fmtTc(tc) + (name ? " (" + name + ")" : ""));
+  }
+  function setLinkOff(off) {
+    if (off) { state.linkOff = { key: lastFocusKey || null, at: Date.now() }; ptLog("Link off. Nothing will be sent to ProTools."); }
+    else { state.linkOff = null; ptLog("Link back on"); }
+    persist(); renderLink(); renderTransport();
+  }
+  function renderTransport() {
+    var box = $("bPt"); if (!box) return;
+    var on = !!link.midi && !!link.out;
+    if (box.hidden !== !on) box.hidden = !on;
+    var mo = $("ptLinkTog"); if (mo) { mo.hidden = !on; var mt = linkOff() ? "Turn link back on" : "Turn link off"; if (mo.textContent !== mt) mo.textContent = mt; }
+    if (!on) return;
+    var off = linkOff(), moving = ptMoving(), pos = link.tc ? tcElapsed() : null;
+    var tc = link.tc ? fmtTc(link.tc).slice(0, 8) : "--:--:--";
+    if ($("bPtTc").textContent !== tc) $("bPtTc").textContent = tc;
+    var pill = $("bPtPill"), pt = !link.inp ? "Not listening" : !link.tc ? "No timecode" : moving ? "Playing" : "Stopped", pc = "pill-s" + (moving ? " play" : link.tc ? " stopped" : "");
+    if (pill.textContent !== pt) pill.textContent = pt;
+    if (pill.className !== pc) pill.className = pc;
+    var lt = $("bLinkTog"), ltx = off ? "Link off" : "Link on";
+    if (lt.textContent !== ltx) lt.textContent = ltx;
+    lt.setAttribute("aria-pressed", off ? "false" : "true");
+    lt.classList.toggle("is-off", off);
+    var note = off ? (state.linkOff.key ? "Link is off for this service. Nothing will be sent to ProTools. It turns back on when the next service loads." : "Link is off. Nothing will be sent to ProTools.") : "";
+    if ($("bPtNote").textContent !== note) $("bPtNote").textContent = note;
+    $("bPtNote").hidden = !note;
+    ["bPtPlay", "bPtStop"].forEach(function (id) { $(id).classList.toggle("is-off", off); $(id).setAttribute("aria-disabled", off ? "true" : "false"); });
+    $("bPtPlay").hidden = moving; $("bPtStop").hidden = !moving && !!link.inp;
+    // memory locations
+    var mk = curMarkers(), sig = (lastCalc ? lastCalc.program : "") + mk.map(function (m) { return m.n + m.t; }).join("|");
+    var mem = $("bMem");
+    if (mem._sig !== sig) {
+      mem._sig = sig;
+      mem.innerHTML = mk.map(function (m, i) {
+        return '<button type="button" class="mem-btn" data-i="' + i + '"><span class="mem-n">' + esc(m.n) + '</span><span class="mem-t">' + fmtDur(Math.floor(m.t)) + "</span></button>";
+      }).join("");
+    }
+    var hereI = -1;
+    if (pos !== null) mk.forEach(function (m, i) { if (pos >= m.t - 0.05) hereI = i; });
+    Array.prototype.forEach.call(mem.children, function (b, i) {
+      b.classList.toggle("here", i === hereI);
+      b.classList.toggle("is-off", off);
+      b.classList.toggle("needs-hold", moving);
+      b.setAttribute("aria-disabled", off ? "true" : "false");
+    });
+  }
   function renderBooth() {
     if (!booth.open) return;
+    renderTransport();
     var now = nowMs(), root = $("booth");
     root.classList.remove("warn", "alert");
     var cp = centralParts(now), co = +state.clockOff || 0;
@@ -2923,6 +3029,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   var link = { midi: null, out: null, inp: null, qf: [0, 0, 0, 0, 0, 0, 0, 0], lastQF: 0, tc: null, fps: null, done: {}, skip: {}, watch: null, result: "", resultBad: false, err: "", lastHeard: 0 };
   // how this device will start ProTools for a service, and whether the MIDI link is healthy
   function autoStatus(key) {
+    if (link.out && linkOff()) return { fires: false, level: "manual", text: "ProTools link off", sub: "The app won\u2019t send anything to ProTools until it\u2019s back on" };
     if (lastCalc && lastCalc.program === "switch") return { fires: false, level: "manual", text: "Manual start", sub: "SWITCH starts when you press play" };
     var hasApi = !!navigator.requestMIDIAccess;
     if (!link.out) {
@@ -2976,7 +3083,9 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     ul.insertBefore(li, ul.firstChild);
     while (ul.children.length > 40) ul.removeChild(ul.lastChild);
   }
+  function linkOff() { return !!state.linkOff; }
   function ptSend(bytes, name, ts) {
+    if (linkOff()) { ptLog("Link is off, so " + name + " wasn\u2019t sent"); return false; }
     if (!link.out) { ptLog("Couldn’t send " + name + ": no Send to ProTools port"); return false; }
     try { if (ts != null) link.out.send(bytes, ts); else link.out.send(bytes); ptLog("Sent " + name); return true; }
     catch (e) { ptLog("Send failed: " + e.message); return false; }
@@ -3095,6 +3204,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   }
   function autoTick() {
     var now = nowMs();
+    if (linkOff()) { renderLink(null, now); return; }
     var n = state.auto && link.out ? nextAuto(now) : null;
     if (n && !state.skips[n.key]) {
       var d = link.done[n.key] || (link.done[n.key] = {}), left = n.pt - now;
@@ -3427,10 +3537,41 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     el._lock = Date.now() + 2500;
   }
   holdToFire($("bHoldPlay"), function () { firePlay($("bHoldPlay")); });
+  function flashBtn(el, txt) { var old = el.textContent; el.textContent = txt; setTimeout(function () { el.textContent = old; }, 2000); }
+  holdToFire($("bPtPlay"), function () {
+    if (linkOff()) return flashBtn($("bPtPlay"), "Link is off");
+    if (ptSend(MMC_PLAY, "Play (from here)")) flashBtn($("bPtPlay"), "Playing");
+  });
+  holdToFire($("bPtStop"), function () {
+    if (linkOff()) return flashBtn($("bPtStop"), "Link is off");
+    if (ptSend(MMC_STOP, "Stop")) flashBtn($("bPtStop"), "Stopped");
+  });
+  (function () {
+    var mem = $("bMem"), t = null, btn = null;
+    function go(b) {
+      var m = curMarkers()[+b.getAttribute("data-i")]; if (!m) return;
+      if (linkOff()) { b.classList.add("flash-off"); setTimeout(function () { b.classList.remove("flash-off"); }, 800); return; }
+      if (locateTo(m.t, m.n)) { b.classList.add("sent"); setTimeout(function () { b.classList.remove("sent"); }, 700); }
+    }
+    function end() { clearTimeout(t); if (btn) btn.classList.remove("holding"); btn = null; }
+    mem.addEventListener("pointerdown", function (e) {
+      var b = e.target.closest ? e.target.closest(".mem-btn") : null; if (!b || (e.button !== undefined && e.button !== 0)) return;
+      if (!ptMoving()) return;   // stopped: a normal tap is enough
+      e.preventDefault(); btn = b; b.classList.add("holding");
+      t = setTimeout(function () { b.classList.remove("holding"); btn = null; go(b); }, 1000);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { mem.addEventListener(ev, end); });
+    mem.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest(".mem-btn") : null; if (!b) return;
+      if (!ptMoving() || e.detail === 0) go(b);
+    });
+  })();
+  $("bLinkTog").addEventListener("click", function () { setLinkOff(!linkOff()); });
+  $("ptLinkTog").addEventListener("click", function () { setLinkOff(!linkOff()); });
   holdToFire($("mHoldPlay"), function () { firePlay($("mHoldPlay")); });
   // show Hold to play when this device can reach ProTools and it isn't already playing
   function paintPlayBtns() {
-    var rbs = remoteBooth(), can = !!link.out || !!(rbs && rbs.level !== "bad");
+    var rbs = remoteBooth(), can = (!!link.out && !linkOff()) || !!(!link.out && rbs && rbs.level !== "bad");
     var playing = link.out ? ptMoving() : !!(rbs && rbs.playing);
     var tg = playTarget(), label = can ? playLabel(tg) : playLabel(tg) + " (connect the ProTools link first)";
     ["bHoldPlay", "mHoldPlay"].forEach(function (id) {
@@ -3561,6 +3702,9 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       state.msgLateKey = null;
       state.msgParts.forEach(function (pt) { if (/^message\s*start/i.test(String(pt.name || "").trim())) pt.at = "0:00"; });
       persist(); renderParts(); compute();
+    }
+    if (state.linkOff && state.linkOff.key && lastFocusKey && lastFocusKey !== state.linkOff.key) {
+      state.linkOff = null; persist(); ptLog("Link back on for the next service"); renderLink(); renderTransport();
     }
     renderMainSheet(now, pick ? sheetFocus(now, pick.o) : heldOcc(now));
     renderRibbonLive(now, pick ? sheetFocus(now, pick.o) : heldOcc(now));
