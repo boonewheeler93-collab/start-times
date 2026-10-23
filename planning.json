@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-23T17:37:57Z",
+  "updated": "2026-10-23T17:39:32Z",
   "weekend": {
     "plan_id": "91142207",
     "title": "Supernatural WK 1",
@@ -54,7 +54,7 @@
             "content": "---"
           }
         ],
-        "lead": "---"
+        "lead": null
       },
       {
         "title": "Walk-in: White Horse - Chris Stapleton",
@@ -134,7 +134,7 @@
         "description": "+ ProTools",
         "key": null,
         "notes": [],
-        "lead": "ProTools"
+        "lead": null
       },
       {
         "title": "Offering + Stage Time",
@@ -165,7 +165,7 @@
             "content": "Craig"
           }
         ],
-        "lead": "Craig"
+        "lead": null
       },
       {
         "title": "Whoever Finds God Finds Life",
@@ -225,7 +225,7 @@
         "description": "Countdown during the last 10 minutes of Free Time.\r\n\r\nPurpose:\r\n+ Build anticipation.\r\n+ Help Team Leads, Band, Tech, Youth Pastor, etc., be on the same page and start the first-impression moment of the night off with excellence.",
         "key": null,
         "notes": [],
-        "lead": "Build anticipation."
+        "lead": null
       },
       {
         "title": "Welcome",
@@ -320,7 +320,7 @@
             "content": "ProPresenter "
           }
         ],
-        "lead": "Answer the question, “Why do we give?”"
+        "lead": null
       },
       {
         "title": "Switch 180",
@@ -331,7 +331,7 @@
         "description": "Purpose:\r\n+ Cast vision for why Switch exists\r\n+ Acknowledge challenge from last week\r\n+ Cast vision for challenge this week\r\n+ Set up the message",
         "key": null,
         "notes": [],
-        "lead": "Cast vision for why Switch exists"
+        "lead": null
       },
       {
         "title": "Small Group Discussion",
@@ -369,7 +369,7 @@
         "description": "Purpose:\r\n+ Students made decisions that will change their lives; we lead them in their first step on that new journey.\r\n+ General next steps for believers as we continue to lead Switch students to become fully devoted followers of Christ.",
         "key": null,
         "notes": [],
-        "lead": "Students made decisions that will change their lives; we lead them in their first step on that new journey."
+        "lead": null
       },
       {
         "title": "Set Up Switch Groups",
