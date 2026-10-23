@@ -1058,6 +1058,9 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .lcs-row.past .lcs-lead { opacity: 0.55; }
 .vt-lead { display: block; font-size: 0.78rem; font-weight: 700; color: var(--g, var(--accent-2)); opacity: 0.9; margin-top: 1px; }
 .vt-row.past .vt-lead { opacity: 0.45; }
+
+.pc-note { color: var(--accent-2); border-color: rgba(111,227,238,0.35); }
+.pc-note[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -1107,6 +1110,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     <div class="statusbox" style="order:3">
       <div id="status" class="status glass" role="status" aria-live="polite"></div>
       <div id="flags" class="flags" aria-live="polite"></div>
+      <div id="pcNote" class="status glass pc-note" hidden></div>
     </div>
 
     <section class="card glass" id="msgCard" style="order:5" aria-labelledby="msg-h" data-prog="weekend">
@@ -2007,7 +2011,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     var cues = [], order = 0, t = off, wEnd = null, wSeg = 0, bad = false, lastSec = "";
     // segment 0 runs from the planned Pre-Experience start; each part marked "starts when you press play" begins a new one
     var segs = [{ rel: off, name: String((state.swItems[0] || {}).name || "Pre-Experience"), pt: null, ptEnd: null }];
-    function add(label, r, cls, extra, sec, seg, pt) { cues.push({ label: label, rel: r, cls: cls || "", o: order++, extra: extra || "", sec: sec || "", seg: seg || 0, pt: pt == null ? null : pt }); }
+    function add(label, r, cls, extra, sec, seg, pt, lead) { cues.push({ label: label, rel: r, cls: cls || "", o: order++, extra: extra || "", sec: sec || "", seg: seg || 0, pt: pt == null ? null : pt, lead: lead || null }); }
     state.swItems.forEach(function (it, i) {
       var raw = String(it.len || "").trim(), n = raw === "" ? 0 : parseDur(raw);
       var invalid = n === null || n < 0;
@@ -2018,7 +2022,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       if (it.start) segs.push({ rel: t, name: nm, pt: pt, ptEnd: null });
       var si = segs.length - 1, sg = segs[si];
       var rel = pt !== null && sg.pt !== null ? sg.rel + (pt - sg.pt) : t;
-      add(nm, rel, "sw" + (it.start ? " swstart" : ""), n ? "Lasts " + fmtDur(n) : "", it.sec, si, pt);
+      add(nm, rel, "sw" + (it.start ? " swstart" : ""), n ? "Lasts " + fmtDur(n) : "", it.sec, si, pt, it.lead);
       var ptE = it.ptEnd != null ? +it.ptEnd : pt !== null ? pt + n : null;
       t = ptE !== null && sg.pt !== null ? sg.rel + (ptE - sg.pt) : rel + n;
       if (ptE !== null) sg.ptEnd = Math.max(sg.ptEnd || 0, ptE);
@@ -2182,7 +2186,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     var cues = [], order = 0;
     function add(label, r, cls, extra, lead) { cues.push({ label: label, rel: r, cls: cls || "", o: order++, extra: extra || "", lead: lead || null }); }
     add("Hit play", startRel, "hit");
-    var wk = state.walkSong || {};
+    var wk = pcWalk() || state.walkSong || {};
     if (W !== null) add("Walk-in song" + (wk.name ? ": " + wk.name : ""), startRel + C, "base", "", wk.lead);
     if (estSet) {
       add("“Begins Now” (est.)", startRel + C + W, "base");
@@ -2196,7 +2200,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
           var at = firstRel + cum;
           if (it.t === "song") {
             var label = i === 0 ? "First worship song" + (it.name ? " (" + it.name + ")" : "") : (it.name || "Song " + it.songN);
-            add(label, at, "song", "", it.lead);
+            add(label, at, "song", "", pcLead(it.name) || it.lead);
           } else {
             add("Toss" + (it.name ? ": " + it.name : ""), at, "toss", it.len > 0 ? "Lasts " + fmtDur(it.len) : "");
           }
@@ -2380,6 +2384,65 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     var sg = lastCalc.segs[seg];
     if (seg > 0) { var pr = swPress(keyOf(occ), seg); if (pr) return pr; return swAnchor(occ, seg - 1) + (sg.rel - lastCalc.segs[seg - 1].rel) * 1000; }
     return occ.t + sg.rel * 1000;
+  }
+  var PC = null;
+  try { PC = JSON.parse(localStorage.getItem("start-times-pco") || "null"); } catch (e) { PC = null; }
+  function normTitle(t) { return String(t || "").toLowerCase().replace(/\([^)]*\)|\[[^\]]*\]/g, "").replace(/[\u2018\u2019']/g, "").replace(/[^a-z0-9]+/g, " ").trim(); }
+  function pcSongs() { return PC && PC.weekend ? PC.weekend.items.filter(function (i) { return i.type === "song"; }) : []; }
+  function pcLead(label) {
+    var n = normTitle(label); if (!n) return null;
+    var hit = null; pcSongs().forEach(function (i) { if (!hit && i.lead && normTitle(i.title) === n) hit = i.lead; });
+    return hit;
+  }
+  function pcWalk() {
+    if (!PC || !PC.weekend) return null;
+    var w = null;
+    PC.weekend.items.forEach(function (i) { if (!w && /^\s*walk-?in/i.test(i.title || "")) w = i; });
+    if (!w) return null;
+    var nm = String(w.title).replace(/^\s*walk-?in\s*:?\s*/i, "").replace(/\s+-\s+.*$/, "").trim();
+    return { name: nm, lead: w.lead || null };
+  }
+  function titleCase(t) { return /[a-z]/.test(t) ? t : String(t).toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
+  function cleanSec(t) { t = String(t || "").trim(); return /^(\S )+\S$/.test(t) ? t.replace(/ (?=\S)/g, "").replace(/-/g, " - ") : t; }
+  // SWITCH: load a new Planning Center plan into the run of show
+  function pcApplySwitch() {
+    if (!PC || !PC.switch || !Array.isArray(PC.switch.items)) return false;
+    var plan = PC.switch;
+    if (state.swPlan === plan.plan_id) return false;
+    var items = [];
+    plan.items.forEach(function (i) {
+      if (/life\.church/i.test(i.section || "") && !i.length) return;     // the address line
+      var t = String(i.title || "").trim(); if (!t) return;
+      var it = { sec: cleanSec(i.section) || "Run of show", name: i.type === "song" ? t : titleCase(t), len: fmtDur(Math.round(i.length || 0)) };
+      if (i.lead && i.type === "song") it.lead = i.lead;
+      if (/^begins now$/i.test(t)) it.start = true;
+      items.push(it);
+    });
+    if (!items.length) return false;
+    state.swItems = items; state.swPlan = plan.plan_id; state.swLive = null;
+    persist();
+    return true;
+  }
+  function renderPcNote() {
+    var el = $("pcNote"); if (!el) return;
+    var txt = "";
+    if (PC && PC.weekend && prog() === "weekend") {
+      var pcs = pcSongs().map(function (i) { return normTitle(i.title); }).join("|");
+      var mine = state.mode === "song" ? state.items.filter(function (i) { return i.t === "song"; }).map(function (i) { return normTitle(i.label); }).join("|") : "";
+      if (pcs && pcs !== mine) txt = "Planning Center has the " + (PC.weekend.dates || "next") + " plan: " + pcSongs().map(function (i) { return i.title; }).join(", ") + ". Send the ProTools session export to load its exact times.";
+    }
+    el.textContent = txt; el.hidden = !txt;
+  }
+  function loadPlanning() {
+    fetch("planning.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (!d || !d.updated) return;
+      var changed = !PC || PC.updated !== d.updated;
+      PC = d;
+      try { localStorage.setItem("start-times-pco", JSON.stringify(d)); } catch (e) {}
+      if (pcApplySwitch()) { renderSwitch(); }
+      if (changed) { compute(); }
+      renderPcNote();
+    }).catch(function () {});
   }
   function leadFor(lead, day) {
     if (!lead) return "";
@@ -3550,6 +3613,8 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     b.addEventListener("contextmenu", function (e) { e.preventDefault(); });
   })();
   syncInit();
+  loadPlanning();
+  setInterval(loadPlanning, 10 * 60 * 1000);
   function holdToFire(el, fire) {
     var t = null;
     function end() { clearTimeout(t); el.classList.remove("holding"); }
@@ -3679,6 +3744,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   // live clock and next start at the top of the main page
   function renderTop() {
     if (prog() !== lastProg) { state.sel = 0; applyProgram(); renderServices(); compute(); }
+    renderPcNote();
     var now = nowMs(), cp = centralParts(now);
     var ch = monoHtml(cp.t) + "<small>" + cp.ap + "</small>", mc = $("mClock");
     if (mc._h !== ch) { mc.innerHTML = ch; mc._h = ch; }
@@ -3799,7 +3865,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     sheetRows(occ).rows.forEach(function (r) {
       var n = viewLabel(r.c); if (!n) return;
       if (n === "Message") msgT = r.t;
-      if (r.c.sec) { rows.push({ n: n, t: r.t, g: n === "SWITCH ends" ? "done" : secG(r.c.sec), s: n === "SWITCH ends" ? "" : r.c.sec }); return; }
+      if (r.c.sec) { rows.push({ n: n, t: r.t, g: n === "SWITCH ends" ? "done" : secG(r.c.sec), s: n === "SWITCH ends" ? "" : r.c.sec, ld: leadFor(r.c.lead, occ.sv.day) }); return; }
       var g = /video/i.test(n) ? "toss" : /^Countdown|^Walk-in|^Begins/.test(n) ? "pre" : n === "Stagetime" ? "stage" : n === "HANDS" ? "hands" : /^Message|^Keys|^Prayer/.test(n) ? "msg" : /^Toss/.test(n) ? "toss" : "worship";
       rows.push({ n: n, t: r.t, g: g, ld: leadFor(r.c.lead, occ.sv.day) });
     });
