@@ -1,35 +1,11 @@
 {
-  "ran": "2026-10-23T17:43:09Z",
+  "ran": "2026-10-23T17:45:15Z",
   "plan": "91142207",
   "changes": [
     {
-      "item": "Walk-in: White Horse - Chris Stapleton",
-      "before": 240,
-      "after": 243,
-      "status": "updated"
-    },
-    {
-      "item": "Alleluia",
-      "before": 258,
-      "after": 261,
-      "status": "updated"
-    },
-    {
-      "item": "Thank God I'm Free",
-      "before": 301,
-      "after": 296,
-      "status": "updated"
-    },
-    {
-      "item": "Way Maker",
-      "before": 403,
-      "after": 261,
-      "status": "updated"
-    },
-    {
-      "item": "Trust In God (SHORT)",
-      "before": 240,
-      "after": 241,
+      "item": "Welcome Video",
+      "before": 45,
+      "after": 48,
       "status": "updated"
     }
   ]

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-23T17:43:15Z",
+  "updated": "2026-10-23T17:45:15Z",
   "weekend": {
     "plan_id": "91142207",
     "title": "Supernatural WK 1",
@@ -129,7 +129,7 @@
         "title": "Welcome Video",
         "type": "item",
         "section": "WORSHIP",
-        "length": 45,
+        "length": 48,
         "position": "during",
         "description": "+ ProTools",
         "key": null,
