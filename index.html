@@ -1134,6 +1134,43 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   .vx-ptcard { grid-column: 1; grid-row: 4; }
   .vx-panel { grid-row: 2 / span 4; }
 }
+
+/* ===== desktop / multiviewer: big timeline that fills the screen and follows the service ===== */
+@media (min-width: 900px) {
+  .vx { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); height: 100vh; height: 100svh; min-height: 0; box-sizing: border-box; padding-top: 16px; padding-bottom: 16px;
+    grid-template-rows: auto auto auto auto 1fr; }
+  .vx-panel { grid-row: 2 / span 4; display: flex; flex-direction: column; min-height: 0; height: 100%; box-sizing: border-box; padding: 1.4vw 1vw 0.8vw; }
+  .vx-panel-h { font-size: clamp(0.9rem, 1.15vw, 1.4rem); padding: 0 1vw 0.8vw; }
+  .vx .v-line { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; }
+  .vx .vt-spacer { height: 70vh; }
+  .vx .v-line::-webkit-scrollbar { display: none; }
+  .vx .vt-row { font-size: clamp(1.15rem, 2.05vw, 2.6rem); padding: 0.42em 0.6em 0.42em 2.3em; border-radius: 0.45em; gap: 0.6em; }
+  .vx .vt-row .vt-t { font-size: 0.92em; }
+  .vx .vt-row .vt-t small { font-size: 0.72em; }
+  .vx .vt-lead { font-size: 0.66em; margin-top: 0.05em; }
+  .vx .vt-sec { margin: 0.9em 0 0.25em 2.6em; font-size: clamp(0.9rem, 1.35vw, 1.7rem); }
+  .vx .vt-sec:first-child { margin-top: 0.2em; }
+  .vx .vt-sec .vx-chip-sm { font-size: 0.8em; padding: 0.15em 0.75em; }
+  .vx .vt-row .lcs-dot { left: 0.62em; width: 0.62em; height: 0.62em; margin-top: -0.31em; border-width: 0.12em; }
+  .vx .vt-wrap .lcs-rail { left: calc(0.93em - 1px); width: 3px; font-size: clamp(1.15rem, 2.05vw, 2.6rem); }
+  .vx .vt-wrap .lcs-now { width: 0.7em; height: 0.7em; margin: -0.35em 0 0 -0.35em; font-size: clamp(1.15rem, 2.05vw, 2.6rem); }
+  .vx-now, .vx-next, .vx-ptcard { align-self: start; }
+}
+
+/* desktop / multiviewer: use the whole width, and scale the small labels with the screen */
+@media (min-width: 900px) {
+  .vx { max-width: none !important; padding-left: 2vw; padding-right: 2vw; column-gap: 1.4vw; }
+  .vx-svc, .vx-clock { height: auto; padding: 0.45em 1em; font-size: clamp(0.95rem, 1.35vw, 1.8rem); }
+  .vx-dot { width: 0.55em; height: 0.55em; }
+  .vx-k { font-size: clamp(0.85rem, 1.15vw, 1.6rem); }
+  .vx-now .vx-k > span:first-child { padding: 0.15em 0.8em; }
+  .vx-next-k { font-size: clamp(1rem, 1.55vw, 2.2rem); }
+  .vx-next-k .vx-chip, .vx-next.is-drop .vx-chip[data-g="drop"] { font-size: 1em; padding: 0.2em 0.8em; }
+  .vx-at { font-size: clamp(0.9rem, 1.25vw, 1.8rem); }
+  .vx-pt { padding: 0.1em 0.6em; }
+  .vx-ptc-k, .vx-ptc-s { font-size: clamp(0.85rem, 1.15vw, 1.6rem); }
+  .vx-bar { height: clamp(6px, 0.55vw, 12px); }
+}
 </style>
 </head>
 <body>
@@ -3978,7 +4015,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
         if (sec && sec !== lastSec) { lastSec = sec; h += '<li class="vt-sec" aria-hidden="true"><span class="vx-chip vx-chip-sm" data-g="' + secCol + '">' + esc(sec) + "</span></li>"; }
         h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + (r.ld ? " has-lead" : "") + '" data-g="' + r.g + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + (r.ld ? '<span class="vt-lead">' + esc(r.ld) + "</span>" : "") + '</span><span class="vt-t">' + vTime(r.t) + "</span></li>";
       });
-      host.innerHTML = h + "</ol></div>";
+      host.innerHTML = h + '</ol><div class="vt-spacer" aria-hidden="true"></div></div>';
     }
     var lis = host.querySelectorAll(".vt-row");
     var started = now >= rows[0].t, curI = !started ? -1 : (nextI < 0 ? rows.length - 1 : nextI - 1);
@@ -3998,6 +4035,18 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     rail.style.top = top + "px"; rail.style.height = Math.max(0, bot - top) + "px";
     fill.style.height = Math.max(0, y - top) + "px"; dotNow.style.top = Math.max(0, y - top) + "px";
     wrap.classList.toggle("is-live", started && nextI >= 0);
+    var box = host;
+    if (box.scrollHeight > box.clientHeight + 4) {
+      var anchor = lis[curI >= 0 ? curI : 0];
+      var key = curI + "|" + Math.round(box.clientHeight);
+      if (anchor && (host._scrollKey !== key || Date.now() - (host._scrollAt || 0) > 15000)) {
+        host._scrollKey = key; host._scrollAt = Date.now();
+        var target = box.scrollTop + (anchor.getBoundingClientRect().top - box.getBoundingClientRect().top) - box.clientHeight * 0.18;
+        var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        try { box.scrollTo({ top: Math.max(0, target), behavior: calm || !host._scrolledOnce ? "auto" : "smooth" }); } catch (e) { box.scrollTop = Math.max(0, target); }
+        host._scrolledOnce = true;
+      }
+    }
   }
   function setHtml(el, h) { if (el._h !== h) { el.innerHTML = h; el._h = h; } }
   var vPtc = { on: false, raf: false, base: null };
