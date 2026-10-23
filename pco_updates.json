@@ -1,8 +1,8 @@
 {
-  "note": "Welcome to Life.Church video length from the ProTools session (!NKC.10.24-25): NFF Toss clip 27:04-27:53",
+  "note": "Begins Now length from the ProTools markers (!NKC.10.24-25): 8:55.29 to Alleluia at 9:22.49",
   "service_type": "890623",
   "plan_id": "91142207",
   "items": [
-    { "match": "Welcome Video", "length": 48 }
+    { "match": "Begins Now", "length": 27 }
   ]
 }
