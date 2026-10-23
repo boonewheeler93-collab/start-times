@@ -1051,6 +1051,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .mem-btn::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: var(--accent-2); }
 .mem-btn.holding::after { width: 100%; transition: width 1s linear; }
 .b-pt-btns .hold-btn.is-off { opacity: 0.45; }
+.b-mem[hidden] { display: none; }
 
 /* who's leading each song */
 .lcs-lead { font-size: 0.86rem; font-weight: 700; color: var(--accent-2); margin-top: 1px; }
@@ -1171,6 +1172,21 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   .vx-ptc-k, .vx-ptc-s { font-size: clamp(0.85rem, 1.15vw, 1.6rem); }
   .vx-bar { height: clamp(6px, 0.55vw, 12px); }
 }
+
+/* red Stop */
+.b-go.b-stop { color: #fff; background: linear-gradient(135deg, #ff5a52, #d81e14); box-shadow: 0 14px 34px -14px rgba(255,59,48,0.95); }
+.b-go.b-stop[hidden] { display: none; }
+.b-go.b-stop.is-off { opacity: 0.5; }
+.b-go.b-stop::after { background: #fff; opacity: 0.55; }
+.b-go.b-stop.holding::after { transition: width 0.5s linear; }
+/* hold a cue sheet moment to cue ProTools */
+body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+#bSheet li.can-cue { position: relative; overflow: hidden; }
+#bSheet li.can-cue::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: var(--accent-2); }
+#bSheet li.can-cue.holding::after { width: 100%; transition: width 1s linear; }
+#bSheet li.can-cue.cue-sent { box-shadow: inset 0 0 0 2px var(--ok); }
+#bSheet li.can-cue.cue-off { box-shadow: inset 0 0 0 2px var(--warn); }
+.b-mem-h { margin: 0; }
 </style>
 </head>
 <body>
@@ -1430,6 +1446,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     <div class="b-next" id="bNext"></div>
     <div class="b-note" id="bNote" role="status"></div>
     <div class="b-actions">
+      <button type="button" class="b-go b-stop hold-btn" id="bStop" hidden>Stop ProTools</button>
       <button type="button" class="b-go b-play hold-btn" id="bHoldPlay" hidden>Hold to play ProTools</button>
       <button type="button" class="b-go" id="bGo">Started</button>
       <button type="button" class="ghost" id="bCue" hidden>Cue up</button>
@@ -1449,10 +1466,10 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
         <button type="button" class="ghost hold-btn b-pt-play" id="bPtPlay">Hold to play from here</button>
         <button type="button" class="ghost hold-btn b-pt-stop" id="bPtStop">Hold to stop</button>
       </div>
-      <div class="b-mem-h">Memory Locations</div>
-      <div class="b-mem" id="bMem"></div>
+      <p class="b-mem-h">Hold a moment on the cue sheet for 1 second to cue ProTools there.</p>
+      <div class="b-mem" id="bMem" hidden></div>
     </section>
-    <p class="b-keys">Space: Started. Up and down arrows: adjust the clock. F: full screen. Esc: close.</p>
+    <p class="b-keys">Space: Started. Hold S: stop ProTools. Up and down arrows: adjust the clock. F: full screen. Esc: close.</p>
     </div>
     <div class="b-right">
       <div class="card-head"><h2>Cue sheet</h2><div class="card-meta"><span class="live-badge" id="bLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="bSheetSvc"></span></div></div>
@@ -2627,7 +2644,8 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
           ? '<div class="lcs-time lcs-cd"></div><div class="lcs-at">' + monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small></div>"
           : '<div class="lcs-time">' + right + '</div><div class="lcs-in"></div>';
         var ld = leadFor(c.lead, occ.sv.day);
-        h += '<li class="lcs-row' + kind + '"><span class="lcs-dot" aria-hidden="true"></span><div class="lcs-main"><div class="lcs-label">' + esc(/^hands$/i.test(c.label) ? "HANDS" : c.label) +
+        var cs = host.id === "bSheet" ? cueSec(c, r) : null;
+        h += '<li class="lcs-row' + kind + (cs !== null ? " can-cue" : "") + '"' + (cs !== null ? ' data-pt="' + cs + '" data-name="' + esc(c.label) + '"' : "") + '><span class="lcs-dot" aria-hidden="true"></span><div class="lcs-main"><div class="lcs-label">' + esc(/^hands$/i.test(c.label) ? "HANDS" : c.label) +
           "</div>" + (ld ? '<div class="lcs-lead"><span class="lcs-lead-k">Led by</span> ' + esc(ld) + "</div>" : "") + '<div class="lcs-meta">' + esc(meta) + '</div></div><div class="lcs-right">' + rightBox + "</div></li>";
       });
       host.innerHTML = h + "</ol></div>";
@@ -2790,6 +2808,17 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     ]
   };
   function curMarkers() { return MARKERS[lastCalc && lastCalc.program === "switch" ? "switch" : "weekend"] || []; }
+  function cueSec(c, r) {
+    var k = c.cls || "";
+    if (/svc|part|drop/.test(k)) return null;
+    if (k.indexOf("hit") > -1) return 0;
+    var mk = curMarkers(), n = normTitle(c.label.replace(/^First worship song \((.+)\)$/, "$1").replace(/^Walk-in song:?.*$/i, "cover").replace(/^\u201c?Begins Now\u201d?$/i, "begins now"));
+    if (k.indexOf("final") > -1) n = "end";
+    if (/video/i.test(c.label)) n = "welcome video";
+    var hit = null; mk.forEach(function (m) { if (hit === null && normTitle(m.n) === n) hit = m.t; });
+    if (hit !== null) return hit;
+    return r.pt != null && r.pt >= 0 ? r.pt : null;
+  }
   function locateTo(sec, name) {
     var tc = secsToTc(sec);
     return ptSend(mmcLocate(tc), "Go to " + fmtTc(tc) + (name ? " (" + name + ")" : ""));
@@ -2802,9 +2831,10 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   function renderTransport() {
     var box = $("bPt"); if (!box) return;
     var on = !!link.midi && !!link.out;
+    document.body.classList.toggle("pt-linked", on);
     if (box.hidden !== !on) box.hidden = !on;
     var mo = $("ptLinkTog"); if (mo) { mo.hidden = !on; var mt = linkOff() ? "Turn link back on" : "Turn link off"; if (mo.textContent !== mt) mo.textContent = mt; }
-    if (!on) return;
+    if (!on) { $("bStop").hidden = true; return; }
     var off = linkOff(), moving = ptMoving(), pos = link.tc ? tcElapsed() : null;
     var tc = link.tc ? fmtTc(link.tc).slice(0, 8) : "--:--:--";
     if ($("bPtTc").textContent !== tc) $("bPtTc").textContent = tc;
@@ -2819,7 +2849,11 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     if ($("bPtNote").textContent !== note) $("bPtNote").textContent = note;
     $("bPtNote").hidden = !note;
     ["bPtPlay", "bPtStop"].forEach(function (id) { $(id).classList.toggle("is-off", off); $(id).setAttribute("aria-disabled", off ? "true" : "false"); });
-    $("bPtPlay").hidden = moving; $("bPtStop").hidden = !moving && !!link.inp;
+    $("bPtPlay").hidden = moving; $("bPtStop").hidden = true;
+    var st = $("bStop"), showStop = moving || !link.inp;
+    if (st.hidden !== !showStop) st.hidden = !showStop;
+    st.classList.toggle("is-off", off);
+    if (!(st._lock > Date.now())) { var stt = off ? "Stop ProTools (link is off)" : "Stop ProTools"; if (st.textContent !== stt) st.textContent = stt; }
     // memory locations
     var mk = curMarkers(), sig = (lastCalc ? lastCalc.program : "") + mk.map(function (m) { return m.n + m.t; }).join("|");
     var mem = $("bMem");
@@ -3219,6 +3253,13 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     else if (e.key === "ArrowUp") { e.preventDefault(); setOff((+state.clockOff || 0) + 1000); }
     else if (e.key === "ArrowDown") { e.preventDefault(); setOff((+state.clockOff || 0) - 1000); }
     else if (e.key === "f" || e.key === "F") { e.preventDefault(); toggleFull(); }
+    else if ((e.key === "s" || e.key === "S") && !e.repeat && link.out) {
+      e.preventDefault(); $("bStop").classList.add("holding");
+      booth.sKey = setTimeout(function () { $("bStop").classList.remove("holding"); booth.sKey = null; fireStop(); }, 500);
+    }
+  });
+  document.addEventListener("keyup", function (e) {
+    if ((e.key === "s" || e.key === "S") && booth.sKey) { clearTimeout(booth.sKey); booth.sKey = null; $("bStop").classList.remove("holding"); }
   });
   updOffNote();
   $("bMinus").addEventListener("click", function () { setOff((+state.clockOff || 0) - 1000); });
@@ -3743,13 +3784,13 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   syncInit();
   loadPlanning();
   setInterval(loadPlanning, 10 * 60 * 1000);
-  function holdToFire(el, fire) {
-    var t = null;
+  function holdToFire(el, fire, ms) {
+    var t = null; ms = ms || 1000;
     function end() { clearTimeout(t); el.classList.remove("holding"); }
     el.addEventListener("pointerdown", function (e) {
       if (e.button !== undefined && e.button !== 0) return;
       e.preventDefault(); el.classList.add("holding");
-      t = setTimeout(function () { el.classList.remove("holding"); fire(); }, 1000);
+      t = setTimeout(function () { el.classList.remove("holding"); fire(); }, ms);
     });
     ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { el.addEventListener(ev, end); });
     el.addEventListener("contextmenu", function (e) { e.preventDefault(); });
@@ -3766,6 +3807,13 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     el._lock = Date.now() + 2500;
   }
   holdToFire($("bHoldPlay"), function () { firePlay($("bHoldPlay")); });
+  // the red Stop: half-second hold, keeps ProTools' place
+  function fireStop() {
+    var el = $("bStop");
+    if (linkOff()) { el.textContent = "Link is off"; el._lock = Date.now() + 2000; return; }
+    if (ptSend(MMC_STOP, "Stop")) { el.textContent = "Stopped"; el._lock = Date.now() + 1500; }
+  }
+  holdToFire($("bStop"), fireStop, 500);
   function flashBtn(el, txt) { var old = el.textContent; el.textContent = txt; setTimeout(function () { el.textContent = old; }, 2000); }
   holdToFire($("bPtPlay"), function () {
     if (linkOff()) return flashBtn($("bPtPlay"), "Link is off");
@@ -3794,6 +3842,22 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       var b = e.target.closest ? e.target.closest(".mem-btn") : null; if (!b) return;
       if (!ptMoving() || e.detail === 0) go(b);
     });
+  })();
+  (function () {
+    var sheet = $("bSheet"), t = null, row = null;
+    function end() { clearTimeout(t); if (row) row.classList.remove("holding"); row = null; }
+    sheet.addEventListener("pointerdown", function (e) {
+      var li = e.target.closest ? e.target.closest("li.can-cue") : null;
+      if (!li || !link.out || (e.button !== undefined && e.button !== 0)) return;
+      row = li; li.classList.add("holding");
+      t = setTimeout(function () {
+        li.classList.remove("holding"); row = null;
+        if (linkOff()) { li.classList.add("cue-off"); setTimeout(function () { li.classList.remove("cue-off"); }, 900); return; }
+        if (locateTo(+li.getAttribute("data-pt"), li.getAttribute("data-name"))) { li.classList.add("cue-sent"); setTimeout(function () { li.classList.remove("cue-sent"); }, 900); }
+      }, 1000);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { sheet.addEventListener(ev, end); });
+    sheet.addEventListener("contextmenu", function (e) { if (e.target.closest && e.target.closest("li.can-cue") && link.out) e.preventDefault(); });
   })();
   $("bLinkTog").addEventListener("click", function () { setLinkOff(!linkOff()); });
   $("ptLinkTog").addEventListener("click", function () { setLinkOff(!linkOff()); });
