@@ -1,0 +1,413 @@
+{
+  "updated": "2026-10-23T17:37:57Z",
+  "weekend": {
+    "plan_id": "91142207",
+    "title": "Supernatural WK 1",
+    "series": "Fall Fest 2026",
+    "dates": "October 24 & 25, 2026",
+    "sort_date": "2026-10-24T17:00:00Z",
+    "times": [
+      "2026-10-24T22:00:00Z",
+      "2026-10-25T13:30:00Z",
+      "2026-10-25T15:00:00Z",
+      "2026-10-25T16:30:00Z",
+      "2026-10-25T18:00:00Z"
+    ],
+    "items": [
+      {
+        "title": "7206 N. Corrington Ave. Kansas City, MO 64119",
+        "type": "item",
+        "section": "Life.Church Northland Address",
+        "length": 0,
+        "position": "during",
+        "description": null,
+        "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "Leadership Script / Notes",
+        "type": "item",
+        "section": "Life.Church Northland Address",
+        "length": 0,
+        "position": "during",
+        "description": null,
+        "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "COUNTDOWN",
+        "type": "item",
+        "section": "P R E - E X P E R I E N C E",
+        "length": 309,
+        "position": "pre",
+        "description": "** START TIME // ",
+        "key": null,
+        "notes": [
+          {
+            "category": "LeadLight",
+            "content": "---"
+          },
+          {
+            "category": "Who",
+            "content": "---"
+          }
+        ],
+        "lead": "---"
+      },
+      {
+        "title": "Walk-in: White Horse - Chris Stapleton",
+        "type": "item",
+        "section": "WALK-IN SONG",
+        "length": 240,
+        "position": "during",
+        "description": "+ Boone \n* BGVS",
+        "key": null,
+        "notes": [],
+        "lead": "Boone"
+      },
+      {
+        "title": "BEGINS NOW",
+        "type": "item",
+        "section": "WORSHIP",
+        "length": 40,
+        "position": "during",
+        "description": null,
+        "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "Alleluia",
+        "type": "song",
+        "section": "WORSHIP",
+        "length": 258,
+        "position": "during",
+        "description": "+ Boone\n* Extended Intro (Vamp on the 1)",
+        "key": "A",
+        "notes": [],
+        "lead": "Boone"
+      },
+      {
+        "title": "Thank God I'm Free",
+        "type": "song",
+        "section": "WORSHIP",
+        "length": 301,
+        "position": "during",
+        "description": "+ Ana",
+        "key": "E",
+        "notes": [],
+        "lead": "Ana"
+      },
+      {
+        "title": "Way Maker",
+        "type": "song",
+        "section": "WORSHIP",
+        "length": 403,
+        "position": "during",
+        "description": "+ Jill (SAT) / Tara (SUN)\n* Big Ending\n",
+        "key": "E",
+        "notes": [],
+        "lead": {
+          "Saturday": "Jill",
+          "Sunday": "Tara"
+        }
+      },
+      {
+        "title": "Trust In God (SHORT)",
+        "type": "song",
+        "section": "WORSHIP",
+        "length": 240,
+        "position": "during",
+        "description": "+ Boone\n* Start on double chorus \n* Double chorus into bridge BUILD\n* End Big",
+        "key": "C",
+        "notes": [],
+        "lead": "Boone"
+      },
+      {
+        "title": "Welcome Video",
+        "type": "item",
+        "section": "WORSHIP",
+        "length": 45,
+        "position": "during",
+        "description": "+ ProTools",
+        "key": null,
+        "notes": [],
+        "lead": "ProTools"
+      },
+      {
+        "title": "Offering + Stage Time",
+        "type": "item",
+        "section": "S T A G E  T I M E - 300",
+        "length": 330,
+        "position": "during",
+        "description": "** Promo Videos following Offering Prayer\r\n** Bands remain under Campus Pastor up until Offering Videos begin",
+        "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "Message • ",
+        "type": "item",
+        "section": "M E S S A G E",
+        "length": 2160,
+        "position": "during",
+        "description": "* Pastor Craig",
+        "key": null,
+        "notes": [
+          {
+            "category": "LeadLight",
+            "content": "---"
+          },
+          {
+            "category": "Who",
+            "content": "Craig"
+          }
+        ],
+        "lead": "Craig"
+      },
+      {
+        "title": "Whoever Finds God Finds Life",
+        "type": "item",
+        "section": "C L O S E",
+        "length": 30,
+        "position": "during",
+        "description": "CP's",
+        "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "Lobby Playlist",
+        "type": "item",
+        "section": "C L O S E",
+        "length": 30,
+        "position": "during",
+        "description": "** Spotify ",
+        "key": null,
+        "notes": [],
+        "lead": null
+      }
+    ],
+    "service_type": {
+      "id": "890623",
+      "name": "Northland | Weekend"
+    }
+  },
+  "switch": {
+    "plan_id": "92310715",
+    "title": null,
+    "series": null,
+    "dates": "October 28, 2026",
+    "sort_date": "2026-10-28T19:00:00Z",
+    "times": [
+      "2026-10-29T00:00:00Z"
+    ],
+    "items": [
+      {
+        "title": "7206 N. Corrington Ave. Kansas City, MO 64119",
+        "type": "item",
+        "section": "Life.Church Northland Address",
+        "length": 0,
+        "position": "during",
+        "description": null,
+        "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "10-Minute Countdown",
+        "type": "item",
+        "section": "Pre-Experience",
+        "length": 600,
+        "position": "pre",
+        "description": "Countdown during the last 10 minutes of Free Time.\r\n\r\nPurpose:\r\n+ Build anticipation.\r\n+ Help Team Leads, Band, Tech, Youth Pastor, etc., be on the same page and start the first-impression moment of the night off with excellence.",
+        "key": null,
+        "notes": [],
+        "lead": "Build anticipation."
+      },
+      {
+        "title": "Welcome",
+        "type": "item",
+        "section": "Opener/Introduction",
+        "length": 120,
+        "position": "during",
+        "description": "Welcome new students, give a rundown of the night and introduce the tension/theme.",
+        "key": null,
+        "notes": [
+          {
+            "category": "Audio",
+            "content": "Background music "
+          },
+          {
+            "category": "Audio/Visual",
+            "content": "Title slide"
+          },
+          {
+            "category": "Lights",
+            "content": "Stage speaker lighting "
+          }
+        ],
+        "lead": null
+      },
+      {
+        "title": "BEGINS NOW",
+        "type": "item",
+        "section": "Opener/Introduction",
+        "length": 60,
+        "position": "during",
+        "description": "ProTools",
+        "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "Alleluia",
+        "type": "song",
+        "section": "Worship",
+        "length": 258,
+        "position": "during",
+        "description": "+ Ana",
+        "key": "B",
+        "notes": [],
+        "lead": "Ana"
+      },
+      {
+        "title": "I Know A Name",
+        "type": "song",
+        "section": "Worship",
+        "length": 418,
+        "position": "during",
+        "description": "+ Boone",
+        "key": "C",
+        "notes": [],
+        "lead": "Boone"
+      },
+      {
+        "title": "Jesus Be The Name (SHORTENED ENDING)",
+        "type": "song",
+        "section": "Worship",
+        "length": 330,
+        "position": "during",
+        "description": "+ Ana\n* End BIG",
+        "key": "C",
+        "notes": [],
+        "lead": "Ana"
+      },
+      {
+        "title": "Transition out of Worship",
+        "type": "item",
+        "section": "Message (15-20 Minutes)",
+        "length": 90,
+        "position": "during",
+        "description": "Pastoral moment + send students to their seats.\r\n\r\n30-60 seconds countdown video while students are finding their seats.",
+        "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "Offering + Videos",
+        "type": "item",
+        "section": "Message (15-20 Minutes)",
+        "length": 120,
+        "position": "during",
+        "description": "Purpose:\r\n+ Answer the question, “Why do we give?”\r\n+ Build the culture of irrational generosity\r\n+ Teach the tithe and offering",
+        "key": null,
+        "notes": [
+          {
+            "category": "Video",
+            "content": "ProPresenter "
+          }
+        ],
+        "lead": "Answer the question, “Why do we give?”"
+      },
+      {
+        "title": "Switch 180",
+        "type": "item",
+        "section": "Message (15-20 Minutes)",
+        "length": 180,
+        "position": "during",
+        "description": "Purpose:\r\n+ Cast vision for why Switch exists\r\n+ Acknowledge challenge from last week\r\n+ Cast vision for challenge this week\r\n+ Set up the message",
+        "key": null,
+        "notes": [],
+        "lead": "Cast vision for why Switch exists"
+      },
+      {
+        "title": "Small Group Discussion",
+        "type": "item",
+        "section": "Message (15-20 Minutes)",
+        "length": 300,
+        "position": "during",
+        "description": "Key Scripture",
+        "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "MESSAGE VIDEO",
+        "type": "item",
+        "section": "Message (15-20 Minutes)",
+        "length": 1200,
+        "position": "during",
+        "description": "The video will lead through the challenge and the call. Be on stage ready to receive hands. ",
+        "key": null,
+        "notes": [
+          {
+            "category": "Video",
+            "content": "ProPresenter"
+          }
+        ],
+        "lead": null
+      },
+      {
+        "title": "Momentum/Next Steps",
+        "type": "item",
+        "section": "Wrap-Up",
+        "length": 180,
+        "position": "during",
+        "description": "Purpose:\r\n+ Students made decisions that will change their lives; we lead them in their first step on that new journey.\r\n+ General next steps for believers as we continue to lead Switch students to become fully devoted followers of Christ.",
+        "key": null,
+        "notes": [],
+        "lead": "Students made decisions that will change their lives; we lead them in their first step on that new journey."
+      },
+      {
+        "title": "Set Up Switch Groups",
+        "type": "item",
+        "section": "Wrap-Up",
+        "length": 90,
+        "position": "during",
+        "description": "Give students direction on what’s about to happen and why it matters. Remember to give clear instructions to new students! \n\nWhy do Switch groups matter? Because you have to make your faith your own and you can't do faith alone. \n",
+        "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "Switch Group Time",
+        "type": "item",
+        "section": "Post-Experience",
+        "length": 1800,
+        "position": "during",
+        "description": null,
+        "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "Dismiss From Switch",
+        "type": "item",
+        "section": "Post-Experience",
+        "length": 30,
+        "position": "during",
+        "description": "Let students and Switch leaders know that it is 8:30pm. Send them out so we can honor their parents and our LifeKids team!",
+        "key": null,
+        "notes": [],
+        "lead": null
+      }
+    ],
+    "service_type": {
+      "id": "1069572",
+      "name": "Northland | Switch"
+    }
+  }
+}
