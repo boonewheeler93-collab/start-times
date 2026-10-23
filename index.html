@@ -1123,6 +1123,17 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .vx-ptc-n .mono-d { width: 0.6em; }
 .vx-ptc.is-yellow { border-color: rgba(255,211,25,0.6); } .vx-ptc.is-yellow .vx-ptc-k, .vx-ptc.is-yellow .vx-ptc-n { color: #ffd319; text-shadow: 0 0 18px rgba(255,211,25,0.5); }
 .vx-ptc.is-red { border-color: rgba(255,59,48,0.8); } .vx-ptc.is-red .vx-ptc-k, .vx-ptc.is-red .vx-ptc-n { color: #ff3b30; text-shadow: 0 0 18px rgba(255,59,48,0.6); }
+
+/* ProTools position card */
+.vx-ptcard { container-type: inline-size; padding: 14px; display: flex; justify-content: center; }
+.vx-ptcard[hidden] { display: none !important; }
+.vx-ptcard .vx-ptc { margin: 0; width: 100%; padding: 12px 18px 14px; }
+.vx-ptc-n { font-size: min(5.2rem, 17cqi); }
+.vx-ptc-s { font-weight: 700; font-size: 0.92rem; color: var(--ink-2); margin-top: 4px; }
+@media (min-width: 900px) {
+  .vx-ptcard { grid-column: 1; grid-row: 4; }
+  .vx-panel { grid-row: 2 / span 4; }
+}
 </style>
 </head>
 <body>
@@ -1330,7 +1341,9 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     <div class="vx-next-k" id="vNextK"></div>
     <div class="vx-cd" id="vNextCd"></div>
     <div class="vx-at" id="vNextSub"></div>
-    <div class="vx-ptc" id="vPtc" hidden><span class="vx-ptc-k">ProTools</span><span class="vx-ptc-n" id="vPtcN"></span></div>
+  </section>
+  <section class="vx-card vx-ptcard" id="vPtCard" hidden aria-label="ProTools position">
+    <div class="vx-ptc" id="vPtc"><span class="vx-ptc-k">ProTools</span><span class="vx-ptc-n" id="vPtcN"></span><span class="vx-ptc-s" id="vPtcS"></span></div>
   </section>
   <section class="vx-card vx-panel" id="vPanel">
     <div class="vx-panel-h"><span>Timeline</span><span class="vx-upd"><span class="vx-dot" aria-hidden="true"></span>Updates live</span></div>
@@ -3995,7 +4008,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     var mm = Math.floor(pt / 60), ss = Math.floor(pt % 60), ms = Math.floor((pt % 1) * 1000);
     var txt = (mm < 10 ? "0" : "") + mm + ":" + (ss < 10 ? "0" : "") + ss + ":" + ("00" + ms).slice(-3);
     var el = $("vPtcN"); if (el._t !== txt) { el.innerHTML = monoHtml(txt); el._t = txt; }
-    var box = $("vPtc"), toDrop = b.pt - pt;
+    var box = $("vPtc"), toDrop = (b.drop != null ? b.drop : 1e9) - pt;
     box.classList.toggle("is-yellow", toDrop > 0 && toDrop <= 30);
     box.classList.toggle("is-red", toDrop <= 0);
     requestAnimationFrame(ptcFrame);
@@ -4049,10 +4062,21 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 
     var dropNext = nextI >= 0 && rows[nextI].g === "drop" ? rows[nextI] : null;
     var dropCur = started && nextI > 0 && rows[nextI - 1].g === "drop" ? rows[nextI - 1] : null;
-    var dr = dropNext || dropCur;
-    vPtc.on = !!(dr && dr.pt != null);
-    if (vPtc.on) { vPtc.base = dr; if (!vPtc.raf) { vPtc.raf = true; requestAnimationFrame(ptcFrame); } }
-    $("vPtc").hidden = !vPtc.on;
+    var dr = dropNext || dropCur, dropRow2 = null;
+    rows.forEach(function (r) { if (r.g === "drop") dropRow2 = r; });
+    vPtc.base = null;
+    if (lastCalc.program === "weekend") {
+      var sAt = sheetRows(focus).startAt, endPt = Math.max(lastCalc.len, lastCalc.dropPT || 0) + 2;
+      (state.ptCues || []).forEach(function (pc) { var a = parseDur(String(pc.at || "")); if (a !== null) endPt = Math.max(endPt, a + 2); });
+      var sa = parseDur(String(state.stageAt || "")); if (sa !== null) endPt = Math.max(endPt, sa);
+      var ptNow = (now - sAt) / 1000;
+      if (ptNow >= 0 && ptNow <= endPt) vPtc.base = { pt: 0, t: sAt, drop: lastCalc.dropPT };
+    } else if (dr && dr.pt != null) vPtc.base = { pt: dr.pt, t: dr.t, drop: dr.pt };
+    vPtc.on = !!vPtc.base;
+    if (vPtc.on && !vPtc.raf) { vPtc.raf = true; requestAnimationFrame(ptcFrame); }
+    $("vPtCard").hidden = !vPtc.on;
+    var dropTxt = vPtc.on && vPtc.base.drop != null ? "Drop screen at " + fmtDur(Math.round(vPtc.base.drop)) : "";
+    if ($("vPtcS").textContent !== dropTxt) $("vPtcS").textContent = dropTxt;
     renderViewLine($("vLine"), rows, now, nextI);
     // "Drop screen now" for 8 seconds from the drop
     var dropRow = null; rows.forEach(function (r) { if (r.g === "drop") dropRow = r; });
