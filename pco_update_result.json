@@ -1,11 +1,11 @@
 {
-  "ran": "2026-10-23T17:45:15Z",
+  "ran": "2026-10-23T17:54:56Z",
   "plan": "91142207",
   "changes": [
     {
-      "item": "Welcome Video",
-      "before": 45,
-      "after": 48,
+      "item": "BEGINS NOW",
+      "before": 40,
+      "after": 27,
       "status": "updated"
     }
   ]
