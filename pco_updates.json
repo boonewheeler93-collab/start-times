@@ -1,0 +1,12 @@
+{
+  "note": "Exact lengths from the ProTools session markers (!NKC.10.24-25), whole seconds",
+  "service_type": "890623",
+  "plan_id": "91142207",
+  "items": [
+    { "match": "Walk-in: White Horse", "length": 243 },
+    { "match": "Alleluia", "length": 261 },
+    { "match": "Thank God I'm Free", "length": 296 },
+    { "match": "Way Maker", "length": 261 },
+    { "match": "Trust In God", "length": 241 }
+  ]
+}
