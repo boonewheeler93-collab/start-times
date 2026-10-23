@@ -1181,6 +1181,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
           <div class="field"><label for="stage-m">Stagetime</label><div id="stage"></div></div>
           <div class="field"><label for="msg-m">Go to Message</label><div id="msg"></div></div>
           <div class="field"><label for="lower-m">Screen takes to lower</label><div id="lower"></div></div>
+          <div class="field"><label for="dropBy-m">Screen down by, on ProTools (blank = final downbeat)</label><div id="dropBy"></div></div>
         
         </div>
       </div>
@@ -1348,7 +1349,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       { t: "song", label: "", len: "3:56" }
     ],
     msgParts: [{ name: "Message Start", at: "0:00" }, { name: "Keys", at: "" }, { name: "Prayer Start", at: "" }, { name: "Hands", at: "" }],
-    cutoff: "18:00", sat: "21:00", lower: "0:38", downBy: "0:00",
+    cutoff: "18:00", sat: "21:00", lower: "0:38", downBy: "0:00", dropBy: "", ptCues: [],
     sel: 0,
     swStart: "-10:00",
     swServices: [{ day: "Wednesday", time: "19:00" }],
@@ -1419,6 +1420,11 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       { name: "Prayer Start", at: "" },
       { name: "Hands", at: "" }
     ] };
+  var WEEK_DROP = { id: "2026-10-24-video", dropBy: "27:04", ptCues: [{ name: "Welcome to Life.Church video", at: "27:04" }] };
+  if (state.weekDrop !== WEEK_DROP.id) {
+    state.dropBy = WEEK_DROP.dropBy; state.ptCues = JSON.parse(JSON.stringify(WEEK_DROP.ptCues)); state.weekDrop = WEEK_DROP.id;
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
+  }
   if (WEEK.items && state.weekItems !== WEEK.id) {
     state.mode = WEEK.mode; state.items = JSON.parse(JSON.stringify(WEEK.items));
     if (WEEK.countdown) state.countdown = WEEK.countdown;
@@ -1525,11 +1531,11 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   }
 
   // ---------- main inputs ----------
-  var durKeys = ["len", "target", "walkin", "set", "countdown", "b2f", "walkBackup", "cutoff", "stage", "msg", "lower"];
+  var durKeys = ["len", "target", "walkin", "set", "countdown", "b2f", "walkBackup", "cutoff", "stage", "msg", "lower", "dropBy"];
   var signedOK = { downBy: 1 };
-  var optional = { walkin: 1, set: 1 };
-  var NAMES = { len: "ProTools set duration", target: "Final downbeat target", walkin: "Walk-in song", set: "First to final downbeat", countdown: "Countdown", b2f: "Begins Now to first downbeat", walkBackup: "Walk-in backup", cutoff: "Latest final downbeat", sat: "Take satellite", lower: "Screen lower time", stage: "Stagetime", msg: "Message starts" };
-  var PH = { len: ["28", "14"], target: ["17", "40"], walkin: ["4", "00"], set: ["18", "57"], countdown: ["5", "00"], b2f: ["0", "27"], walkBackup: ["4", "00"], cutoff: ["18", "00"], sat: ["21", "00"], lower: ["0", "38"], stage: ["5", "00"], msg: ["23", "00"] };
+  var optional = { walkin: 1, set: 1, dropBy: 1 };
+  var NAMES = { dropBy: "Screen down by, on ProTools", len: "ProTools set duration", target: "Final downbeat target", walkin: "Walk-in song", set: "First to final downbeat", countdown: "Countdown", b2f: "Begins Now to first downbeat", walkBackup: "Walk-in backup", cutoff: "Latest final downbeat", sat: "Take satellite", lower: "Screen lower time", stage: "Stagetime", msg: "Message starts" };
+  var PH = { dropBy: ["", ""], len: ["28", "14"], target: ["17", "40"], walkin: ["4", "00"], set: ["18", "57"], countdown: ["5", "00"], b2f: ["0", "27"], walkBackup: ["4", "00"], cutoff: ["18", "00"], sat: ["21", "00"], lower: ["0", "38"], stage: ["5", "00"], msg: ["23", "00"] };
 
   // minutes : seconds input with a fixed colon between the two boxes
   function makeTime(o) {
@@ -2184,7 +2190,12 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     }
     add("Final downbeat", finalRel, "final");
     // the screen must be fully down at the final downbeat, so press the button `lower` seconds before it
-    add("Drop screen", finalRel - v.lower, "extra drop");
+    var downAt = v.dropBy !== undefined ? v.dropBy : v.len;
+    add("Drop screen", finalRel - v.len + downAt - v.lower, "extra drop");
+    (Array.isArray(state.ptCues) ? state.ptCues : []).forEach(function (pc) {
+      var at = parseDur(String(pc.at || "")); if (at === null) return;
+      add(pc.name || "ProTools cue", finalRel - v.len + at, "extra video");
+    });
     // Stagetime runs its full length and lands exactly on the message (18:00 + 5:00 = 23:00 by default)
     add("Stagetime", v.msg - v.stage, "svc", "Lasts " + fmtDur(v.stage));
     add("Go to Message", v.msg, "svc msg");
@@ -2278,8 +2289,8 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     });
     tb += "</table></div>";
     $("tiles").innerHTML = svcs.length ? tb : '<p class="note" style="margin-top:0">Add a service time under Service times to see results.</p>';
-    var dropPT = v.len - v.lower;
-    lastCalc = { program: "weekend", mStartRel: v.msg + (mStart || 0), handsRel: handsRel, parts: msgList, tail: tail, startRel: startRel, finalRel: finalRel, len: v.len, lower: v.lower, sat: v.sat, stage: v.stage, msg: v.msg, cues: cues, svcs: svcs };
+    var dropPT = downAt - v.lower;
+    lastCalc = { program: "weekend", dropPT: dropPT, mStartRel: v.msg + (mStart || 0), handsRel: handsRel, parts: msgList, tail: tail, startRel: startRel, finalRel: finalRel, len: v.len, lower: v.lower, sat: v.sat, stage: v.stage, msg: v.msg, cues: cues, svcs: svcs };
     $("dropCall").innerHTML = '<span class="dl">Drop screen</span><b>' + (dropPT >= 0 ? fmtDur(dropPT) : "\u2014") + '</b><span class="dn">on ProTools</span>';
 
     // the cue sheet itself is drawn live by renderTop()
@@ -2555,7 +2566,8 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   var MARKERS = {
     weekend: [
       { n: "Start", t: 0 }, { n: "Cover", t: 292.0 }, { n: "Begins Now", t: 535.288 }, { n: "Alleluia", t: 562.488 },
-      { n: "Thank God I\u2019m Free", t: 823.608 }, { n: "Way Maker", t: 1119.858 }, { n: "Trust In God", t: 1381.034 }, { n: "End", t: 1621.845 }
+      { n: "Thank God I\u2019m Free", t: 823.608 }, { n: "Way Maker", t: 1119.858 }, { n: "Trust In God", t: 1381.034 }, { n: "End", t: 1621.845 },
+      { n: "Welcome video", t: 1624 }
     ],
     "switch": [
       { n: "Cover", t: 0 }, { n: "Begins Now", t: 227.273 }, { n: "Thank God I\u2019m Free", t: 253.273 },
@@ -2639,7 +2651,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     var planned = cur.t + lastCalc.startRel * 1000;
     var live = state.live && state.live.key === booth.key ? state.live.at : null;
     var startAt = live !== null ? live : planned;
-    var el = (now - startAt) / 1000, L = lastCalc.len, dropEl = L - lastCalc.lower;
+    var el = (now - startAt) / 1000, L = lastCalc.len, dropEl = lastCalc.dropPT != null ? lastCalc.dropPT : L - lastCalc.lower;
     var linked = live !== null ? linkElapsed() : null;
     if (linked !== null) el = linked;
     var ast = autoStatus(booth.key);
@@ -3324,7 +3336,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   var FB_VERSION = "10.12.2";
   // every device unlocks with one shared password for this sign-in
   var SYNC_LOGIN = window.START_TIMES_LOGIN || "booth@northland-start-times.app";
-  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems", "swLive"];
+  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems", "swLive", "dropBy", "ptCues"];
   var sync = { ready: false, applying: false, user: null, db: null, timer: null, device: "", role: "", peers: {}, booth: null, lastTele: "", teleAt: 0, err: "", offs: [] };
   try { sync.device = localStorage.getItem("st-device") || ""; } catch (e) {}
   if (!sync.device) { sync.device = "d" + Math.random().toString(36).slice(2, 10); try { localStorage.setItem("st-device", sync.device); } catch (e) {} }
@@ -3379,7 +3391,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     sync.applying = true;
     SHARED.forEach(function (k) {
       var x = v[k];
-      if (k === "items" || k === "services" || k === "msgParts" || k === "swItems" || k === "swServices") {
+      if (k === "items" || k === "services" || k === "msgParts" || k === "swItems" || k === "swServices" || k === "ptCues") {
         x = !x ? [] : Array.isArray(x) ? x.filter(Boolean) : Object.keys(x).sort(function (a, b) { return a - b; }).map(function (i) { return x[i]; });
       } else if (k === "skips") x = x || {};
       else if (k === "live") x = x || null;
@@ -3762,7 +3774,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       var n = viewLabel(r.c); if (!n) return;
       if (n === "Message") msgT = r.t;
       if (r.c.sec) { rows.push({ n: n, t: r.t, g: n === "SWITCH ends" ? "done" : secG(r.c.sec), s: n === "SWITCH ends" ? "" : r.c.sec }); return; }
-      var g = /^Countdown|^Walk-in|^Begins/.test(n) ? "pre" : n === "Stagetime" ? "stage" : n === "HANDS" ? "hands" : /^Message|^Keys|^Prayer/.test(n) ? "msg" : /^Toss/.test(n) ? "toss" : "worship";
+      var g = /video/i.test(n) ? "toss" : /^Countdown|^Walk-in|^Begins/.test(n) ? "pre" : n === "Stagetime" ? "stage" : n === "HANDS" ? "hands" : /^Message|^Keys|^Prayer/.test(n) ? "msg" : /^Toss/.test(n) ? "toss" : "worship";
       rows.push({ n: n, t: r.t, g: g });
     });
     // "Message starts" only shows when it differs from the planned Message time
