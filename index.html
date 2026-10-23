@@ -1051,6 +1051,13 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .mem-btn::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: var(--accent-2); }
 .mem-btn.holding::after { width: 100%; transition: width 1s linear; }
 .b-pt-btns .hold-btn.is-off { opacity: 0.45; }
+
+/* who's leading each song */
+.lcs-lead { font-size: 0.86rem; font-weight: 700; color: var(--accent-2); margin-top: 1px; }
+.lcs-lead-k { color: var(--ink-3); font-weight: 600; }
+.lcs-row.past .lcs-lead { opacity: 0.55; }
+.vt-lead { display: block; font-size: 0.78rem; font-weight: 700; color: var(--g, var(--accent-2)); opacity: 0.9; margin-top: 1px; }
+.vt-row.past .vt-lead { opacity: 0.45; }
 </style>
 </head>
 <body>
@@ -1408,10 +1415,10 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   // this weekend's session (from the ProTools markers), applied once per device
   var WEEK = { id: "2026-10-24", len: "27:02", countdown: "4:52", mode: "song",
     items: [
-      { t: "song", label: "Alleluia", len: "4:22" },
-      { t: "song", label: "Thank God I\u2019m Free", len: "4:56" },
-      { t: "song", label: "Way Maker", len: "4:21" },
-      { t: "song", label: "Trust In God", len: "4:01" }
+      { t: "song", label: "Alleluia", len: "4:22", lead: "Boone" },
+      { t: "song", label: "Thank God I\u2019m Free", len: "4:56", lead: "Ana" },
+      { t: "song", label: "Way Maker", len: "4:21", lead: { Saturday: "Jill", Sunday: "Tara" } },
+      { t: "song", label: "Trust In God", len: "4:01", lead: "Boone" }
     ],
     // Resi times come later in the week; until then only Message Start shows
     msgParts: [
@@ -1423,6 +1430,16 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   var WEEK_DROP = { id: "2026-10-24-video", dropBy: "27:04", ptCues: [{ name: "Welcome to Life.Church video", at: "27:04" }] };
   if (state.weekDrop !== WEEK_DROP.id) {
     state.dropBy = WEEK_DROP.dropBy; state.ptCues = JSON.parse(JSON.stringify(WEEK_DROP.ptCues)); state.weekDrop = WEEK_DROP.id;
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
+  }
+  // leaders from the printout (added after the songs were loaded, so apply on its own)
+  var WEEK_LEAD = { id: "2026-10-24-leads", walkSong: { name: "White Horse", lead: "Boone" } };
+  if (state.weekLead !== WEEK_LEAD.id) {
+    state.walkSong = WEEK_LEAD.walkSong;
+    if (Array.isArray(state.items) && Array.isArray(WEEK.items)) state.items.forEach(function (it) {
+      WEEK.items.forEach(function (w) { if (w.lead && it.label === w.label) it.lead = w.lead; });
+    });
+    state.weekLead = WEEK_LEAD.id;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   if (WEEK.items && state.weekItems !== WEEK.id) {
@@ -2105,7 +2122,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
         if (itemEls[i]) itemEls[i].classList.toggle("bad", invalid);
         if (invalid) { itemBad = true; return; }
         if (it.t === "song") songN++;
-        items.push({ t: it.t, name: (it.label || "").trim(), len: n, songN: songN });
+        items.push({ t: it.t, name: (it.label || "").trim(), len: n, songN: songN, lead: it.lead || null });
       });
     }
 
@@ -2163,9 +2180,10 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 
     // cues
     var cues = [], order = 0;
-    function add(label, r, cls, extra) { cues.push({ label: label, rel: r, cls: cls || "", o: order++, extra: extra || "" }); }
+    function add(label, r, cls, extra, lead) { cues.push({ label: label, rel: r, cls: cls || "", o: order++, extra: extra || "", lead: lead || null }); }
     add("Hit play", startRel, "hit");
-    if (W !== null) add("Walk-in song", startRel + C, "base");
+    var wk = state.walkSong || {};
+    if (W !== null) add("Walk-in song" + (wk.name ? ": " + wk.name : ""), startRel + C, "base", "", wk.lead);
     if (estSet) {
       add("“Begins Now” (est.)", startRel + C + W, "base");
       add("First worship song (est.)", firstRel, "base");
@@ -2178,7 +2196,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
           var at = firstRel + cum;
           if (it.t === "song") {
             var label = i === 0 ? "First worship song" + (it.name ? " (" + it.name + ")" : "") : (it.name || "Song " + it.songN);
-            add(label, at, "song");
+            add(label, at, "song", "", it.lead);
           } else {
             add("Toss" + (it.name ? ": " + it.name : ""), at, "toss", it.len > 0 ? "Lasts " + fmtDur(it.len) : "");
           }
@@ -2363,6 +2381,11 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     if (seg > 0) { var pr = swPress(keyOf(occ), seg); if (pr) return pr; return swAnchor(occ, seg - 1) + (sg.rel - lastCalc.segs[seg - 1].rel) * 1000; }
     return occ.t + sg.rel * 1000;
   }
+  function leadFor(lead, day) {
+    if (!lead) return "";
+    if (typeof lead === "string") return lead;
+    return lead[day] || lead["default"] || "";
+  }
   function sheetRows(occ) {
     if (lastCalc && lastCalc.program === "switch") {
       var swr = lastCalc.cues.map(function (c) { return { c: c, t: swAnchor(occ, c.seg) + (c.rel - lastCalc.segs[c.seg].rel) * 1000, pt: c.pt }; })
@@ -2412,8 +2435,9 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
         var rightBox = isPart
           ? '<div class="lcs-time lcs-cd"></div><div class="lcs-at">' + monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small></div>"
           : '<div class="lcs-time">' + right + '</div><div class="lcs-in"></div>';
+        var ld = leadFor(c.lead, occ.sv.day);
         h += '<li class="lcs-row' + kind + '"><span class="lcs-dot" aria-hidden="true"></span><div class="lcs-main"><div class="lcs-label">' + esc(/^hands$/i.test(c.label) ? "HANDS" : c.label) +
-          '</div><div class="lcs-meta">' + esc(meta) + '</div></div><div class="lcs-right">' + rightBox + "</div></li>";
+          "</div>" + (ld ? '<div class="lcs-lead"><span class="lcs-lead-k">Led by</span> ' + esc(ld) + "</div>" : "") + '<div class="lcs-meta">' + esc(meta) + '</div></div><div class="lcs-right">' + rightBox + "</div></li>";
       });
       host.innerHTML = h + "</ol></div>";
     }
@@ -3336,7 +3360,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   var FB_VERSION = "10.12.2";
   // every device unlocks with one shared password for this sign-in
   var SYNC_LOGIN = window.START_TIMES_LOGIN || "booth@northland-start-times.app";
-  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems", "swLive", "dropBy", "ptCues"];
+  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems", "swLive", "dropBy", "ptCues", "walkSong"];
   var sync = { ready: false, applying: false, user: null, db: null, timer: null, device: "", role: "", peers: {}, booth: null, lastTele: "", teleAt: 0, err: "", offs: [] };
   try { sync.device = localStorage.getItem("st-device") || ""; } catch (e) {}
   if (!sync.device) { sync.device = "d" + Math.random().toString(36).slice(2, 10); try { localStorage.setItem("st-device", sync.device); } catch (e) {} }
@@ -3759,8 +3783,10 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     }
     if (k.indexOf("drop") > -1) return null;
     if (k.indexOf("hit") > -1) return "Countdown starts";
-    if (/^Walk-in/.test(l)) return "Walk-in song";
+    if (/^Walk-in/.test(l)) return l.replace(/^Walk-in song: /, "Walk-in: ");
     if (/Begins Now/.test(l)) return "Begins Now";
+    var fw = /^First worship song \((.+)\)$/.exec(l);
+    if (fw) return fw[1];
     if (/^First worship song/.test(l) || l === "Set begins") return "Worship";
     if (k.indexOf("final") > -1) return "Worship ends";
     if (/^Go to Message/.test(l)) return "Message";
@@ -3775,7 +3801,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       if (n === "Message") msgT = r.t;
       if (r.c.sec) { rows.push({ n: n, t: r.t, g: n === "SWITCH ends" ? "done" : secG(r.c.sec), s: n === "SWITCH ends" ? "" : r.c.sec }); return; }
       var g = /video/i.test(n) ? "toss" : /^Countdown|^Walk-in|^Begins/.test(n) ? "pre" : n === "Stagetime" ? "stage" : n === "HANDS" ? "hands" : /^Message|^Keys|^Prayer/.test(n) ? "msg" : /^Toss/.test(n) ? "toss" : "worship";
-      rows.push({ n: n, t: r.t, g: g });
+      rows.push({ n: n, t: r.t, g: g, ld: leadFor(r.c.lead, occ.sv.day) });
     });
     // "Message starts" only shows when it differs from the planned Message time
     return rows.filter(function (r) { return !(r.n === "Message starts" && msgT !== null && Math.abs(r.t - msgT) < 2000); });
@@ -3784,7 +3810,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   // the slim timeline on the basic view: line fills between moments, current moment pulses
   function renderViewLine(host, rows, now, nextI) {
     if (!rows.length) { if (host._sig) { host.innerHTML = ""; host._sig = ""; } return; }
-    var sig = rows.map(function (r) { return r.n + "@" + Math.round(r.t) + r.g; }).join(",");
+    var sig = rows.map(function (r) { return r.n + "@" + Math.round(r.t) + r.g + (r.ld || ""); }).join(",");
     if (host._sig !== sig) {
       host._sig = sig;
       var lastSec = "";
@@ -3793,7 +3819,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
         var sec = r.s !== undefined ? r.s : r.g === "pre" ? "Before service" : (r.g === "worship" || r.g === "toss") ? "Worship" : "Message";
         var secCol = r.s !== undefined ? r.g : sec === "Before service" ? "pre" : sec === "Worship" ? "worship" : "msg";
         if (sec && sec !== lastSec) { lastSec = sec; h += '<li class="vt-sec" aria-hidden="true"><span class="vx-chip vx-chip-sm" data-g="' + secCol + '">' + esc(sec) + "</span></li>"; }
-        h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + '" data-g="' + r.g + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + '</span><span class="vt-t">' + vTime(r.t) + "</span></li>";
+        h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + (r.ld ? " has-lead" : "") + '" data-g="' + r.g + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + (r.ld ? '<span class="vt-lead">' + esc(r.ld) + "</span>" : "") + '</span><span class="vt-t">' + vTime(r.t) + "</span></li>";
       });
       host.innerHTML = h + "</ol></div>";
     }
@@ -3840,7 +3866,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       var cur = rows[done ? rows.length - 1 : nextI - 1];
       var nm = done ? "Service complete" : cur.n;
       if ($("vNowName").textContent !== nm) $("vNowName").textContent = nm;
-      setHtml($("vNowSub"), done ? "" : "since " + vTime(cur.t));
+      setHtml($("vNowSub"), done ? "" : (cur.ld ? esc(cur.ld) + " \u00b7 " : "") + "since " + vTime(cur.t));
       var pct = done ? 100 : Math.min(100, Math.max(0, (now - cur.t) / (rows[nextI].t - cur.t) * 100));
       $("vBar").style.width = pct.toFixed(2) + "%";
       nowCard.classList.toggle("is-done", done);
