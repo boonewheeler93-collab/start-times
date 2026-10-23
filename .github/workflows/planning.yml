@@ -1,0 +1,29 @@
+name: Planning Center (weekly read)
+
+on:
+  schedule:
+    - cron: "0 12 * * *"   # every day at 7:00 AM Central (12:00 UTC during CDT)
+  workflow_dispatch: {}     # "Run workflow" button for a manual refresh
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Read the next Weekend and SWITCH plans
+        env:
+          PCO_APP_ID: ${{ secrets.PCO_APP_ID }}
+          PCO_SECRET: ${{ secrets.PCO_SECRET }}
+        run: python scripts/pco_fetch.py
+      - name: Save planning.json if it changed
+        run: |
+          git config user.name "start-times-bot"
+          git config user.email "start-times-bot@users.noreply.github.com"
+          git add planning.json
+          if git diff --cached --quiet; then echo "No changes"; else git commit -m "Planning Center: update planning.json" && git push; fi
