@@ -1065,6 +1065,24 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .stage-lock { color: var(--accent-2); font-weight: 700; }
 .stage-lock[hidden] { display: none; }
 .tin.is-locked { opacity: 0.55; }
+
+/* ===== shared view: countdown always fits its card; layout adapts to the screen ===== */
+.vx-next { container-type: inline-size; overflow: hidden; }
+.vx-cd { white-space: nowrap; font-size: min(13rem, 31cqi); }
+.vx-next.cd-long .vx-cd { font-size: min(9rem, 19.5cqi); }
+.vx-next.cd-xlong .vx-cd { font-size: min(8rem, 18cqi); }
+.vx-now { container-type: inline-size; }
+.vx-now-name { font-size: min(4.6rem, max(2.1rem, 11cqi)); overflow-wrap: anywhere; }
+@media (min-width: 900px) {
+  .vx { max-width: 1180px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; column-gap: 18px; row-gap: 14px; padding-left: 28px; padding-right: 28px; }
+  .vx-top { grid-column: 1 / -1; }
+  .vx-now { grid-column: 1; grid-row: 2; }
+  .vx-next { grid-column: 1; grid-row: 3; padding: 30px 28px 26px; }
+  .vx-panel { grid-column: 2; grid-row: 2 / span 3; }
+  .vx-foot { grid-column: 1 / -1; }
+  .vx-svc, .vx-clock { height: 42px; font-size: 1.02rem; }
+}
+@media (min-width: 1400px) { .vx { max-width: 1320px; } }
 </style>
 </head>
 <body>
@@ -3968,6 +3986,8 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       setHtml($("vNextSub"), "at " + vTime(r.t));
       nx.classList.toggle("cd-red", left <= 30);
       nx.classList.toggle("cd-yellow", left > 30 && left <= 120);
+      nx.classList.toggle("cd-long", left >= 3600);
+      nx.classList.toggle("cd-xlong", left >= 36000);
     }
 
     renderViewLine($("vLine"), rows, now, nextI);
