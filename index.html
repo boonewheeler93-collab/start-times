@@ -1083,6 +1083,23 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
   .vx-svc, .vx-clock { height: 42px; font-size: 1.02rem; }
 }
 @media (min-width: 1400px) { .vx { max-width: 1320px; } }
+
+/* shared view: screen drop */
+[data-g="drop"] { --g: #ff5a52; --gbg: rgba(255,90,82,0.15); --gbd: rgba(255,90,82,0.6); }
+.vt-row[data-g="drop"] .vt-n { color: var(--g); }
+.vx-pt { margin-left: 8px; padding: 2px 10px; border-radius: 999px; color: #ff5a52; background: rgba(255,90,82,0.14); border: 1px solid rgba(255,90,82,0.5); font-weight: 800; }
+.vx-next.is-drop { border-color: rgba(255,90,82,0.55); }
+.vx-next.drop-hot { background: linear-gradient(180deg, rgba(255,59,48,0.28), rgba(255,59,48,0.12)); border-color: #ff3b30; box-shadow: 0 0 0 2px rgba(255,59,48,0.5), 0 24px 60px -24px rgba(255,59,48,0.8); }
+.vx-next.drop-hot .vx-cd { color: #fff; }
+@media (prefers-reduced-motion: no-preference) { .vx-next.drop-hot { animation: vxDropPulse 1s ease-in-out infinite; } }
+@keyframes vxDropPulse { 50% { box-shadow: 0 0 0 6px rgba(255,59,48,0.35), 0 24px 60px -24px rgba(255,59,48,0.9); } }
+.vx-alert { position: fixed; left: 0; right: 0; top: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: calc(env(safe-area-inset-top, 0px) + 26px) 20px 26px; background: #ff3b30; color: #fff; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+.vx-alert[hidden] { display: none; }
+.vx-alert-t { font-weight: 900; font-size: clamp(2.2rem, 9vw, 6rem); letter-spacing: 0.02em; text-transform: uppercase; line-height: 1; }
+.vx-alert-s { font-family: var(--clockfont); font-weight: 800; font-size: clamp(1.1rem, 3vw, 2rem); opacity: 0.9; }
+@media (prefers-reduced-motion: no-preference) { .vx-alert { animation: vxAlertFlash 0.8s steps(2, jump-none) infinite; } }
+@keyframes vxAlertFlash { 50% { background: #b3150d; } }
 </style>
 </head>
 <body>
@@ -1296,6 +1313,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     <div class="v-line" id="vLine" aria-label="Service timeline"></div>
   </section>
   <p class="vx-foot" id="vFoot"></p>
+  <div class="vx-alert" id="vAlert" hidden role="alert"><span class="vx-alert-t">Drop screen now</span><span class="vx-alert-s" id="vAlertS"></span></div>
 </div>
 
 <div id="booth" class="booth" hidden role="dialog" aria-modal="true" aria-labelledby="bSvc">
@@ -3879,11 +3897,11 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       if (k.indexOf("hit") > -1) return (c.extra || "Countdown").replace(/, \d+:\d\d$/, "");
       if (k.indexOf("swstart") > -1 && /cover|walk/i.test(c.sec)) return l;
       if (k.indexOf("final") > -1) return null;
-      if (k.indexOf("drop") > -1) return null;
+      if (k.indexOf("drop") > -1) return "Drop screen";
       if (/\bend\b/.test(k)) return "SWITCH ends";
       return l;
     }
-    if (k.indexOf("drop") > -1) return null;
+    if (k.indexOf("drop") > -1) return "Drop screen";
     if (k.indexOf("hit") > -1) return "Countdown starts";
     if (/^Walk-in/.test(l)) return l.replace(/^Walk-in song: /, "Walk-in: ");
     if (/Begins Now/.test(l)) return "Begins Now";
@@ -3901,9 +3919,9 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     sheetRows(occ).rows.forEach(function (r) {
       var n = viewLabel(r.c); if (!n) return;
       if (n === "Message") msgT = r.t;
-      if (r.c.sec) { rows.push({ n: n, t: r.t, g: n === "SWITCH ends" ? "done" : secG(r.c.sec), s: n === "SWITCH ends" ? "" : r.c.sec, ld: leadFor(r.c.lead, occ.sv.day) }); return; }
-      var g = /video/i.test(n) ? "toss" : /^Countdown|^Walk-in|^Begins/.test(n) ? "pre" : n === "Stagetime" ? "stage" : n === "HANDS" ? "hands" : /^Message|^Keys|^Prayer/.test(n) ? "msg" : /^Toss/.test(n) ? "toss" : "worship";
-      rows.push({ n: n, t: r.t, g: g, ld: leadFor(r.c.lead, occ.sv.day) });
+      if (r.c.sec) { rows.push({ n: n, t: r.t, pt: r.pt, g: n === "Drop screen" ? "drop" : n === "SWITCH ends" ? "done" : secG(r.c.sec), s: n === "SWITCH ends" ? "" : r.c.sec, ld: leadFor(r.c.lead, occ.sv.day) }); return; }
+      var g = n === "Drop screen" ? "drop" : /video/i.test(n) ? "toss" : /^Countdown|^Walk-in|^Begins/.test(n) ? "pre" : n === "Stagetime" ? "stage" : n === "HANDS" ? "hands" : /^Message|^Keys|^Prayer/.test(n) ? "msg" : /^Toss/.test(n) ? "toss" : "worship";
+      rows.push({ n: n, t: r.t, g: g, ld: leadFor(r.c.lead, occ.sv.day), pt: r.pt });
     });
     // "Message starts" only shows when it differs from the planned Message time
     return rows.filter(function (r) { return !(r.n === "Message starts" && msgT !== null && Math.abs(r.t - msgT) < 2000); });
@@ -3918,7 +3936,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       var lastSec = "";
       var h = '<div class="vt-wrap"><div class="lcs-rail" aria-hidden="true"><div class="lcs-fill"></div><div class="lcs-now"></div></div><ol class="vt-list">';
       rows.forEach(function (r) {
-        var sec = r.s !== undefined ? r.s : r.g === "pre" ? "Before service" : (r.g === "worship" || r.g === "toss") ? "Worship" : "Message";
+        var sec = r.s !== undefined ? r.s : r.g === "pre" ? "Before service" : (r.g === "worship" || r.g === "toss" || r.g === "drop") ? "Worship" : "Message";
         var secCol = r.s !== undefined ? r.g : sec === "Before service" ? "pre" : sec === "Worship" ? "worship" : "msg";
         if (sec && sec !== lastSec) { lastSec = sec; h += '<li class="vt-sec" aria-hidden="true"><span class="vx-chip vx-chip-sm" data-g="' + secCol + '">' + esc(sec) + "</span></li>"; }
         h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + (r.ld ? " has-lead" : "") + '" data-g="' + r.g + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + (r.ld ? '<span class="vt-lead">' + esc(r.ld) + "</span>" : "") + '</span><span class="vt-t">' + vTime(r.t) + "</span></li>";
@@ -3983,7 +4001,9 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       var r = rows[nextI], left = Math.ceil((r.t - now) / 1000);
       setHtml($("vNextK"), (started ? "" : "First up ") + '<span class="vx-chip" data-g="' + r.g + '">' + esc(r.n) + "</span> in");
       setHtml($("vNextCd"), monoHtml(left >= 3600 ? fmtHMS(left) : fmtMMSS(left)));
-      setHtml($("vNextSub"), "at " + vTime(r.t));
+      setHtml($("vNextSub"), "at " + vTime(r.t) + (r.g === "drop" && r.pt != null ? ' <span class="vx-pt">ProTools ' + fmtDur(Math.round(r.pt)) + "</span>" : ""));
+      nx.classList.toggle("is-drop", r.g === "drop");
+      nx.classList.toggle("drop-hot", r.g === "drop" && left <= 30);
       nx.classList.toggle("cd-red", left <= 30);
       nx.classList.toggle("cd-yellow", left > 30 && left <= 120);
       nx.classList.toggle("cd-long", left >= 3600);
@@ -3991,6 +4011,12 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     }
 
     renderViewLine($("vLine"), rows, now, nextI);
+    // "Drop screen now" for 8 seconds from the drop
+    var dropRow = null; rows.forEach(function (r) { if (r.g === "drop") dropRow = r; });
+    var alertOn = !!dropRow && now >= dropRow.t && now < dropRow.t + 8000;
+    var al = $("vAlert");
+    if (al.hidden !== !alertOn) al.hidden = !alertOn;
+    if (alertOn) { var ast = dropRow.pt != null ? "ProTools " + fmtDur(Math.round(dropRow.pt)) : ""; if ($("vAlertS").textContent !== ast) $("vAlertS").textContent = ast; }
 
     var foot = "";
     if (pick && keyOf(pick) !== keyOf(focus)) foot = "Next service: " + pick.sv.day + " " + svcClock(pick.sv.sec);
