@@ -85,7 +85,9 @@ def plan_detail(type_id, plan):
             "title": a.get("title"), "type": a.get("item_type"), "section": section,
             "length": a.get("length"), "position": a.get("service_position"),
             "description": a.get("description"), "key": a.get("key_name"),
-            "notes": nn, "lead": find_lead(a.get("description"), nn),
+            "notes": nn,
+            # only songs and the walk-in have a leader; other items use "+" for bullet points
+            "lead": find_lead(a.get("description"), nn) if (a.get("item_type") == "song" or re.match(r"\s*walk-?in", a.get("title") or "", re.I)) else None,
         })
     times, _ = get_all(f"/service_types/{type_id}/plans/{pid}/plan_times")
     return {
