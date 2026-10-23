@@ -1100,6 +1100,29 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .vx-alert-s { font-family: var(--clockfont); font-weight: 800; font-size: clamp(1.1rem, 3vw, 2rem); opacity: 0.9; }
 @media (prefers-reduced-motion: no-preference) { .vx-alert { animation: vxAlertFlash 0.8s steps(2, jump-none) infinite; } }
 @keyframes vxAlertFlash { 50% { background: #b3150d; } }
+
+/* shared view: a stronger red for the drop, and the ProTools counter under it */
+.vx-next.is-drop { background: linear-gradient(180deg, rgba(255,59,48,0.34), rgba(150,18,12,0.32)); border: 2px solid #ff3b30;
+  box-shadow: 0 0 0 1px rgba(255,59,48,0.35), 0 30px 70px -30px rgba(255,59,48,0.95); }
+.vx-next.is-drop .vx-cd { color: #fff; }
+.vx-next.is-drop .vx-next-k { color: #ffd9d6; }
+.vx-next.is-drop .vx-chip[data-g="drop"] { background: #ff3b30; border-color: #ff3b30; color: #fff; font-size: 1.15rem; padding: 5px 16px; }
+.vx-next.is-drop .vx-at { color: #ffd9d6; }
+.vx-next.is-drop .vx-pt { background: #ff3b30; border-color: #ff3b30; color: #fff; }
+.vx-next.drop-hot { background: linear-gradient(180deg, rgba(255,59,48,0.62), rgba(200,28,20,0.5)); border-color: #ff6b62; }
+.vt-row[data-g="drop"] { background: rgba(255,59,48,0.16); box-shadow: inset 0 0 0 1px rgba(255,59,48,0.55); }
+.vt-row[data-g="drop"] .vt-n { color: #ff6b62; font-weight: 800; }
+.vt-row[data-g="drop"] .vt-t { color: #ff8a82; }
+.vt-row[data-g="drop"] .lcs-dot { background: #ff3b30; border-color: #ff3b30; }
+.vx-ptc { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 16px auto 0; width: fit-content; max-width: 100%; padding: 10px 22px 12px; border-radius: 18px;
+  background: #050d08; background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px); background-size: 6px 6px;
+  border: 1px solid rgba(139,224,78,0.45); }
+.vx-ptc[hidden] { display: none; }
+.vx-ptc-k { font-weight: 800; font-size: 0.85rem; color: #8be04e; }
+.vx-ptc-n { font-family: var(--clockfont); font-weight: 700; font-size: min(4.2rem, 13cqi); line-height: 1; color: #8be04e; text-shadow: 0 0 18px rgba(139,224,78,0.45); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.vx-ptc-n .mono-d { width: 0.6em; }
+.vx-ptc.is-yellow { border-color: rgba(255,211,25,0.6); } .vx-ptc.is-yellow .vx-ptc-k, .vx-ptc.is-yellow .vx-ptc-n { color: #ffd319; text-shadow: 0 0 18px rgba(255,211,25,0.5); }
+.vx-ptc.is-red { border-color: rgba(255,59,48,0.8); } .vx-ptc.is-red .vx-ptc-k, .vx-ptc.is-red .vx-ptc-n { color: #ff3b30; text-shadow: 0 0 18px rgba(255,59,48,0.6); }
 </style>
 </head>
 <body>
@@ -1307,6 +1330,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     <div class="vx-next-k" id="vNextK"></div>
     <div class="vx-cd" id="vNextCd"></div>
     <div class="vx-at" id="vNextSub"></div>
+    <div class="vx-ptc" id="vPtc" hidden><span class="vx-ptc-k">ProTools</span><span class="vx-ptc-n" id="vPtcN"></span></div>
   </section>
   <section class="vx-card vx-panel" id="vPanel">
     <div class="vx-panel-h"><span>Timeline</span><span class="vx-upd"><span class="vx-dot" aria-hidden="true"></span>Updates live</span></div>
@@ -3963,6 +3987,19 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
     wrap.classList.toggle("is-live", started && nextI >= 0);
   }
   function setHtml(el, h) { if (el._h !== h) { el.innerHTML = h; el._h = h; } }
+  var vPtc = { on: false, raf: false, base: null };
+  function ptcFrame() {
+    if (!vPtc.on || !vPtc.base) { vPtc.raf = false; return; }
+    var b = vPtc.base, pt = b.pt + (nowMs() - b.t) / 1000;
+    if (pt < 0) pt = 0;
+    var mm = Math.floor(pt / 60), ss = Math.floor(pt % 60), ms = Math.floor((pt % 1) * 1000);
+    var txt = (mm < 10 ? "0" : "") + mm + ":" + (ss < 10 ? "0" : "") + ss + ":" + ("00" + ms).slice(-3);
+    var el = $("vPtcN"); if (el._t !== txt) { el.innerHTML = monoHtml(txt); el._t = txt; }
+    var box = $("vPtc"), toDrop = b.pt - pt;
+    box.classList.toggle("is-yellow", toDrop > 0 && toDrop <= 30);
+    box.classList.toggle("is-red", toDrop <= 0);
+    requestAnimationFrame(ptcFrame);
+  }
   function renderViewer() {
     if (!document.body.classList.contains("view-mode")) return;
     var now = nowMs(), cp = centralParts(now);
@@ -4010,6 +4047,12 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
       nx.classList.toggle("cd-xlong", left >= 36000);
     }
 
+    var dropNext = nextI >= 0 && rows[nextI].g === "drop" ? rows[nextI] : null;
+    var dropCur = started && nextI > 0 && rows[nextI - 1].g === "drop" ? rows[nextI - 1] : null;
+    var dr = dropNext || dropCur;
+    vPtc.on = !!(dr && dr.pt != null);
+    if (vPtc.on) { vPtc.base = dr; if (!vPtc.raf) { vPtc.raf = true; requestAnimationFrame(ptcFrame); } }
+    $("vPtc").hidden = !vPtc.on;
     renderViewLine($("vLine"), rows, now, nextI);
     // "Drop screen now" for 8 seconds from the drop
     var dropRow = null; rows.forEach(function (r) { if (r.g === "drop") dropRow = r; });
