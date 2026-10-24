@@ -1580,24 +1580,13 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       { t: "song", label: "Way Maker", len: "4:21", lead: { Saturday: "Jill", Sunday: "Tara" } },
       { t: "song", label: "Trust In God", len: "4:01", lead: "Boone" }
     ],
-    // Resi times come later in the week; until then only Message Start shows
+    // this weekend's Resi cues, from MSG START
     msgParts: [
       { name: "Message Start", at: "0:00" },
-      { name: "Keys", at: "" },
-      { name: "Prayer Start", at: "" },
-      { name: "Hands", at: "" }
+      { name: "Keys", at: "25:41" },
+      { name: "Prayer Start", at: "29:44" },
+      { name: "Hands", at: "35:16" }
     ] };
-  // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
-  var WEEK_RESI = { id: "2026-10-24-resi", msgParts: [
-    { name: "Message Start", at: "0:00" },
-    { name: "Keys", at: "25:41" },
-    { name: "Prayer Start", at: "29:44" },
-    { name: "Hands", at: "35:16" }
-  ] };
-  if (state.weekResi !== WEEK_RESI.id) {
-    state.msgParts = JSON.parse(JSON.stringify(WEEK_RESI.msgParts)); state.msgLateKey = null; state.weekResi = WEEK_RESI.id;
-    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
-  }
   var WEEK_STAGE = { id: "2026-10-24-stage", stageAt: "27:53" };
   if (state.weekStage !== WEEK_STAGE.id) {
     state.stageAt = WEEK_STAGE.stageAt; state.weekStage = WEEK_STAGE.id;
@@ -1667,6 +1656,17 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
 
+  // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
+  var WEEK_RESI = { id: "2026-10-24-resi2", msgParts: [
+    { name: "Message Start", at: "0:00" },
+    { name: "Keys", at: "25:41" },
+    { name: "Prayer Start", at: "29:44" },
+    { name: "Hands", at: "35:16" }
+  ] };
+  if (state.weekResi !== WEEK_RESI.id) {
+    state.msgParts = JSON.parse(JSON.stringify(WEEK_RESI.msgParts)); state.msgLateKey = null; state.weekResi = WEEK_RESI.id;
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
+  }
   // ---------- helpers ----------
   function parseDur(str) {
     if (str == null) return null;
