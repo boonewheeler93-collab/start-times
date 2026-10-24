@@ -1587,6 +1587,17 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       { name: "Prayer Start", at: "" },
       { name: "Hands", at: "" }
     ] };
+  // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
+  var WEEK_RESI = { id: "2026-10-24-resi", msgParts: [
+    { name: "Message Start", at: "0:00" },
+    { name: "Keys", at: "25:41" },
+    { name: "Prayer Start", at: "29:44" },
+    { name: "Hands", at: "35:16" }
+  ] };
+  if (state.weekResi !== WEEK_RESI.id) {
+    state.msgParts = JSON.parse(JSON.stringify(WEEK_RESI.msgParts)); state.msgLateKey = null; state.weekResi = WEEK_RESI.id;
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
+  }
   var WEEK_STAGE = { id: "2026-10-24-stage", stageAt: "27:53" };
   if (state.weekStage !== WEEK_STAGE.id) {
     state.stageAt = WEEK_STAGE.stageAt; state.weekStage = WEEK_STAGE.id;
