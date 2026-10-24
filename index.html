@@ -1187,6 +1187,25 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 #bSheet li.can-cue.cue-sent { box-shadow: inset 0 0 0 2px var(--ok); }
 #bSheet li.can-cue.cue-off { box-shadow: inset 0 0 0 2px var(--warn); }
 .b-mem-h { margin: 0; }
+
+/* booth: start times for every service */
+.b-times { padding: 14px 16px 12px; border-radius: 20px; background: rgba(255,255,255,0.045); border: 1px solid var(--glass-line); }
+.b-times-h { margin: 0 0 8px; font-family: var(--display); font-weight: 500; font-size: 1.15rem; }
+.b-times-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.bt-row { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto 3.6em; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer;
+  font: inherit; color: var(--ink); text-align: left; background: rgba(255,255,255,0.04); border: 1px solid transparent; min-height: 48px; }
+.bt-row:hover:not(:disabled) { border-color: var(--glass-line); }
+.bt-row:disabled { cursor: default; }
+.bt-svc { font-weight: 800; font-family: var(--clockfont); white-space: nowrap; }
+.bt-svc .daychip { font-family: inherit; margin-right: 4px; }
+.bt-hit { font-family: var(--clockfont); font-weight: 700; font-size: 1.1rem; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.bt-hit small { font-size: 0.75em; margin-left: 2px; color: var(--ink-3); }
+.bt-k { font-family: var(--body, inherit); font-weight: 600; font-size: 0.78rem; color: var(--ink-3); margin-right: 4px; }
+.bt-st { font-weight: 800; font-size: 0.8rem; text-align: right; color: var(--ink-3); }
+.bt-row.is-now { background: rgba(157,176,255,0.12); border-color: rgba(157,176,255,0.45); }
+.bt-row.is-now .bt-st { color: var(--accent); }
+.bt-row.is-next .bt-st { color: var(--accent-2); }
+.bt-row.is-done { opacity: 0.45; }
 </style>
 </head>
 <body>
@@ -1468,6 +1487,10 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       </div>
       <p class="b-mem-h">Hold a moment on the cue sheet for 1 second to cue ProTools there.</p>
       <div class="b-mem" id="bMem" hidden></div>
+    </section>
+    <section class="b-times" aria-labelledby="bTimesH">
+      <h3 class="b-times-h" id="bTimesH">Start times</h3>
+      <ul class="b-times-list" id="bTimesList"></ul>
     </section>
     <p class="b-keys">Space: Started. Hold S: stop ProTools. Up and down arrows: adjust the clock. F: full screen. Esc: close.</p>
     </div>
@@ -2872,9 +2895,37 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       b.setAttribute("aria-disabled", off ? "true" : "false");
     });
   }
+  // every service this weekend (or SWITCH night) with its hit-play time and status
+  function renderBoothTimes(now) {
+    var list = $("bTimesList"); if (!list || !lastCalc || !lastCalc.svcs.length) { if (list) list.innerHTML = ""; return; }
+    var occ = occurrences(now); if (!occ.length) return;
+    var cur = null; occ.forEach(function (o) { if (keyOf(o) === booth.key) cur = o; }); if (!cur) cur = occ[0];
+    var focus = booth.manual ? cur : (sheetFocus(now, cur) || cur);
+    var base = new Date(focus.t), tail = (lastCalc.tail || Math.max(lastCalc.finalRel, lastCalc.msg || 0)) + 5;
+    var sw = lastCalc.program === "switch";
+    var rows = lastCalc.svcs.map(function (sv) {
+      var d = ((DOW[sv.day] || 0) - (DOW[focus.sv.day] || 0) + 7) % 7; if (d > 3) d -= 7;
+      var t = new Date(base.getFullYear(), base.getMonth(), base.getDate() + d, Math.floor(sv.sec / 3600), Math.floor((sv.sec % 3600) / 60), 0, 0).getTime();
+      return { sv: sv, t: t, key: keyOf({ sv: sv, t: t }) };
+    }).sort(function (a, b) { return a.t - b.t; });
+    var nextSeen = false;
+    var h = rows.map(function (r) {
+      var done = r.t + tail * 1000 < now, isNow = r.key === keyOf(focus), st = "", cls = "";
+      if (isNow) { st = "Now"; cls = " is-now"; }
+      else if (done) { st = "Done"; cls = " is-done"; }
+      else if (!nextSeen) { st = "Next"; cls = " is-next"; nextSeen = true; }
+      var hit = r.t + lastCalc.startRel * 1000;
+      var right = sw ? '<span class="bt-k">ProTools by hand, about</span> ' + vTime(hit) : '<span class="bt-k">Hit play</span> ' + vTime(hit);
+      return '<li><button type="button" class="bt-row' + cls + '" data-key="' + esc(r.key) + '"' + (done ? " disabled" : "") + '>' +
+        '<span class="bt-svc"><span class="daychip ' + dayCls(r.sv.day) + '">' + (sw ? "SWITCH" : esc(r.sv.day)) + "</span> " + esc(svcClock(r.sv.sec)) + "</span>" +
+        '<span class="bt-hit">' + right + "</span>" + '<span class="bt-st">' + st + "</span></button></li>";
+    }).join("");
+    if (list._h !== h) { list.innerHTML = h; list._h = h; }
+  }
   function renderBooth() {
     if (!booth.open) return;
     renderTransport();
+    renderBoothTimes(nowMs());
     var now = nowMs(), root = $("booth");
     root.classList.remove("warn", "alert");
     var cp = centralParts(now), co = +state.clockOff || 0;
@@ -3267,6 +3318,11 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   $("bZero").addEventListener("click", function () { setOff(0); });
   $("bClose").addEventListener("click", closeBooth);
   $("bPrev").addEventListener("click", function () { shiftSvc(-1); });
+  $("bTimesList").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".bt-row") : null;
+    if (!b || b.disabled) return;
+    booth.manual = true; booth.key = b.getAttribute("data-key"); renderBooth();
+  });
   $("bNextSvc").addEventListener("click", function () { shiftSvc(1); });
   $("bCue").addEventListener("click", function () {
     if (!lastCalc || lastCalc.program !== "switch" || booth.swNext == null) return;
