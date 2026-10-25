@@ -3671,7 +3671,15 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   // ---------- sync across devices (Firebase Realtime Database) ----------
   // Paste the web app config from the Firebase console between the braces, e.g.
   // { apiKey: "...", authDomain: "...", databaseURL: "...", projectId: "...", appId: "..." }
-  var FIREBASE_CONFIG = window.START_TIMES_FIREBASE || null;
+  var FIREBASE_CONFIG = window.START_TIMES_FIREBASE || {
+    apiKey: "AIzaSyBk7mDjK3-4NIExIUw01ru1Y4yvvhvJwmc",
+    authDomain: "start-times-77f2f.firebaseapp.com",
+    databaseURL: "https://start-times-77f2f-default-rtdb.firebaseio.com",
+    projectId: "start-times-77f2f",
+    storageBucket: "start-times-77f2f.firebasestorage.app",
+    messagingSenderId: "326841126924",
+    appId: "1:326841126924:web:d22137f73819b54d661e29"
+  };
   var FB_VERSION = "10.12.2";
   // every device unlocks with one shared password for this sign-in
   var SYNC_LOGIN = window.START_TIMES_LOGIN || "booth@northland-start-times.app";
@@ -3692,6 +3700,10 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     ready.then(function () {
       if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
       firebase.auth().onAuthStateChanged(onAuth);
+      firebase.database().ref("startTimes/state").on("value", function (x) {
+        if (sync.user) return;                      // signed-in devices handle this themselves
+        var v = x.val(); if (v) { applyShared(v); sync.follow = true; renderSync(); }
+      }, function () {});
       renderSync();
     }, function () { sync.err = "Sync couldn\u2019t load on this page. Use the hosted link."; renderSync(); });
   }
@@ -3822,7 +3834,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     var st = $("syncStatus"), txt, cls = "link-status";
     if (sync.err) { txt = sync.err; cls += " bad"; }
     else if (!window.firebase) txt = "Loading sync\u2026";
-    else if (!sync.user) txt = "Enter the sync password to share times and control the booth from your phone.";
+    else if (!sync.user) txt = (sync.follow ? "Following the booth\u2019s times (read-only). " : "") + "Enter the sync password to make changes and control the booth from your phone.";
     else if (!sync.ready) txt = "Connecting\u2026";
     else { txt = "Synced on this device"; cls += " ok"; }
     st.textContent = txt; st.className = cls;
