@@ -1206,6 +1206,18 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 .bt-row.is-now .bt-st { color: var(--accent); }
 .bt-row.is-next .bt-st { color: var(--accent-2); }
 .bt-row.is-done { opacity: 0.45; }
+
+/* HANDS alerts */
+.hap-l { position: fixed; left: -9999px; top: 0; width: 1px; height: 1px; overflow: hidden; opacity: 0; }
+.vx-alerts { display: block; margin: 4px auto 0; min-height: 44px; padding: 8px 18px; border-radius: 999px; font: inherit; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+  color: var(--ink-3); background: rgba(255,255,255,0.05); border: 1px solid var(--glass-line); }
+.alerts-btn.on { color: var(--hands, #ff8a7a); border-color: rgba(255,138,122,0.55); background: rgba(255,138,122,0.12); }
+.m-alerts { margin-top: 10px; }
+@media (min-width: 900px) { .vx-alerts { grid-column: 1 / -1; font-size: clamp(0.85rem, 1vw, 1.3rem); } }
+.hands-flash { position: fixed; left: 0; right: 0; top: 0; z-index: 60; padding: calc(env(safe-area-inset-top, 0px) + 22px) 18px 22px; text-align: center;
+  font-weight: 900; font-size: clamp(2rem, 8vw, 5rem); line-height: 1; color: #1b0f00; background: #ffc272; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+.hands-flash[hidden] { display: none; }
+.hands-flash.red { color: #fff; background: #ff3b30; }
 </style>
 </head>
 <body>
@@ -1263,6 +1275,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       <div class="card-head"><h2 id="msg-h">Message</h2><div class="card-meta"><span class="card-note">Times from Resi, from Message Start (+23:00)</span></div></div>
       <div id="msgParts"></div>
       <p class="msg-sum" id="msgSum"></p>
+      <button type="button" class="ghost alerts-btn m-alerts" aria-pressed="false">HANDS alerts: Off</button>
       <div class="actions"><button type="button" class="ghost" id="addPart">Add a part</button></div>
     </section>
 
@@ -1399,6 +1412,8 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   </div>
 </div>
 
+<label class="hap-l" aria-hidden="true"><input type="checkbox" switch tabindex="-1"></label>
+<div class="hands-flash" id="handsFlash" hidden role="alert"></div>
 <div id="viewer" class="vx" hidden>
   <header class="vx-top">
     <span class="vx-svc" id="vSvc"><span class="vx-dot" aria-hidden="true"></span><span id="vSvcT"></span></span>
@@ -1422,6 +1437,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     <div class="v-line" id="vLine" aria-label="Service timeline"></div>
   </section>
   <p class="vx-foot" id="vFoot"></p>
+  <button type="button" class="vx-alerts alerts-btn" aria-pressed="false">HANDS alerts: Off</button>
   <div class="vx-alert" id="vAlert" hidden role="alert"><span class="vx-alert-t">Drop screen now</span><span class="vx-alert-s" id="vAlertS"></span></div>
 </div>
 
@@ -1577,7 +1593,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     items: [
       { t: "song", label: "Alleluia", len: "4:22", lead: "Boone" },
       { t: "song", label: "Thank God I\u2019m Free", len: "4:56", lead: "Ana" },
-      { t: "song", label: "Way Maker", len: "4:21", lead: { Saturday: "Jill", Sunday: "Tara" } },
+      { t: "song", label: "Way Maker", len: "4:21", lead: { Saturday: "Jill", Sunday: "Ana" } },
       { t: "song", label: "Trust In God", len: "4:01", lead: "Boone" }
     ],
     // this weekend's Resi cues, from MSG START
@@ -1598,7 +1614,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // leaders from the printout (added after the songs were loaded, so apply on its own)
-  var WEEK_LEAD = { id: "2026-10-24-leads", walkSong: { name: "White Horse", lead: "Boone" } };
+  var WEEK_LEAD = { id: "2026-10-25-leads", walkSong: { name: "White Horse", lead: "Boone" } };
   if (state.weekLead !== WEEK_LEAD.id) {
     state.walkSong = WEEK_LEAD.walkSong;
     if (Array.isArray(state.items) && Array.isArray(WEEK.items)) state.items.forEach(function (it) {
@@ -4000,6 +4016,61 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   renderServices();
   compute();
 
+  // ---------- HANDS alerts: 2:00, 1:00 and 0:30 before HANDS (vibrate / iPhone haptic tap / beep / banner) ----------
+  var ALERT_KEY = "start-times-hands-alerts";
+  var alertMode = "off";
+  try { alertMode = localStorage.getItem(ALERT_KEY) || "off"; } catch (e) {}
+  var alertFired = {}, audioCtx = null;
+  function paintAlertBtns() {
+    var txt = alertMode === "off" ? "HANDS alerts: Off" : alertMode === "sound" ? "HANDS alerts: Vibrate + sound" : "HANDS alerts: Vibrate";
+    Array.prototype.forEach.call(document.querySelectorAll(".alerts-btn"), function (b) { b.textContent = txt; b.setAttribute("aria-pressed", alertMode === "off" ? "false" : "true"); b.classList.toggle("on", alertMode !== "off"); });
+  }
+  function beep(n) {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      for (var i = 0; i < n; i++) {
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain(), t0 = audioCtx.currentTime + i * 0.28;
+        o.frequency.value = 880; o.connect(g); g.connect(audioCtx.destination);
+        g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+        o.start(t0); o.stop(t0 + 0.22);
+      }
+    } catch (e) {}
+  }
+  function buzz(n) {
+    var pat = n === 1 ? [500] : n === 2 ? [300, 150, 300] : [200, 100, 200, 100, 200];
+    try { if (navigator.vibrate) navigator.vibrate(pat); } catch (e) {}
+    // iPhone (iOS 18+): flipping a hidden switch gives a haptic tap
+    var lab = document.querySelector(".hap-l");
+    if (lab) for (var i = 0; i < n * 2; i++) setTimeout(function () { try { lab.click(); } catch (e) {} }, i * 160);
+  }
+  function showHandsFlash(txt, red) {
+    var f = $("handsFlash"); f.textContent = txt; f.classList.toggle("red", !!red); f.hidden = false;
+    clearTimeout(f._t); f._t = setTimeout(function () { f.hidden = true; }, 6000);
+  }
+  function cycleAlerts() {
+    alertMode = alertMode === "off" ? "vibrate" : alertMode === "vibrate" ? "sound" : "off";
+    try { localStorage.setItem(ALERT_KEY, alertMode); } catch (e) {}
+    paintAlertBtns();
+    if (alertMode !== "off") { buzz(1); if (alertMode === "sound") beep(1); }   // a test buzz so you know it works
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".alerts-btn"), function (b) { b.addEventListener("click", cycleAlerts); });
+  paintAlertBtns();
+  function checkHandsAlerts(handsT, key, now) {
+    if (alertMode === "off" || !handsT) return;
+    var left = (handsT - now) / 1000;
+    [[120, 1, "HANDS in 2:00", false], [60, 2, "HANDS in 1:00", false], [30, 3, "HANDS in 0:30", true]].forEach(function (a) {
+      var id = key + "|" + Math.round(handsT) + "|" + a[0];
+      if (left <= a[0] && left > a[0] - 4 && !alertFired[id]) {
+        alertFired[id] = 1; buzz(a[1]); if (alertMode === "sound") beep(a[1]); showHandsFlash(a[2], a[3]);
+      }
+    });
+  }
+  // the main page: HANDS of the service on the cue sheet
+  function mainHandsCheck(now, focusOcc) {
+    if (!focusOcc || !lastCalc || lastCalc.handsRel == null || document.body.classList.contains("view-mode")) return;
+    checkHandsAlerts(focusOcc.t + lastCalc.handsRel * 1000, keyOf(focusOcc), now);
+  }
+
   // live clock and next start at the top of the main page
   function renderTop() {
     if (prog() !== lastProg) { state.sel = 0; applyProgram(); renderServices(); compute(); }
@@ -4057,6 +4128,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     }
     nb.hidden = !html;
     var focusOcc = pick ? sheetFocus(now, pick.o) : heldOcc(now);
+    mainHandsCheck(now, focusOcc);
     lastFocusKey = focusOcc ? keyOf(focusOcc) : null;
     // a late message start belongs to one service: reset it when the next service's sheet loads
     if (state.msgLateKey && lastFocusKey && lastFocusKey !== state.msgLateKey) {
@@ -4257,6 +4329,8 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     $("vPtCard").hidden = !vPtc.on;
     var dropTxt = vPtc.on && vPtc.base.drop != null ? "Drop screen at " + fmtDur(Math.round(vPtc.base.drop)) : "";
     if ($("vPtcS").textContent !== dropTxt) $("vPtcS").textContent = dropTxt;
+    var handsRow = null; rows.forEach(function (r) { if (r.n === "HANDS") handsRow = r; });
+    if (handsRow) checkHandsAlerts(handsRow.t, keyOf(focus), now);
     renderViewLine($("vLine"), rows, now, nextI);
     // "Drop screen now" for 8 seconds from the drop
     var dropRow = null; rows.forEach(function (r) { if (r.g === "drop") dropRow = r; });
