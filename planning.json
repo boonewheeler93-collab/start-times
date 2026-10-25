@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-24T14:56:58Z",
+  "updated": "2026-10-25T11:03:00Z",
   "weekend": {
     "plan_id": "91142207",
     "title": "Supernatural WK 1",
@@ -106,12 +106,12 @@
         "section": "WORSHIP",
         "length": 261,
         "position": "during",
-        "description": "+ Jill (SAT) / Tara (SUN)\n* Big Ending\n",
-        "key": "E",
+        "description": "+ Jill (SAT) / Ana (SUN)\n* Big Ending\n",
+        "key": "G",
         "notes": [],
         "lead": {
           "Saturday": "Jill",
-          "Sunday": "Tara"
+          "Sunday": "Ana"
         }
       },
       {
