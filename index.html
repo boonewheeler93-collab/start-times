@@ -1683,6 +1683,10 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     state.msgParts = JSON.parse(JSON.stringify(WEEK_RESI.msgParts)); state.msgLateKey = null; state.weekResi = WEEK_RESI.id;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
+  // the weekly data this version of the app carries; older data in sync never overwrites it
+  var DATA_VER = "2026-10-25a";
+  state.weekVer = DATA_VER;
+
   // ---------- helpers ----------
   function parseDur(str) {
     if (str == null) return null;
@@ -3683,7 +3687,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   var FB_VERSION = "10.12.2";
   // every device unlocks with one shared password for this sign-in
   var SYNC_LOGIN = window.START_TIMES_LOGIN || "booth@northland-start-times.app";
-  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems", "swLive", "dropBy", "ptCues", "walkSong", "stageAt"];
+  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems", "swLive", "dropBy", "ptCues", "walkSong", "stageAt", "weekVer"];
   var sync = { ready: false, applying: false, user: null, db: null, timer: null, device: "", role: "", peers: {}, booth: null, lastTele: "", teleAt: 0, err: "", offs: [] };
   try { sync.device = localStorage.getItem("st-device") || ""; } catch (e) {}
   if (!sync.device) { sync.device = "d" + Math.random().toString(36).slice(2, 10); try { localStorage.setItem("st-device", sync.device); } catch (e) {} }
@@ -3719,7 +3723,8 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     sync.db = db;
     root.child("state").once("value").then(function (snap) {
       var v = snap.val();
-      if (v) applyShared(v); else pushShared();
+      if (v && sharedIsCurrent(v)) applyShared(v);
+      else { if (v) applyShared(v); pushShared(); }
       sync.ready = true;
       listen(root.child("state"), "value", function (x) { var val = x.val(); if (val && val._by !== sync.device) applyShared(val); });
       var me = root.child("presence/" + sync.device);
@@ -3738,12 +3743,19 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     }, function () { sync.err = "This account isn\u2019t allowed to sync. Ask to be added."; renderSync(); });
     renderSync();
   }
+  var WEEKLY_KEYS = { mode: 1, len: 1, target: 1, walkin: 1, set: 1, items: 1, countdown: 1, b2f: 1, walkBackup: 1, cutoff: 1, sat: 1, stage: 1, msg: 1, lower: 1,
+    services: 1, msgParts: 1, msgLateKey: 1, swStart: 1, swServices: 1, swItems: 1, dropBy: 1, ptCues: 1, walkSong: 1, stageAt: 1, weekVer: 1 };
+  function sharedIsCurrent(v) { return !!v && v.weekVer === DATA_VER; }
   function applyShared(v) {
+    var current = sharedIsCurrent(v);
     sync.applying = true;
     SHARED.forEach(function (k) {
+      if (!current && WEEKLY_KEYS[k]) return;        // older data: keep this weekend's times
       var x = v[k];
       if (k === "items" || k === "services" || k === "msgParts" || k === "swItems" || k === "swServices" || k === "ptCues") {
-        x = !x ? [] : Array.isArray(x) ? x.filter(Boolean) : Object.keys(x).sort(function (a, b) { return a - b; }).map(function (i) { return x[i]; });
+        if (x === undefined || x === null) return;   // missing list: keep this device's
+        x = Array.isArray(x) ? x.filter(Boolean) : Object.keys(x).sort(function (a, b) { return a - b; }).map(function (i) { return x[i]; });
+        if (!x.length && (k === "services" || k === "swServices" || k === "msgParts")) return;
       } else if (k === "skips") x = x || {};
       else if (k === "live") x = x || null;
       else if (x === undefined || x === null) return;
