@@ -1,17 +1,17 @@
 {
-  "updated": "2026-10-26T17:42:56Z",
+  "updated": "2026-10-27T16:55:03Z",
   "weekend": {
-    "plan_id": "91142207",
-    "title": "Supernatural WK 1",
-    "series": "Fall Fest 2026",
-    "dates": "October 24 & 25, 2026",
-    "sort_date": "2026-10-24T17:00:00Z",
+    "plan_id": "91142208",
+    "title": null,
+    "series": "Supernatural",
+    "dates": "October 31 & November 1, 2026",
+    "sort_date": "2026-10-31T17:00:00Z",
     "times": [
-      "2026-10-24T22:00:00Z",
-      "2026-10-25T13:30:00Z",
-      "2026-10-25T15:00:00Z",
-      "2026-10-25T16:30:00Z",
-      "2026-10-25T18:00:00Z"
+      "2026-10-31T22:00:00Z",
+      "2026-11-01T14:30:00Z",
+      "2026-11-01T16:00:00Z",
+      "2026-11-01T17:30:00Z",
+      "2026-11-01T19:00:00Z"
     ],
     "items": [
       {
@@ -57,21 +57,21 @@
         "lead": null
       },
       {
-        "title": "Walk-in: White Horse - Chris Stapleton",
+        "title": "Walk-in: Babydoll - Jamie Miller",
         "type": "item",
         "section": "WALK-IN SONG",
-        "length": 243,
+        "length": 240,
         "position": "during",
-        "description": "+ Boone \n* BGVS",
+        "description": "+ Ana\n* BGVS",
         "key": null,
         "notes": [],
-        "lead": "Boone"
+        "lead": "Ana"
       },
       {
         "title": "BEGINS NOW",
         "type": "item",
         "section": "WORSHIP",
-        "length": 27,
+        "length": 40,
         "position": "during",
         "description": null,
         "key": null,
@@ -79,60 +79,35 @@
         "lead": null
       },
       {
-        "title": "Alleluia",
+        "title": "WASHED",
         "type": "song",
         "section": "WORSHIP",
-        "length": 261,
+        "length": 224,
         "position": "during",
-        "description": "+ Boone\n* Extended Intro (Vamp on the 1)",
-        "key": "A",
+        "description": null,
+        "key": "D",
         "notes": [],
-        "lead": "Boone"
+        "lead": null
       },
       {
-        "title": "Thank God I'm Free",
+        "title": "The Lord Is With Me",
         "type": "song",
         "section": "WORSHIP",
-        "length": 296,
+        "length": 360,
         "position": "during",
-        "description": "+ Ana",
-        "key": "E",
+        "description": null,
+        "key": "D",
         "notes": [],
-        "lead": "Ana"
+        "lead": null
       },
       {
-        "title": "Way Maker",
+        "title": "The Blood",
         "type": "song",
         "section": "WORSHIP",
-        "length": 261,
+        "length": 314,
         "position": "during",
-        "description": "+ Jill (SAT) / Ana (SUN)\n* Big Ending\n",
+        "description": null,
         "key": "G",
-        "notes": [],
-        "lead": {
-          "Saturday": "Jill",
-          "Sunday": "Ana"
-        }
-      },
-      {
-        "title": "Trust In God (SHORT)",
-        "type": "song",
-        "section": "WORSHIP",
-        "length": 241,
-        "position": "during",
-        "description": "+ Boone\n* Start on double chorus \n* Double chorus into bridge BUILD\n* End Big",
-        "key": "C",
-        "notes": [],
-        "lead": "Boone"
-      },
-      {
-        "title": "Welcome Video",
-        "type": "item",
-        "section": "WORSHIP",
-        "length": 48,
-        "position": "during",
-        "description": "+ ProTools",
-        "key": null,
         "notes": [],
         "lead": null
       },
@@ -140,7 +115,7 @@
         "title": "Offering + Stage Time",
         "type": "item",
         "section": "S T A G E  T I M E - 300",
-        "length": 300,
+        "length": 330,
         "position": "during",
         "description": "** Promo Videos following Offering Prayer\r\n** Bands remain under Campus Pastor up until Offering Videos begin",
         "key": null,
@@ -186,6 +161,17 @@
         "position": "during",
         "description": "** Spotify ",
         "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "Test Of Time",
+        "type": "song",
+        "section": "C L O S E",
+        "length": 239,
+        "position": "during",
+        "description": null,
+        "key": "F",
         "notes": [],
         "lead": null
       }
@@ -268,10 +254,10 @@
         "section": "Worship",
         "length": 258,
         "position": "during",
-        "description": "+ Ana",
+        "description": null,
         "key": "B",
         "notes": [],
-        "lead": "Ana"
+        "lead": null
       },
       {
         "title": "I Know A Name",
@@ -279,10 +265,10 @@
         "section": "Worship",
         "length": 418,
         "position": "during",
-        "description": "+ Boone",
-        "key": "C",
+        "description": "+ Ana",
+        "key": "E",
         "notes": [],
-        "lead": "Boone"
+        "lead": "Ana"
       },
       {
         "title": "Jesus Be The Name (SHORTENED ENDING)",
