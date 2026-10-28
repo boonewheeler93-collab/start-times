@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-27T16:55:03Z",
+  "updated": "2026-10-28T17:28:28Z",
   "weekend": {
     "plan_id": "91142208",
     "title": null,
@@ -84,8 +84,30 @@
         "section": "WORSHIP",
         "length": 224,
         "position": "during",
-        "description": null,
+        "description": "+ Ana",
         "key": "D",
+        "notes": [],
+        "lead": "Ana"
+      },
+      {
+        "title": "So Much",
+        "type": "song",
+        "section": "WORSHIP",
+        "length": 309,
+        "position": "during",
+        "description": null,
+        "key": "A",
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "Song Intro",
+        "type": "item",
+        "section": "WORSHIP",
+        "length": 60,
+        "position": "during",
+        "description": "+ Boone",
+        "key": null,
         "notes": [],
         "lead": null
       },
@@ -161,17 +183,6 @@
         "position": "during",
         "description": "** Spotify ",
         "key": null,
-        "notes": [],
-        "lead": null
-      },
-      {
-        "title": "Test Of Time",
-        "type": "song",
-        "section": "C L O S E",
-        "length": 239,
-        "position": "during",
-        "description": null,
-        "key": "F",
         "notes": [],
         "lead": null
       }
@@ -254,10 +265,10 @@
         "section": "Worship",
         "length": 258,
         "position": "during",
-        "description": null,
+        "description": "+ Ana\n*ENERGY",
         "key": "B",
         "notes": [],
-        "lead": null
+        "lead": "Ana"
       },
       {
         "title": "I Know A Name",
@@ -265,10 +276,10 @@
         "section": "Worship",
         "length": 418,
         "position": "during",
-        "description": "+ Ana",
+        "description": "+ Jill",
         "key": "E",
         "notes": [],
-        "lead": "Ana"
+        "lead": "Jill"
       },
       {
         "title": "Jesus Be The Name (SHORTENED ENDING)",
