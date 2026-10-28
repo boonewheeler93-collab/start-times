@@ -1648,14 +1648,13 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   }
 
   // this Wednesday's SWITCH plan from Planning Center, applied once per device
-  var WEEK_SW = { id: "2026-10-21b", items: [
-    { sec: "Pre-Experience", name: "Line Dancing (No Countdown)", len: "10:00" },
-    { sec: "Cover/Walk-In", name: "Cotton Eye Joe", len: "3:47", start: true, pt: 0 },
-    { sec: "Opener/Introduction", name: "Welcome / Game", len: "5:00" },
-    { sec: "Opener/Introduction", name: "Begins Now", len: "0:26", start: true, pt: 227.273 },
-    { sec: "Worship", name: "Thank God I\u2019m Free", len: "4:56", pt: 253.273 },
-    { sec: "Worship", name: "I Was But God", len: "4:31", pt: 549.523 },
-    { sec: "Worship", name: "Way Maker", len: "6:39", pt: 820.334, ptEnd: 1219 },
+  var WEEK_SW = { id: "2026-10-28", plan: "92310715", items: [
+    { sec: "Pre-Experience", name: "10-Minute Countdown", len: "10:00" },
+    { sec: "Opener/Introduction", name: "Welcome", len: "2:00" },
+    { sec: "Opener/Introduction", name: "Begins Now", len: "1:00", start: true },
+    { sec: "Worship", name: "Alleluia", len: "4:18", lead: "Ana" },
+    { sec: "Worship", name: "I Know A Name", len: "6:58", lead: "Jill" },
+    { sec: "Worship", name: "Jesus Be The Name", len: "5:30", lead: "Ana" },
     { sec: "Message", name: "Transition out of Worship", len: "1:30" },
     { sec: "Message", name: "Offering + Videos", len: "2:00" },
     { sec: "Message", name: "Switch 180", len: "3:00" },
@@ -1668,7 +1667,8 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   ] };
   if (state.swWeek !== WEEK_SW.id) {
     state.swItems = JSON.parse(JSON.stringify(WEEK_SW.items));
-    state.swWeek = WEEK_SW.id;
+    state.swWeek = WEEK_SW.id; state.swLive = null; state.swStart = "-10:00";
+    if (WEEK_SW.plan) state.swPlan = WEEK_SW.plan;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
 
@@ -1684,7 +1684,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-10-25a";
+  var DATA_VER = "2026-10-28a";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2214,7 +2214,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       if (it.start) segs.push({ rel: t, name: nm, pt: pt, ptEnd: null });
       var si = segs.length - 1, sg = segs[si];
       var rel = pt !== null && sg.pt !== null ? sg.rel + (pt - sg.pt) : t;
-      add(nm, rel, "sw" + (it.start ? " swstart" : ""), n ? "Lasts " + fmtDur(n) : "", it.sec, si, pt, it.lead);
+      add(nm, rel, "sw" + (it.start ? " swstart" : ""), n ? "Lasts " + fmtDur(n) : "", it.sec, si, pt, pcLeadSw(nm) || it.lead);
       var ptE = it.ptEnd != null ? +it.ptEnd : pt !== null ? pt + n : null;
       t = ptE !== null && sg.pt !== null ? sg.rel + (ptE - sg.pt) : rel + n;
       if (ptE !== null) sg.ptEnd = Math.max(sg.ptEnd || 0, ptE);
@@ -2588,6 +2588,11 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   try { PC = JSON.parse(localStorage.getItem("start-times-pco") || "null"); } catch (e) { PC = null; }
   function normTitle(t) { return String(t || "").toLowerCase().replace(/\([^)]*\)|\[[^\]]*\]/g, "").replace(/[\u2018\u2019']/g, "").replace(/[^a-z0-9]+/g, " ").trim(); }
   function pcSongs() { return PC && PC.weekend ? PC.weekend.items.filter(function (i) { return i.type === "song"; }) : []; }
+  function pcLeadSw(label) {
+    var n = normTitle(label); if (!n || !PC || !PC.switch) return null;
+    var hit = null; PC.switch.items.forEach(function (i) { if (!hit && i.type === "song" && i.lead && normTitle(i.title) === n) hit = i.lead; });
+    return hit;
+  }
   function pcLead(label) {
     var n = normTitle(label); if (!n) return null;
     var hit = null; pcSongs().forEach(function (i) { if (!hit && i.lead && normTitle(i.title) === n) hit = i.lead; });
