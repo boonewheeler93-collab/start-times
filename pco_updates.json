@@ -1,8 +1,13 @@
 {
-  "note": "Begins Now length from the ProTools markers (!NKC.10.24-25): 8:55.29 to Alleluia at 9:22.49",
+  "note": "Lengths from the ProTools markers (!NKC.10.31-1), whole seconds",
   "service_type": "890623",
-  "plan_id": "91142207",
+  "plan_id": "91142208",
   "items": [
-    { "match": "Begins Now", "length": 27 }
+    { "match": "Walk-in: Babydoll", "length": 179 },
+    { "match": "Begins Now", "length": 27 },
+    { "match": "Washed", "length": 221 },
+    { "match": "So Much", "length": 274 },
+    { "match": "The Lord Is With Me", "length": 333 },
+    { "match": "The Blood", "length": 243 }
   ]
 }
