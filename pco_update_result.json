@@ -1,11 +1,41 @@
 {
-  "ran": "2026-10-23T17:54:56Z",
-  "plan": "91142207",
+  "ran": "2026-10-29T15:04:10Z",
+  "plan": "91142208",
   "changes": [
+    {
+      "item": "Walk-in: Babydoll - Jamie Miller",
+      "before": 240,
+      "after": 179,
+      "status": "updated"
+    },
     {
       "item": "BEGINS NOW",
       "before": 40,
       "after": 27,
+      "status": "updated"
+    },
+    {
+      "item": "WASHED",
+      "before": 224,
+      "after": 221,
+      "status": "updated"
+    },
+    {
+      "item": "So Much",
+      "before": 309,
+      "after": 274,
+      "status": "updated"
+    },
+    {
+      "item": "The Lord Is With Me (NEW SONG)",
+      "before": 360,
+      "after": 333,
+      "status": "updated"
+    },
+    {
+      "item": "The Blood",
+      "before": 314,
+      "after": 243,
       "status": "updated"
     }
   ]
