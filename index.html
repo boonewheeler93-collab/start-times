@@ -1589,32 +1589,33 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 
   // this weekend's message times from Resi, pushed with the app; each device picks them up once
   // this weekend's session (from the ProTools markers), applied once per device
-  var WEEK = { id: "2026-10-24", len: "27:02", countdown: "4:52", mode: "song",
+  // ProTools session !NKC.10.31-1 (markers): song lengths chosen so each song lands on its rounded marker
+  var WEEK = { id: "2026-10-31", len: "26:15", countdown: "4:58", mode: "song",
     items: [
-      { t: "song", label: "Alleluia", len: "4:22", lead: "Boone" },
-      { t: "song", label: "Thank God I\u2019m Free", len: "4:56", lead: "Ana" },
-      { t: "song", label: "Way Maker", len: "4:21", lead: { Saturday: "Jill", Sunday: "Ana" } },
-      { t: "song", label: "Trust In God", len: "4:01", lead: "Boone" }
+      { t: "song", label: "Washed", len: "3:41", lead: "Ana" },
+      { t: "song", label: "So Much", len: "4:34", lead: "Jill" },
+      { t: "song", label: "The Lord Is With Me", len: "5:33", lead: "Boone" },
+      { t: "song", label: "The Blood", len: "4:03", lead: "Boone" }
     ],
-    // this weekend's Resi cues, from MSG START
+    // Resi cues come later in the week
     msgParts: [
       { name: "Message Start", at: "0:00" },
-      { name: "Keys", at: "25:41" },
-      { name: "Prayer Start", at: "29:44" },
-      { name: "Hands", at: "35:16" }
+      { name: "Keys", at: "" },
+      { name: "Prayer Start", at: "" },
+      { name: "Hands", at: "" }
     ] };
-  var WEEK_STAGE = { id: "2026-10-24-stage", stageAt: "27:53" };
+  var WEEK_STAGE = { id: "2026-10-31-stage", stageAt: "" };
   if (state.weekStage !== WEEK_STAGE.id) {
-    state.stageAt = WEEK_STAGE.stageAt; state.weekStage = WEEK_STAGE.id;
+    state.stageAt = WEEK_STAGE.stageAt; state.target = "17:40"; state.weekStage = WEEK_STAGE.id;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
-  var WEEK_DROP = { id: "2026-10-24-video", dropBy: "27:04", ptCues: [{ name: "Welcome to Life.Church video", at: "27:04" }] };
+  var WEEK_DROP = { id: "2026-10-31-novideo", dropBy: "", ptCues: [] };
   if (state.weekDrop !== WEEK_DROP.id) {
     state.dropBy = WEEK_DROP.dropBy; state.ptCues = JSON.parse(JSON.stringify(WEEK_DROP.ptCues)); state.weekDrop = WEEK_DROP.id;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // leaders from the printout (added after the songs were loaded, so apply on its own)
-  var WEEK_LEAD = { id: "2026-10-25-leads", walkSong: { name: "White Horse", lead: "Boone" } };
+  var WEEK_LEAD = { id: "2026-10-31-leads", walkSong: { name: "Babydoll", lead: "Ana" } };
   if (state.weekLead !== WEEK_LEAD.id) {
     state.walkSong = WEEK_LEAD.walkSong;
     if (Array.isArray(state.items) && Array.isArray(WEEK.items)) state.items.forEach(function (it) {
@@ -1674,18 +1675,18 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   }
 
   // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
-  var WEEK_RESI = { id: "2026-10-24-resi2", msgParts: [
+  var WEEK_RESI = { id: "2026-10-31-resi", msgParts: [
     { name: "Message Start", at: "0:00" },
-    { name: "Keys", at: "25:41" },
-    { name: "Prayer Start", at: "29:44" },
-    { name: "Hands", at: "35:16" }
+    { name: "Keys", at: "" },
+    { name: "Prayer Start", at: "" },
+    { name: "Hands", at: "" }
   ] };
   if (state.weekResi !== WEEK_RESI.id) {
     state.msgParts = JSON.parse(JSON.stringify(WEEK_RESI.msgParts)); state.msgLateKey = null; state.weekResi = WEEK_RESI.id;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-10-28b";
+  var DATA_VER = "2026-10-31a";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2858,9 +2859,8 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   // Memory Locations from each session's markers (seconds into the session)
   var MARKERS = {
     weekend: [
-      { n: "Start", t: 0 }, { n: "Cover", t: 292.0 }, { n: "Begins Now", t: 535.288 }, { n: "Alleluia", t: 562.488 },
-      { n: "Thank God I\u2019m Free", t: 823.608 }, { n: "Way Maker", t: 1119.858 }, { n: "Trust In God", t: 1381.034 }, { n: "End", t: 1621.845 },
-      { n: "Welcome video", t: 1624 }, { n: "Video ends", t: 1673 }
+      { n: "Start", t: 0 }, { n: "Cover", t: 298.000 }, { n: "Begins Now", t: 476.571 }, { n: "Washed", t: 503.771 },
+      { n: "So Much", t: 724.779 }, { n: "The Lord Is With Me", t: 999.064 }, { n: "The Blood", t: 1331.723 }, { n: "End", t: 1574.966 }
     ],
     "switch": [
       { n: "10-Minute Countdown", t: 0 }, { n: "Begins Now", t: 902.000 }, { n: "Alleluia", t: 926.000 },
