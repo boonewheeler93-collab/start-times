@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-28T18:56:42Z",
+  "updated": "2026-10-29T15:02:23Z",
   "weekend": {
     "plan_id": "91142208",
     "title": null,
@@ -95,10 +95,10 @@
         "section": "WORSHIP",
         "length": 309,
         "position": "during",
-        "description": null,
-        "key": "A",
+        "description": "+ Jill\n* Big Intro",
+        "key": "D",
         "notes": [],
-        "lead": null
+        "lead": "Jill"
       },
       {
         "title": "Song Intro",
@@ -112,15 +112,15 @@
         "lead": null
       },
       {
-        "title": "The Lord Is With Me",
+        "title": "The Lord Is With Me (NEW SONG)",
         "type": "song",
         "section": "WORSHIP",
         "length": 360,
         "position": "during",
-        "description": null,
+        "description": "+ Boone",
         "key": "D",
         "notes": [],
-        "lead": null
+        "lead": "Boone"
       },
       {
         "title": "The Blood",
@@ -128,10 +128,10 @@
         "section": "WORSHIP",
         "length": 314,
         "position": "during",
-        "description": null,
+        "description": "+ Boone",
         "key": "G",
         "notes": [],
-        "lead": null
+        "lead": "Boone"
       },
       {
         "title": "Offering + Stage Time",
