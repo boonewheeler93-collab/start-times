@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-29T17:39:28Z",
+  "updated": "2026-10-30T17:17:30Z",
   "weekend": {
     "plan_id": "91142208",
     "title": null,
@@ -193,13 +193,13 @@
     }
   },
   "switch": {
-    "plan_id": "92310715",
+    "plan_id": "92310716",
     "title": null,
     "series": null,
-    "dates": "October 28, 2026",
-    "sort_date": "2026-10-28T19:00:00Z",
+    "dates": "November 4, 2026",
+    "sort_date": "2026-11-04T19:00:00Z",
     "times": [
-      "2026-10-29T00:00:00Z"
+      "2026-11-05T01:00:00Z"
     ],
     "items": [
       {
@@ -260,37 +260,37 @@
         "lead": null
       },
       {
-        "title": "Alleluia",
+        "title": "I Was But God",
         "type": "song",
         "section": "Worship",
-        "length": 258,
+        "length": 274,
         "position": "during",
-        "description": "+ Ana\n*ENERGY",
-        "key": "B",
-        "notes": [],
-        "lead": "Ana"
-      },
-      {
-        "title": "I Know A Name",
-        "type": "song",
-        "section": "Worship",
-        "length": 418,
-        "position": "during",
-        "description": "+ Jill",
-        "key": "E",
-        "notes": [],
-        "lead": "Jill"
-      },
-      {
-        "title": "Jesus Be The Name (SHORTENED ENDING)",
-        "type": "song",
-        "section": "Worship",
-        "length": 330,
-        "position": "during",
-        "description": "+ Ana\n* End BIG",
+        "description": "+ Boone\n* Big Ending",
         "key": "C",
         "notes": [],
+        "lead": "Boone"
+      },
+      {
+        "title": "God I'm Just Grateful",
+        "type": "song",
+        "section": "Worship",
+        "length": 303,
+        "position": "during",
+        "description": "+ Ana\n* Big intro",
+        "key": "E",
+        "notes": [],
         "lead": "Ana"
+      },
+      {
+        "title": "I Speak Jesus",
+        "type": "song",
+        "section": "Worship",
+        "length": 415,
+        "position": "during",
+        "description": "+ Boone/Ana",
+        "key": "E",
+        "notes": [],
+        "lead": "Boone/Ana"
       },
       {
         "title": "Transition out of Worship",
