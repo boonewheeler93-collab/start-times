@@ -1218,6 +1218,11 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   font-weight: 900; font-size: clamp(2rem, 8vw, 5rem); line-height: 1; color: #1b0f00; background: #ffc272; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
 .hands-flash[hidden] { display: none; }
 .hands-flash.red { color: #fff; background: #ff3b30; }
+
+/* message start: quick 5-second nudges */
+.ms-quick { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 2px; }
+.ms-quick button { min-height: 44px; font-weight: 800; }
+.b-msgadj .ma-btns button { min-width: 3.6em; }
 </style>
 </head>
 <body>
@@ -1473,8 +1478,10 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     <div class="b-msgadj" id="bMsgAdj" hidden>
       <span class="ma-l">Message start <b id="maVal">on time</b></span>
       <div class="ma-btns">
+        <button type="button" class="ghost" id="maMinus5" aria-label="Message started 5 seconds earlier">−5 s</button>
         <button type="button" class="ghost" id="maMinus" aria-label="Message started 1 second earlier">−1 s</button>
         <button type="button" class="ghost" id="maPlus" aria-label="Message started 1 second later">+1 s</button>
+        <button type="button" class="ghost" id="maPlus5" aria-label="Message started 5 seconds later">+5 s</button>
         <button type="button" class="solid" id="maNow">Started now</button>
       </div>
     </div>
@@ -2098,6 +2105,16 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       del.addEventListener("click", function () { state.msgParts.splice(i, 1); persist(); renderParts(); compute(); });
       if (/^message\s*start/.test(nmL)) row.className += " has-step";
       row.appendChild(nm); row.appendChild(tm); row.appendChild(del);
+      if (/^message\s*start/.test(nmL)) {
+        var q = document.createElement("div"); q.className = "ms-quick";
+        [[-5, "\u22125 s", "5 seconds earlier"], [5, "+5 s", "5 seconds later"]].forEach(function (d) {
+          var qb = document.createElement("button"); qb.type = "button"; qb.className = "ghost"; qb.textContent = d[1];
+          qb.setAttribute("aria-label", "Message started " + d[2]);
+          qb.addEventListener("click", function () { setMsgStart(msgLate() + d[0]); });
+          q.appendChild(qb);
+        });
+        row.appendChild(q);
+      }
       host.appendChild(row); partEls.push(tm);
     });
     if (!state.msgParts.length) host.innerHTML = '<p class="note" style="margin-top:0">No message parts. Add one to count down to it.</p>';
@@ -3300,6 +3317,8 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   function msgLate() { return lastCalc ? Math.round(lastCalc.mStartRel - lastCalc.msg) : 0; }
   $("maMinus").addEventListener("click", function () { setMsgStart(msgLate() - 1); });
   $("maPlus").addEventListener("click", function () { setMsgStart(msgLate() + 1); });
+  $("maPlus5").addEventListener("click", function () { setMsgStart(msgLate() + 5); });
+  $("maMinus5").addEventListener("click", function () { setMsgStart(msgLate() - 5); });
   $("maNow").addEventListener("click", function () {
     if (!lastCalc || !booth.msgOcc) return;
     setMsgStart((nowMs() - (booth.msgOcc.t + lastCalc.msg * 1000)) / 1000);
