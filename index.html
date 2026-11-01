@@ -1223,13 +1223,19 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 .ms-quick { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 2px; }
 .ms-quick button { min-height: 44px; font-weight: 800; }
 .b-msgadj .ma-btns button { min-width: 3.6em; }
+
+.top-right { display: flex; align-items: center; gap: 12px; }
+.refresh-btn { min-height: 40px; padding: 6px 14px; font-size: 0.9rem; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
     <h1>Start Times</h1>
-    <div class="mini-clock" id="mClock" aria-label="Central time"></div>
+    <div class="top-right">
+      <button type="button" class="ghost refresh-btn" id="mRefresh" aria-label="Refresh to the newest version">Refresh</button>
+      <div class="mini-clock" id="mClock" aria-label="Central time"></div>
+    </div>
   </div>
   <button type="button" class="nextline" id="mNext" hidden></button>
   <div class="layout">
@@ -1452,6 +1458,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       <button type="button" class="ghost icon-btn" id="bPrev" aria-label="Previous service">‹</button>
       <div class="b-svc" id="bSvc"></div>
       <button type="button" class="ghost icon-btn" id="bNextSvc" aria-label="Next service">›</button>
+      <button type="button" class="ghost" id="bRefresh" aria-label="Refresh to the newest version">Refresh</button>
       <button type="button" class="ghost" id="bFull">Full screen</button>
       <button type="button" class="ghost" id="bClose">Close</button>
     </div>
@@ -3349,6 +3356,13 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   }
   if (!document.fullscreenEnabled) $("bFull").hidden = true;
   $("bFull").addEventListener("click", toggleFull);
+  // Refresh: load the newest published version (booth reopens as booth); confirm if it's mid-set
+  function refreshApp() {
+    if (!safeToReload(nowMs()) && !window.confirm("It\u2019s during the set or ProTools is playing. Refresh anyway?")) return;
+    location.replace(location.pathname + "?v=" + Date.now() + (booth.open ? "#booth" : location.hash));
+  }
+  $("bRefresh").addEventListener("click", refreshApp);
+  $("mRefresh").addEventListener("click", refreshApp);
   document.addEventListener("fullscreenchange", function () { $("bFull").textContent = document.fullscreenElement ? "Exit full screen" : "Full screen"; });
   var idleT = null;
   function wakeCursor() {
