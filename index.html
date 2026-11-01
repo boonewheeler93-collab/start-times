@@ -3768,12 +3768,47 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     }, function () { sync.err = "This account isn\u2019t allowed to sync. Ask to be added."; renderSync(); });
     renderSync();
   }
+  var reloadWanted = false;
+  function safeToReload(now) {
+    if (!lastCalc) return true;
+    var occ = occurrences(now); if (!occ.length) return true;
+    var bad = false;
+    occ.slice(0, 2).forEach(function (o) {
+      var from = o.t + (lastCalc.startRel - 120) * 1000, to = o.t + (lastCalc.finalRel + 60) * 1000;   // 2 min before hit play to 1 min after the final downbeat
+      if (now >= from && now <= to) bad = true;
+    });
+    if (ptMoving && ptMoving()) bad = true;
+    return !bad;
+  }
+  function scheduleReload() {
+    if (reloadWanted) return; reloadWanted = true;
+    var tick = setInterval(function () {
+      if (!safeToReload(nowMs())) return;
+      clearInterval(tick);
+      var u = location.pathname + "?v=" + Date.now() + location.hash;
+      location.replace(u);
+    }, 15000);
+  }
   var WEEKLY_KEYS = { mode: 1, len: 1, target: 1, walkin: 1, set: 1, items: 1, countdown: 1, b2f: 1, walkBackup: 1, cutoff: 1, sat: 1, stage: 1, msg: 1, lower: 1,
     services: 1, msgParts: 1, msgLateKey: 1, swStart: 1, swServices: 1, swItems: 1, dropBy: 1, ptCues: 1, walkSong: 1, stageAt: 1, weekVer: 1 };
   function sharedIsCurrent(v) { return !!v && v.weekVer === DATA_VER; }
   function applyShared(v) {
     var current = sharedIsCurrent(v);
     sync.applying = true;
+    if (!current) {
+      // different version: keep this device's weekly times, but take the live message start nudge
+      var inMs = null;
+      (Array.isArray(v.msgParts) ? v.msgParts : v.msgParts ? Object.keys(v.msgParts).map(function (i) { return v.msgParts[i]; }) : []).forEach(function (pt) {
+        if (pt && /^message\s*start/i.test(String(pt.name || "").trim())) inMs = pt.at;
+      });
+      if (inMs !== null && inMs !== undefined) {
+        state.msgParts.forEach(function (pt) { if (/^message\s*start/i.test(String(pt.name || "").trim())) pt.at = inMs; });
+        state.msgLateKey = v.msgLateKey || null;
+        renderParts();
+      }
+      // a newer version is out: reload this screen when it's safe
+      if (v.weekVer && v.weekVer > DATA_VER) scheduleReload();
+    }
     SHARED.forEach(function (k) {
       if (!current && WEEKLY_KEYS[k]) return;        // older data: keep this weekend's times
       var x = v[k];
