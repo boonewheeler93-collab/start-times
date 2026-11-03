@@ -1,17 +1,17 @@
 {
-  "updated": "2026-11-02T20:55:03Z",
+  "updated": "2026-11-03T18:42:54Z",
   "weekend": {
-    "plan_id": "91142208",
-    "title": null,
-    "series": null,
-    "dates": "October 31 & November 1, 2026",
-    "sort_date": "2026-10-31T17:00:00Z",
+    "plan_id": "91142209",
+    "title": "BAPTISM WEEKEND",
+    "series": "Supernatural",
+    "dates": "November 7 & 8, 2026",
+    "sort_date": "2026-11-07T17:00:00Z",
     "times": [
-      "2026-10-31T22:00:00Z",
-      "2026-11-01T14:30:00Z",
-      "2026-11-01T16:00:00Z",
-      "2026-11-01T17:30:00Z",
-      "2026-11-01T19:00:00Z"
+      "2026-11-07T23:00:00Z",
+      "2026-11-08T14:30:00Z",
+      "2026-11-08T16:00:00Z",
+      "2026-11-08T17:30:00Z",
+      "2026-11-08T19:00:00Z"
     ],
     "items": [
       {
@@ -57,21 +57,10 @@
         "lead": null
       },
       {
-        "title": "Walk-in: Babydoll - Jamie Miller",
+        "title": "Walk-in:  ",
         "type": "item",
         "section": "WALK-IN SONG",
-        "length": 179,
-        "position": "during",
-        "description": "+ Ana\n* BGVS",
-        "key": null,
-        "notes": [],
-        "lead": "Ana"
-      },
-      {
-        "title": "BEGINS NOW",
-        "type": "item",
-        "section": "WORSHIP",
-        "length": 27,
+        "length": 240,
         "position": "during",
         "description": null,
         "key": null,
@@ -79,35 +68,46 @@
         "lead": null
       },
       {
-        "title": "WASHED",
-        "type": "song",
+        "title": "BEGINS NOW",
+        "type": "item",
         "section": "WORSHIP",
-        "length": 221,
+        "length": 40,
         "position": "during",
-        "description": "+ Ana",
-        "key": "D",
+        "description": null,
+        "key": null,
         "notes": [],
-        "lead": "Ana"
+        "lead": null
       },
       {
-        "title": "So Much",
+        "title": "Alleluia",
         "type": "song",
         "section": "WORSHIP",
-        "length": 274,
+        "length": 258,
         "position": "during",
-        "description": "+ Jill\n* Big Intro",
-        "key": "D",
+        "description": null,
+        "key": "A",
         "notes": [],
-        "lead": "Jill"
+        "lead": null
       },
       {
-        "title": "Song Intro",
+        "title": "Baptism Toss",
         "type": "item",
         "section": "WORSHIP",
         "length": 60,
         "position": "during",
-        "description": "+ Boone",
+        "description": "+",
         "key": null,
+        "notes": [],
+        "lead": null
+      },
+      {
+        "title": "Thank God I'm Free",
+        "type": "song",
+        "section": "WORSHIP",
+        "length": 301,
+        "position": "during",
+        "description": null,
+        "key": "E",
         "notes": [],
         "lead": null
       },
@@ -119,17 +119,6 @@
         "position": "during",
         "description": "+ Boone",
         "key": "D",
-        "notes": [],
-        "lead": "Boone"
-      },
-      {
-        "title": "The Blood",
-        "type": "song",
-        "section": "WORSHIP",
-        "length": 243,
-        "position": "during",
-        "description": "+ Boone",
-        "key": "G",
         "notes": [],
         "lead": "Boone"
       },
