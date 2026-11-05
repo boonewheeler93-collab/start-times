@@ -1593,13 +1593,15 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       // forget skips for services more than two days old
       Object.keys(state.skips).forEach(function (k) { var t = +String(k).split("|")[2]; if (!t || t < Date.now() - 172800000) delete state.skips[k]; });
       // move saved values off the old defaults
-      if (state.target === "17:50") state.target = "17:45";
+      // (an old one-time conversion from 17:50 to 17:45 used to sit here and ran on every load; removed)
       // 17:40 is the standard final downbeat target; move old defaults to it once, then leave any edit alone
       if (!state.tgt1740) { if (state.target === "17:45" || state.target === "17:50") state.target = "17:40"; state.tgt1740 = true; }
       // standard target is now 17:47: about 13 seconds after the last downbeat before Stagetime at 18:00
       if (!state.tgt1747) { if (state.target === "17:40") state.target = "17:47"; state.tgt1747 = true; }
       // standard target is now 17:50: the last downbeat lands 10 seconds before Stagetime at 18:00
       if (!state.tgt1750) { if (state.target === "17:40" || state.target === "17:47") state.target = "17:50"; state.tgt1750 = true; }
+      // repair devices that the old conversion knocked down from 17:50 to 17:45
+      if (!state.tgt1750fix) { if (state.target === "17:45") state.target = "17:50"; state.tgt1750fix = true; }
       if (state.lower === "0:30") state.lower = "0:38";
     }
   } catch (e) {}
@@ -1607,20 +1609,20 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 
   // this weekend's message times from Resi, pushed with the app; each device picks them up once
   // this weekend's session (from the ProTools markers), applied once per device
-  // ProTools session !NKC.10.31-1 (markers): song lengths chosen so each song lands on its rounded marker
-  var WEEK = { id: "2026-10-31", len: "26:15", countdown: "4:58", mode: "song",
+  // ProTools session !NKC.11.7-8 (markers), Baptism Weekend: lengths chosen so each part lands on its rounded marker
+  var WEEK = { id: "2026-11-07", len: "26:30", countdown: "5:00", mode: "song",
     items: [
-      { t: "song", label: "Washed", len: "3:41", lead: "Ana" },
-      { t: "song", label: "So Much", len: "4:34", lead: "Jill" },
-      { t: "song", label: "The Lord Is With Me", len: "5:33", lead: "Boone" },
-      { t: "song", label: "The Blood", len: "4:03", lead: "Boone" }
+      { t: "song", label: "Alleluia", len: "3:51", lead: "Boone" },
+      { t: "toss", label: "Baptism Toss", len: "1:00", lead: "Boone" },
+      { t: "song", label: "Thank God I\u2019m Free", len: "4:11", lead: { Saturday: "Ady", Sunday: "Tara" } },
+      { t: "song", label: "The Lord Is With Me", len: "8:44", lead: "Ana" }
     ],
-    // this weekend's Resi cues, from MSG START
+    // Resi cues come later in the week
     msgParts: [
       { name: "Message Start", at: "0:00" },
-      { name: "Keys", at: "27:25" },
-      { name: "Prayer Start", at: "31:28" },
-      { name: "Hands", at: "35:27" }
+      { name: "Keys", at: "" },
+      { name: "Prayer Start", at: "" },
+      { name: "Hands", at: "" }
     ] };
   var WEEK_STAGE = { id: "2026-10-31-stage", stageAt: "" };
   if (state.weekStage !== WEEK_STAGE.id) {
@@ -1633,7 +1635,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // leaders from the printout (added after the songs were loaded, so apply on its own)
-  var WEEK_LEAD = { id: "2026-10-31-leads", walkSong: { name: "Babydoll", lead: "Ana" } };
+  var WEEK_LEAD = { id: "2026-11-07-leads", walkSong: { name: "Don\u2019t Stop", lead: "Jess / Kari" } };
   if (state.weekLead !== WEEK_LEAD.id) {
     state.walkSong = WEEK_LEAD.walkSong;
     if (Array.isArray(state.items) && Array.isArray(WEEK.items)) state.items.forEach(function (it) {
@@ -1693,18 +1695,18 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   }
 
   // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
-  var WEEK_RESI = { id: "2026-10-31-resi2", msgParts: [
+  var WEEK_RESI = { id: "2026-11-07-resi", msgParts: [
     { name: "Message Start", at: "0:00" },
-    { name: "Keys", at: "27:25" },
-    { name: "Prayer Start", at: "31:28" },
-    { name: "Hands", at: "35:27" }
+    { name: "Keys", at: "" },
+    { name: "Prayer Start", at: "" },
+    { name: "Hands", at: "" }
   ] };
   if (state.weekResi !== WEEK_RESI.id) {
     state.msgParts = JSON.parse(JSON.stringify(WEEK_RESI.msgParts)); state.msgLateKey = null; state.weekResi = WEEK_RESI.id;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-04a";
+  var DATA_VER = "2026-11-07a";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2431,7 +2433,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
             var label = i === 0 ? "First worship song" + (it.name ? " (" + it.name + ")" : "") : (it.name || "Song " + it.songN);
             add(label, at, "song", "", pcLead(it.name) || it.lead);
           } else {
-            add("Toss" + (it.name ? ": " + it.name : ""), at, "toss", it.len > 0 ? "Lasts " + fmtDur(it.len) : "");
+            add("Toss" + (it.name ? ": " + it.name : ""), at, "toss", it.len > 0 ? "Lasts " + fmtDur(it.len) : "", it.lead);
           }
           cum += it.len;
         });
@@ -2887,8 +2889,8 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   // Memory Locations from each session's markers (seconds into the session)
   var MARKERS = {
     weekend: [
-      { n: "Start", t: 0 }, { n: "Cover", t: 298.000 }, { n: "Begins Now", t: 476.571 }, { n: "Washed", t: 503.771 },
-      { n: "So Much", t: 724.779 }, { n: "The Lord Is With Me", t: 999.064 }, { n: "The Blood", t: 1331.723 }, { n: "End", t: 1574.966 }
+      { n: "Start", t: 0 }, { n: "Cover", t: 300.000 }, { n: "Begins Now", t: 497.288 }, { n: "Alleluia", t: 524.488 },
+      { n: "Baptism Toss", t: 754.888 }, { n: "Thank God I\u2019m Free", t: 814.888 }, { n: "The Lord Is With Me", t: 1066.138 }, { n: "End", t: 1590.189 }
     ],
     "switch": [
       { n: "10-Minute Countdown", t: 0 }, { n: "Begins Now", t: 833.500 }, { n: "I Was But God", t: 858.000 },
@@ -2900,7 +2902,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     var k = c.cls || "";
     if (/svc|part|drop/.test(k)) return null;
     if (k.indexOf("hit") > -1) return 0;
-    var mk = curMarkers(), n = normTitle(c.label.replace(/^First worship song \((.+)\)$/, "$1").replace(/^Walk-in song:?.*$/i, "cover").replace(/^\u201c?Begins Now\u201d?$/i, "begins now"));
+    var mk = curMarkers(), n = normTitle(c.label.replace(/^Toss:\s*/, "").replace(/^First worship song \((.+)\)$/, "$1").replace(/^Walk-in song:?.*$/i, "cover").replace(/^\u201c?Begins Now\u201d?$/i, "begins now"));
     if (k.indexOf("final") > -1) n = "end";
     if (/video/i.test(c.label)) n = "welcome video";
     var hit = null; mk.forEach(function (m) { if (hit === null && normTitle(m.n) === n) hit = m.t; });
