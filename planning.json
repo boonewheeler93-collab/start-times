@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-05T04:28:26Z",
+  "updated": "2026-11-05T19:07:15Z",
   "weekend": {
     "plan_id": "91142209",
     "title": "BAPTISM WEEKEND",
@@ -84,7 +84,7 @@
         "section": "WORSHIP",
         "length": 230,
         "position": "during",
-        "description": "+ Boone\n* Verse Chords Intro, straight into V1",
+        "description": "+ Boone\n* Verse Chords Intro, straight into V1\n- End with a Trash on the 1\n\n-125 BPM-",
         "key": "A",
         "notes": [],
         "lead": "Boone"
@@ -106,7 +106,7 @@
         "section": "WORSHIP",
         "length": 251,
         "position": "during",
-        "description": "+ Ady (SAT)/ Tara (SUN)",
+        "description": "+ Ady (SAT)/ Tara (SUN)\n- End with trash on the 1\n\n-128 BPM-",
         "key": "E",
         "notes": [],
         "lead": {
@@ -120,7 +120,7 @@
         "section": "WORSHIP",
         "length": 524,
         "position": "during",
-        "description": "+ Ana\n\n--- Song Roadmap ---\n79 BPM (6/8)\nIntro, Verse 1, Verse 2, Chorus, Turnaround, Verse 3, Bridge (2x), Chorus, Bridge (2x), Interlude, Verse 3, Bridge (2x), Chorus, Bridge (2x), Chorus, Ending",
+        "description": "+ Ana\n\n--- Song Roadmap ---\n79 BPM\nIntro, Verse 1, Verse 2, Chorus, Turnaround, Verse 3, Bridge (2x), Chorus, Bridge (2x), Interlude, Verse 3, Bridge (2x), Chorus, Bridge (2x), Chorus, Ending",
         "key": "G",
         "notes": [],
         "lead": "Ana"
