@@ -40,6 +40,13 @@ def main():
         if len(hits) != 1:
             print(f"SKIP {u['match']!r}: {len(hits)} matching items"); result["changes"].append({"item": u["match"], "status": f"skipped ({len(hits)} matches)"}); continue
         it = hits[0]
+        if "description" in u:
+            # set the whole description (used when the full text is spelled out in pco_updates.json)
+            before_d = it["attributes"].get("description") or ""
+            call("PATCH", f"/service_types/{st}/plans/{pid}/items/{it['id']}", {"data": {"type": "Item", "id": it["id"], "attributes": {"description": u["description"]}}})
+            print(f"DESC {it['attributes']['title']!r} set")
+            result["changes"].append({"item": it["attributes"]["title"], "status": "description set", "before": before_d, "description": u["description"]})
+            continue
         if "roadmap" in u:
             # keep everything already in the description; replace only our roadmap block (or add it at the end)
             desc = (it["attributes"].get("description") or "").replace("\r\n", "\n")
