@@ -1,13 +1,13 @@
 {
-  "note": "Lengths from the ProTools markers (!NKC.10.31-1), whole seconds",
+  "note": "Lengths from the ProTools markers (!NKC.11.7-8), whole seconds",
   "service_type": "890623",
-  "plan_id": "91142208",
+  "plan_id": "91142209",
   "items": [
-    { "match": "Walk-in: Babydoll", "length": 179 },
+    { "match": "Walk-in: Don't Stop", "length": 197 },
     { "match": "Begins Now", "length": 27 },
-    { "match": "Washed", "length": 221 },
-    { "match": "So Much", "length": 274 },
-    { "match": "The Lord Is With Me", "length": 333 },
-    { "match": "The Blood", "length": 243 }
+    { "match": "Alleluia", "length": 230 },
+    { "match": "Baptism Toss", "length": 60 },
+    { "match": "Thank God I'm Free", "length": 251 },
+    { "match": "The Lord Is With Me", "length": 524 }
   ]
 }
