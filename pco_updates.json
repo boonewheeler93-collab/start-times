@@ -1,11 +1,11 @@
 {
-  "note": "Roadmap for The Lord Is With Me (from the bounce of !NKC.11.7-8)",
+  "note": "Condensed roadmap for The Lord Is With Me",
   "service_type": "890623",
   "plan_id": "91142209",
   "items": [
     {
       "match": "The Lord Is With Me",
-      "roadmap": "105 BPM - 230 bars - times are the ProTools counter\nIntro (8 bars) 17:46\nVerse 1 (16) 18:04\nVerse 1, second half (8) 18:41\nBuild / Pre-Chorus (8) 18:59\nChorus 1 (16) 19:17\nTurnaround (4) 19:54\nVerse 2 (12) 20:03\nPre-Chorus (8) 20:30\nChorus 2, part A (16) 20:48\nChorus 2, part B - hook (16) 21:25\nBridge (20) 22:01\nBreakdown - quiet, loops (16) 22:47\nRebuild (16) 23:23\nChorus 3, part A (16) 24:00\nChorus 3, part B - hook (16) 24:36\nBridge 2 (16) 25:13\nTag / Ending (18) 25:49 - screen drop 25:52 (bar 214, beat 2)\nFinal downbeat 26:30"
+      "description": "+ Ana\n\n105 BPM\nIntro, Verse 1 (2x), PreChorus, Chorus 1, Turnaround, Verse 2, PreChorus, Chorus 2 (2x), Bridge, Breakdown, Build, Chorus 3 (2x), Bridge, Tag, End"
     }
   ]
 }
