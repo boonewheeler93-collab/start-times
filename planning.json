@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-04T22:31:17Z",
+  "updated": "2026-11-05T03:54:06Z",
   "weekend": {
     "plan_id": "91142209",
     "title": "BAPTISM WEEKEND",
@@ -62,10 +62,10 @@
         "section": "WALK-IN SONG",
         "length": 240,
         "position": "during",
-        "description": null,
+        "description": "+ Jess / Kari\n* BGVS",
         "key": null,
         "notes": [],
-        "lead": null
+        "lead": "Jess / Kari"
       },
       {
         "title": "BEGINS NOW",
@@ -82,12 +82,12 @@
         "title": "Alleluia",
         "type": "song",
         "section": "WORSHIP",
-        "length": 258,
+        "length": 240,
         "position": "during",
-        "description": null,
+        "description": "+ Boone\n* Verse Chords Intro, straight into V1",
         "key": "A",
         "notes": [],
-        "lead": null
+        "lead": "Boone"
       },
       {
         "title": "Baptism Toss",
@@ -95,7 +95,7 @@
         "section": "WORSHIP",
         "length": 60,
         "position": "during",
-        "description": "+",
+        "description": "+ Boone\n* Thank God I’m Free (Underscore) Big\n- Intro (2x), Bridge (2x), Verse 1",
         "key": null,
         "notes": [],
         "lead": null
@@ -106,21 +106,24 @@
         "section": "WORSHIP",
         "length": 301,
         "position": "during",
-        "description": null,
+        "description": "+ Ady (SAT)/ Tara (SUN)",
         "key": "E",
         "notes": [],
-        "lead": null
+        "lead": {
+          "Saturday": "Ady",
+          "Sunday": "Tara"
+        }
       },
       {
-        "title": "The Lord Is With Me (NEW SONG)",
+        "title": "The Lord Is With Me (Longer Version)",
         "type": "song",
         "section": "WORSHIP",
         "length": 333,
         "position": "during",
-        "description": "+ Boone",
-        "key": "D",
+        "description": "+ Ana\n",
+        "key": "G",
         "notes": [],
-        "lead": "Boone"
+        "lead": "Ana"
       },
       {
         "title": "Offering + Stage Time",
