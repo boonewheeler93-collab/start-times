@@ -33,12 +33,27 @@ def main():
     print("Plan:", plan["attributes"].get("dates"), plan["attributes"].get("title"))
     items = call("GET", f"/service_types/{st}/plans/{pid}/items?per_page=100")["data"]
     result = {"ran": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z", "plan": pid, "changes": []}
+    START, END = "--- Song roadmap ---", "--- end roadmap ---"
     for u in cfg["items"]:
         want = norm(u["match"])
         hits = [i for i in items if norm(i["attributes"].get("title")).startswith(want)]
         if len(hits) != 1:
             print(f"SKIP {u['match']!r}: {len(hits)} matching items"); result["changes"].append({"item": u["match"], "status": f"skipped ({len(hits)} matches)"}); continue
-        it = hits[0]; before = it["attributes"].get("length")
+        it = hits[0]
+        if "roadmap" in u:
+            # keep everything already in the description; replace only our roadmap block (or add it at the end)
+            desc = (it["attributes"].get("description") or "").replace("\r\n", "\n")
+            block = START + "\n" + u["roadmap"].strip() + "\n" + END
+            if START in desc and END in desc:
+                a, b = desc.index(START), desc.index(END) + len(END)
+                new = desc[:a].rstrip() + ("\n\n" if desc[:a].strip() else "") + block + desc[b:]
+            else:
+                new = (desc.rstrip() + "\n\n" if desc.strip() else "") + block
+            call("PATCH", f"/service_types/{st}/plans/{pid}/items/{it['id']}", {"data": {"type": "Item", "id": it["id"], "attributes": {"description": new}}})
+            print(f"NOTE {it['attributes']['title']!r}: roadmap {'replaced' if START in desc else 'added'}")
+            result["changes"].append({"item": it["attributes"]["title"], "status": "roadmap " + ("replaced" if START in desc else "added"), "description": new})
+            continue
+        before = it["attributes"].get("length")
         if before == u["length"]:
             print(f"OK   {it['attributes']['title']!r} already {before}s"); result["changes"].append({"item": it["attributes"]["title"], "before": before, "after": before, "status": "unchanged"}); continue
         call("PATCH", f"/service_types/{st}/plans/{pid}/items/{it['id']}", {"data": {"type": "Item", "id": it["id"], "attributes": {"length": u["length"]}}})
