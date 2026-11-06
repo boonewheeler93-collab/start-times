@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-05T19:07:15Z",
+  "updated": "2026-11-06T18:34:17Z",
   "weekend": {
     "plan_id": "91142209",
     "title": "BAPTISM WEEKEND",
@@ -185,13 +185,13 @@
     }
   },
   "switch": {
-    "plan_id": "92310716",
+    "plan_id": "92310717",
     "title": null,
     "series": null,
-    "dates": "November 4, 2026",
-    "sort_date": "2026-11-04T19:00:00Z",
+    "dates": "November 11, 2026",
+    "sort_date": "2026-11-11T19:00:00Z",
     "times": [
-      "2026-11-05T01:00:00Z"
+      "2026-11-12T01:00:00Z"
     ],
     "items": [
       {
@@ -252,37 +252,37 @@
         "lead": null
       },
       {
-        "title": "I Was But God",
+        "title": "Alleluia",
         "type": "song",
         "section": "Worship",
-        "length": 274,
+        "length": 258,
         "position": "during",
-        "description": "+ Boone\n* Big Ending",
-        "key": "C",
+        "description": "+ BOONE \n*ENERGY",
+        "key": "A",
         "notes": [],
-        "lead": "Boone"
+        "lead": "BOONE"
       },
       {
-        "title": "God I'm Just Grateful",
+        "title": "WASHED",
         "type": "song",
         "section": "Worship",
-        "length": 303,
+        "length": 224,
         "position": "during",
-        "description": "+ Ana\n* Big intro",
-        "key": "E",
+        "description": "+ ANA",
+        "key": "D",
+        "notes": [],
+        "lead": "ANA"
+      },
+      {
+        "title": "At The Altar",
+        "type": "song",
+        "section": "Worship",
+        "length": 437,
+        "position": "during",
+        "description": "+ Ana",
+        "key": "D",
         "notes": [],
         "lead": "Ana"
-      },
-      {
-        "title": "I Speak Jesus",
-        "type": "song",
-        "section": "Worship",
-        "length": 415,
-        "position": "during",
-        "description": "+ Boone/Ana",
-        "key": "E",
-        "notes": [],
-        "lead": "Boone/Ana"
       },
       {
         "title": "Transition out of Worship",
