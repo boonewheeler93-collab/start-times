@@ -1617,12 +1617,12 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       { t: "song", label: "Thank God I\u2019m Free", len: "4:11", lead: { Saturday: "Ady", Sunday: "Tara" } },
       { t: "song", label: "The Lord Is With Me", len: "8:44", lead: "Ana" }
     ],
-    // Resi cues come later in the week
+    // this weekend's Resi cues, from MSG START
     msgParts: [
       { name: "Message Start", at: "0:00" },
-      { name: "Keys", at: "" },
-      { name: "Prayer Start", at: "" },
-      { name: "Hands", at: "" }
+      { name: "Keys", at: "22:16" },
+      { name: "Prayer Start", at: "30:46" },
+      { name: "Hands", at: "35:04" }
     ] };
   var WEEK_STAGE = { id: "2026-10-31-stage", stageAt: "" };
   if (state.weekStage !== WEEK_STAGE.id) {
@@ -1695,18 +1695,18 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   }
 
   // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
-  var WEEK_RESI = { id: "2026-11-07-resi", msgParts: [
+  var WEEK_RESI = { id: "2026-11-07-resi2", msgParts: [
     { name: "Message Start", at: "0:00" },
-    { name: "Keys", at: "" },
-    { name: "Prayer Start", at: "" },
-    { name: "Hands", at: "" }
+    { name: "Keys", at: "22:16" },
+    { name: "Prayer Start", at: "30:46" },
+    { name: "Hands", at: "35:04" }
   ] };
   if (state.weekResi !== WEEK_RESI.id) {
     state.msgParts = JSON.parse(JSON.stringify(WEEK_RESI.msgParts)); state.msgLateKey = null; state.weekResi = WEEK_RESI.id;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-07a";
+  var DATA_VER = "2026-11-07b";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
