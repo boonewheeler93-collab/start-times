@@ -1537,7 +1537,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   var STORE = "weekend-start-times-v4";
   var DEFAULTS = {
     mode: "normal",
-    len: "28:14", target: "17:50",
+    len: "28:14", target: "17:45",
     pre: "", set: "", walkin: "", countdown: "5:00", b2f: "0:27", walkBackup: "4:00", live: null, skips: {}, clockOff: 0, cueLead: "30", stage: "5:00", msg: "23:00", auto: false, ptOut: "", ptIn: "", ptStart: "00:00:00:00", ptRate: "30",
     items: [
       { t: "song", label: "", len: "4:51" },
@@ -1602,6 +1602,8 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       if (!state.tgt1750) { if (state.target === "17:40" || state.target === "17:47") state.target = "17:50"; state.tgt1750 = true; }
       // repair devices that the old conversion knocked down from 17:50 to 17:45
       if (!state.tgt1750fix) { if (state.target === "17:45") state.target = "17:50"; state.tgt1750fix = true; }
+      // standard target is now 17:45 (5 seconds earlier than 17:50)
+      if (!state.tgt1745b) { if (state.target === "17:50") state.target = "17:45"; state.tgt1745b = true; }
       if (state.lower === "0:30") state.lower = "0:38";
     }
   } catch (e) {}
@@ -1626,7 +1628,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     ] };
   var WEEK_STAGE = { id: "2026-10-31-stage", stageAt: "" };
   if (state.weekStage !== WEEK_STAGE.id) {
-    state.stageAt = WEEK_STAGE.stageAt; state.target = "17:50"; state.weekStage = WEEK_STAGE.id;
+    state.stageAt = WEEK_STAGE.stageAt; state.target = "17:45"; state.weekStage = WEEK_STAGE.id;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   var WEEK_DROP = { id: "2026-10-31-novideo", dropBy: "", ptCues: [] };
@@ -1706,7 +1708,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-07b";
+  var DATA_VER = "2026-11-07c";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -1770,7 +1772,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   var signedOK = { downBy: 1 };
   var optional = { walkin: 1, set: 1, dropBy: 1, stageAt: 1 };
   var NAMES = { stageAt: "Stagetime starts at, on ProTools", dropBy: "Screen down by, on ProTools", len: "ProTools set duration", target: "Final downbeat target", walkin: "Walk-in song", set: "First to final downbeat", countdown: "Countdown", b2f: "Begins Now to first downbeat", walkBackup: "Walk-in backup", cutoff: "Latest final downbeat", sat: "Take satellite", lower: "Screen lower time", stage: "Stagetime", msg: "Message starts" };
-  var PH = { stageAt: ["", ""], dropBy: ["", ""], len: ["28", "14"], target: ["17", "50"], walkin: ["4", "00"], set: ["18", "57"], countdown: ["5", "00"], b2f: ["0", "27"], walkBackup: ["4", "00"], cutoff: ["18", "00"], sat: ["21", "00"], lower: ["0", "38"], stage: ["5", "00"], msg: ["23", "00"] };
+  var PH = { stageAt: ["", ""], dropBy: ["", ""], len: ["28", "14"], target: ["17", "45"], walkin: ["4", "00"], set: ["18", "57"], countdown: ["5", "00"], b2f: ["0", "27"], walkBackup: ["4", "00"], cutoff: ["18", "00"], sat: ["21", "00"], lower: ["0", "38"], stage: ["5", "00"], msg: ["23", "00"] };
 
   // minutes : seconds input with a fixed colon between the two boxes
   function makeTime(o) {
