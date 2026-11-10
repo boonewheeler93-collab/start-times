@@ -1,17 +1,17 @@
 {
-  "updated": "2026-11-09T21:39:55Z",
+  "updated": "2026-11-10T18:56:57Z",
   "weekend": {
-    "plan_id": "91142209",
-    "title": "BAPTISM WEEKEND",
+    "plan_id": "91142210",
+    "title": null,
     "series": "Supernatural",
-    "dates": "November 7 & 8, 2026",
-    "sort_date": "2026-11-07T17:00:00Z",
+    "dates": "November 14 & 15, 2026",
+    "sort_date": "2026-11-14T17:00:00Z",
     "times": [
-      "2026-11-07T23:00:00Z",
-      "2026-11-08T14:30:00Z",
-      "2026-11-08T16:00:00Z",
-      "2026-11-08T17:30:00Z",
-      "2026-11-08T19:00:00Z"
+      "2026-11-14T23:00:00Z",
+      "2026-11-15T14:30:00Z",
+      "2026-11-15T16:00:00Z",
+      "2026-11-15T17:30:00Z",
+      "2026-11-15T19:00:00Z"
     ],
     "items": [
       {
@@ -57,21 +57,10 @@
         "lead": null
       },
       {
-        "title": "Walk-in: Don't Stop - Fleetwood Mac",
+        "title": "Walk-in:  ",
         "type": "item",
         "section": "WALK-IN SONG",
-        "length": 197,
-        "position": "during",
-        "description": "+ Jess / Kari\n* BGVS",
-        "key": null,
-        "notes": [],
-        "lead": "Jess / Kari"
-      },
-      {
-        "title": "BEGINS NOW",
-        "type": "item",
-        "section": "WORSHIP",
-        "length": 27,
+        "length": 240,
         "position": "during",
         "description": null,
         "key": null,
@@ -79,51 +68,15 @@
         "lead": null
       },
       {
-        "title": "Alleluia",
-        "type": "song",
-        "section": "WORSHIP",
-        "length": 230,
-        "position": "during",
-        "description": "+ Boone\n* Verse Chords Intro, straight into V1\n- End with a Trash on the 1\n\n-125 BPM-",
-        "key": "A",
-        "notes": [],
-        "lead": "Boone"
-      },
-      {
-        "title": "Baptism Toss",
+        "title": "BEGINS NOW",
         "type": "item",
         "section": "WORSHIP",
-        "length": 60,
+        "length": 40,
         "position": "during",
-        "description": "+ Boone\n* Thank God I’m Free (Underscore) Big\n- Intro (2x), Bridge (2x), Verse 1",
+        "description": null,
         "key": null,
         "notes": [],
         "lead": null
-      },
-      {
-        "title": "Thank God I'm Free",
-        "type": "song",
-        "section": "WORSHIP",
-        "length": 251,
-        "position": "during",
-        "description": "+ Ady (SAT)/ Tara (SUN)\n- End with trash on the 1\n\n-128 BPM-",
-        "key": "E",
-        "notes": [],
-        "lead": {
-          "Saturday": "Ady",
-          "Sunday": "Tara"
-        }
-      },
-      {
-        "title": "The Lord Is With Me (Longer Version)",
-        "type": "song",
-        "section": "WORSHIP",
-        "length": 524,
-        "position": "during",
-        "description": "+ Ana\n\n--- Song Roadmap ---\n79 BPM\nIntro, Verse 1, Verse 2, Chorus, Turnaround, Verse 3, Bridge (2x), Chorus, Bridge (2x), Interlude, Verse 3, Bridge (2x), Chorus, Bridge (2x), Chorus, Ending",
-        "key": "G",
-        "notes": [],
-        "lead": "Ana"
       },
       {
         "title": "Offering + Stage Time",
