@@ -1671,19 +1671,22 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   }
 
   // this Wednesday's SWITCH plan from Planning Center, applied once per device
-  // ProTools markers from !SW.11.4 (seconds into the session)
-  var WEEK_SW = { id: "2026-11-04", plan: "92310716", items: [
-    { sec: "Pre-Experience", name: "10-Minute Countdown", len: "10:01", start: true, pt: 0, ptEnd: 601 },
+  // ProTools markers from !SW.11.11 (seconds into the session); Begins Now from its video clip (no marker this week)
+  var WEEK_SW = { id: "2026-11-11", plan: "92310717", resi: "2026-11-11-resi", items: [
+    { sec: "Pre-Experience", name: "10-Minute Countdown", len: "10:03", start: true, pt: 0, ptEnd: 603 },
     { sec: "Opener/Introduction", name: "Welcome", len: "2:00" },
-    { sec: "Opener/Introduction", name: "Begins Now", len: "0:24", start: true, pt: 833.500 },
-    { sec: "Worship", name: "I Was But God", len: "4:24", lead: "Boone", pt: 858.000 },
-    { sec: "Worship", name: "God I\u2019m Just Grateful", len: "5:02", lead: "Ana", pt: 1121.514 },
-    { sec: "Worship", name: "I Speak Jesus", len: "6:45", lead: "Boone/Ana", pt: 1423.180, ptEnd: 1828.586 },
+    { sec: "Opener/Introduction", name: "Begins Now", len: "0:24", start: true, pt: 832.000 },
+    { sec: "Worship", name: "Alleluia", len: "4:13", lead: "Boone", pt: 856.000 },
+    { sec: "Worship", name: "Washed", len: "3:51", lead: "Ana", pt: 1109.440 },
+    { sec: "Worship", name: "At The Altar", len: "6:38", lead: "Ana", pt: 1340.807, ptEnd: 1738.925 },
     { sec: "Message", name: "Transition out of Worship", len: "1:30" },
     { sec: "Message", name: "Offering + Videos", len: "2:00" },
     { sec: "Message", name: "Switch 180", len: "3:00" },
     { sec: "Message", name: "Small Group Discussion", len: "5:00" },
-    { sec: "Message", name: "Message Video", len: "20:00" },
+    { sec: "Message", name: "Message Video", len: "20:45", start: true },
+    { sec: "Message", name: "Keys", len: "3:24" },
+    { sec: "Message", name: "Prayer Start", len: "0:47" },
+    { sec: "Message", name: "Message End", len: "0:00" },
     { sec: "Wrap-Up", name: "Momentum/Next Steps", len: "3:00" },
     { sec: "Wrap-Up", name: "Set Up Switch Groups", len: "1:30" },
     { sec: "Post-Experience", name: "Switch Group Time", len: "30:00" },
@@ -1692,6 +1695,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   if (state.swWeek !== WEEK_SW.id) {
     state.swItems = JSON.parse(JSON.stringify(WEEK_SW.items));
     state.swWeek = WEEK_SW.id; state.swLive = null; state.swStart = "-10:00";
+    if (WEEK_SW.resi) state.swResi = WEEK_SW.resi;   // the message cues are already in these items
     if (WEEK_SW.plan) state.swPlan = WEEK_SW.plan;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
@@ -1708,7 +1712,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-11a";
+  var DATA_VER = "2026-11-11b";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2625,6 +2629,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   function pcLeadSw(label) {
     var n = normTitle(label); if (!n || !PC || !PC.switch) return null;
     var hit = null; PC.switch.items.forEach(function (i) { if (!hit && i.type === "song" && i.lead && normTitle(i.title) === n) hit = i.lead; });
+    if (hit && hit === hit.toUpperCase()) hit = hit.toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); });
     return hit;
   }
   function pcLead(label) {
@@ -2916,8 +2921,8 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       { n: "Baptism Toss", t: 754.888 }, { n: "Thank God I\u2019m Free", t: 814.888 }, { n: "The Lord Is With Me", t: 1066.138 }, { n: "End", t: 1590.189 }
     ],
     "switch": [
-      { n: "10-Minute Countdown", t: 0 }, { n: "Begins Now", t: 833.500 }, { n: "I Was But God", t: 858.000 },
-      { n: "God I\u2019m Just Grateful", t: 1121.514 }, { n: "I Speak Jesus", t: 1423.180 }, { n: "End", t: 1828.586 }
+      { n: "10-Minute Countdown", t: 0 }, { n: "Begins Now", t: 832.000 }, { n: "Alleluia", t: 856.000 },
+      { n: "Washed", t: 1109.440 }, { n: "At The Altar", t: 1340.807 }, { n: "End", t: 1738.925 }
     ]
   };
   function curMarkers() { return MARKERS[lastCalc && lastCalc.program === "switch" ? "switch" : "weekend"] || []; }
