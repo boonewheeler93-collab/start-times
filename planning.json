@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-10T18:56:57Z",
+  "updated": "2026-11-11T18:54:54Z",
   "weekend": {
     "plan_id": "91142210",
     "title": null,
@@ -57,15 +57,18 @@
         "lead": null
       },
       {
-        "title": "Walk-in:  ",
+        "title": "Walk-in: Calling All Angels - TRAIN  ",
         "type": "item",
         "section": "WALK-IN SONG",
         "length": 240,
         "position": "during",
-        "description": null,
+        "description": "+ Ana (SAT) / Tara (SUN)\n*BGVs",
         "key": null,
         "notes": [],
-        "lead": null
+        "lead": {
+          "Saturday": "Ana",
+          "Sunday": "Tara"
+        }
       },
       {
         "title": "BEGINS NOW",
@@ -77,6 +80,39 @@
         "key": null,
         "notes": [],
         "lead": null
+      },
+      {
+        "title": "Standing In Victory",
+        "type": "song",
+        "section": "WORSHIP",
+        "length": 286,
+        "position": "during",
+        "description": "+ Boone\n* Energy",
+        "key": "Bb",
+        "notes": [],
+        "lead": "Boone"
+      },
+      {
+        "title": "Same God",
+        "type": "song",
+        "section": "WORSHIP",
+        "length": 481,
+        "position": "during",
+        "description": "+ Boone",
+        "key": "C",
+        "notes": [],
+        "lead": "Boone"
+      },
+      {
+        "title": "Holy Forever",
+        "type": "song",
+        "section": "WORSHIP",
+        "length": 503,
+        "position": "during",
+        "description": "+ Ana\nLEAD IN\n*ends with an extra upbeat chorus BIG ENDING*",
+        "key": "G",
+        "notes": [],
+        "lead": "Ana"
       },
       {
         "title": "Offering + Stage Time",
