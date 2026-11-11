@@ -1708,7 +1708,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-07c";
+  var DATA_VER = "2026-11-11a";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2643,6 +2643,26 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   function titleCase(t) { return /[a-z]/.test(t) ? t : String(t).toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
   function cleanSec(t) { t = String(t || "").trim(); return /^(\S )+\S$/.test(t) ? t.replace(/ (?=\S)/g, "").replace(/-/g, " - ") : t; }
   // SWITCH: load a new Planning Center plan into the run of show
+  // SWITCH message cues from Resi (from MSG START), for one plan only, so another week's plan never shows these times
+  var SW_RESI = { id: "2026-11-11-resi", plan: "92310717", keys: 20 * 60 + 45, prayer: 24 * 60 + 9, end: 24 * 60 + 56 };
+  function swApplyResi() {
+    if (!SW_RESI.plan || String(state.swPlan) !== SW_RESI.plan || state.swResi === SW_RESI.id) return false;
+    var out = [], done = false;
+    state.swItems.forEach(function (it) {
+      if (!done && /message\s*video/i.test(String(it.name || ""))) {
+        var sec = it.sec;
+        out.push({ sec: sec, name: "Message Video", len: fmtDur(SW_RESI.keys), start: true });
+        out.push({ sec: sec, name: "Keys", len: fmtDur(SW_RESI.prayer - SW_RESI.keys) });
+        out.push({ sec: sec, name: "Prayer Start", len: fmtDur(SW_RESI.end - SW_RESI.prayer) });
+        out.push({ sec: sec, name: "Message End", len: "0:00" });
+        done = true;
+      } else if (!/^(keys|prayer start|message end)$/i.test(String(it.name || ""))) out.push(it);
+    });
+    if (!done) return false;
+    state.swItems = out; state.swResi = SW_RESI.id;
+    persist();
+    return true;
+  }
   function pcApplySwitch() {
     if (!PC || !PC.switch || !Array.isArray(PC.switch.items)) return false;
     var plan = PC.switch;
@@ -2659,6 +2679,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     if (!items.length) return false;
     state.swItems = items; state.swPlan = plan.plan_id; state.swLive = null;
     persist();
+    swApplyResi();
     return true;
   }
   function renderPcNote() {
@@ -2677,7 +2698,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       var changed = !PC || PC.updated !== d.updated;
       PC = d;
       try { localStorage.setItem("start-times-pco", JSON.stringify(d)); } catch (e) {}
-      if (pcApplySwitch()) { renderSwitch(); }
+      if (pcApplySwitch() | swApplyResi()) { renderSwitch(); }
       if (changed) { compute(); }
       renderPcNote();
     }).catch(function () {});
