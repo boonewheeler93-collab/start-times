@@ -3153,6 +3153,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     // during the message the three section timers replace the big countdown
     $("bCountBox").hidden = msgMode;
     // message start controls: from Stagetime until a minute after Hands
+    booth.swAdj = null; setAdjLabel("Message start", null);
     var aOcc = booth.manual ? cur : (sheetFocus(now, cur) || cur), showAdj = false;
     if (aOcc && lastCalc.msg) {
       var stgT = aOcc.t + (lastCalc.msg - (lastCalc.stage || 300)) * 1000;
@@ -3293,7 +3294,11 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     cb.classList.remove("is-auto", "is-soon");
     cb.classList.toggle("cd-red", !counting && cdLeft !== null && cdLeft <= 30);
     cb.classList.toggle("cd-yellow", !counting && cdLeft !== null && cdLeft > 30 && cdLeft <= 120);
-    cb.hidden = false; $("bParts").hidden = true; $("bMsgAdj").hidden = true; $("bSkip").hidden = true;
+    cb.hidden = false; $("bParts").hidden = true; $("bSkip").hidden = true;
+    var adjP = lastP >= 1 && segs[lastP].pt === null ? lastP : -1;
+    booth.swAdj = adjP > 0 ? { key: key, seg: adjP } : null;
+    if (adjP > 0) setAdjLabel(segs[adjP].name + " started", msClock(swPress(key, adjP)));
+    $("bMsgAdj").hidden = adjP < 0;
     // screen drop callout, same as the weekend
     var nx = "";
     root.classList.remove("warn", "alert");
@@ -3392,11 +3397,25 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     persist(); renderParts(); compute(); renderBooth();
   }
   function msgLate() { return lastCalc ? Math.round(lastCalc.mStartRel - lastCalc.msg) : 0; }
-  $("maMinus").addEventListener("click", function () { setMsgStart(msgLate() - 1); });
-  $("maPlus").addEventListener("click", function () { setMsgStart(msgLate() + 1); });
-  $("maPlus5").addEventListener("click", function () { setMsgStart(msgLate() + 5); });
-  $("maMinus5").addEventListener("click", function () { setMsgStart(msgLate() - 5); });
+  function setAdjLabel(name, val) {
+    var l = document.querySelector("#bMsgAdj .ma-l"), h = name + " <b id=\"maVal\">" + (val || "") + "</b>";
+    if (val === null) { if (l._mode !== "wk") { l.innerHTML = 'Message start <b id="maVal">on time</b>'; l._mode = "wk"; } return; }
+    if (l._h !== h) { l.innerHTML = h; l._h = h; l._mode = "sw"; }
+  }
+  // SWITCH: move the most recent hand-started point by d seconds (later = +)
+  function swNudge(d, toNow) {
+    var t = booth.swAdj; if (!t || !state.swLive || state.swLive.key !== t.key || !state.swLive.a) return;
+    var a = state.swLive.a; if (!a[t.seg]) return;
+    a[t.seg] = toNow ? nowMs() : a[t.seg] + d * 1000;
+    persist(); renderBooth();
+  }
+  function msgNudge(d) { if (booth.swAdj) swNudge(d); else setMsgStart(msgLate() + d); }
+  $("maMinus").addEventListener("click", function () { msgNudge(-1); });
+  $("maPlus").addEventListener("click", function () { msgNudge(1); });
+  $("maPlus5").addEventListener("click", function () { msgNudge(5); });
+  $("maMinus5").addEventListener("click", function () { msgNudge(-5); });
   $("maNow").addEventListener("click", function () {
+    if (booth.swAdj) { swNudge(0, true); return; }
     if (!lastCalc || !booth.msgOcc) return;
     setMsgStart((nowMs() - (booth.msgOcc.t + lastCalc.msg * 1000)) / 1000);
   });
