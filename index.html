@@ -1712,7 +1712,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-11b";
+  var DATA_VER = "2026-11-11c";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -3233,11 +3233,13 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       booth.cOn = false;
       if (nextSeg !== null && segs[nextSeg].pt !== null) {
         var plan = swAnchor(occ, nextSeg), left = Math.ceil((plan - now) / 1000);
-        if (left > 43200) { lab = "Next SWITCH"; big = occ.sv.day + " " + svcClock(occ.sv.sec); sub = segs[nextSeg].name + " planned about " + msClock(plan) + ". Press Started when ProTools starts."; }
+        var autoHere = lastP === 0 && autoArmedFor(key) && !linkOff();
+        var firstTxt = autoHere ? "ProTools auto-starts at " + msClock(plan) + "." : "Press Started when ProTools starts. Planned about " + msClock(plan) + ".";
+        if (left > 43200) { lab = "Next SWITCH"; big = occ.sv.day + " " + svcClock(occ.sv.sec); sub = segs[nextSeg].name + (autoHere ? " auto-starts at " : " planned about ") + msClock(plan) + "."; }
         else {
-        lab = segs[nextSeg].name + (left >= 0 ? " planned in" : " planned");
+        lab = segs[nextSeg].name + (autoHere ? (left >= 0 ? " auto-starts in" : " auto-start") : left >= 0 ? " planned in" : " planned");
         big = left >= 0 ? fmtHMS(left) : "+" + fmtDur(-left);
-        sub = lastP === 0 ? "Press Started when ProTools starts. Planned about " + msClock(plan) + "."
+        sub = lastP === 0 ? firstTxt
           : "Cue up ProTools at " + fmtDur(Math.floor(segs[nextSeg].pt)) + " and press Started when the communicator leads in.";
         if (left >= 0) cdLeft = left;
         }
@@ -3618,16 +3620,30 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     if (key) { state.live = { key: key, at: nowMs() - e * 1000 }; persist(); }
   }
   function nextAuto(now) {
-    if (!lastCalc || lastCalc.program === "switch") return null;
+    if (!lastCalc) return null;
+    if (lastCalc.program === "switch") {
+      // SWITCH: auto-start only the first ProTools part (the countdown) at its planned time; later parts stay by hand
+      var segs = lastCalc.segs, k1 = -1;
+      for (var k = 1; k < segs.length; k++) if (segs[k].pt !== null) { k1 = k; break; }
+      if (k1 < 0) return null;
+      var n2 = null;
+      occurrences(now).forEach(function (o) {
+        if (n2) return;
+        var key = keyOf(o); if (swPress(key, k1)) return;
+        var t = swAnchor(o, k1);
+        if (t > now - 3000) n2 = { o: o, pt: t, key: key, sw: true, seg: k1, segPt: segs[k1].pt, name: segs[k1].name };
+      });
+      return n2;
+    }
     var n = null;
     occurrences(now).forEach(function (o) { var pt = o.t + lastCalc.startRel * 1000; if (!n && pt > now - 3000) n = { o: o, pt: pt, key: keyOf(o) }; });
     return n;
   }
   function autoArmedFor(key) { return !!(state.auto && link.out && key && !state.skips[key]); }
-  function cueUp() {
+  function cueUp(sec) {
     if (ptMoving() && fromTop()) { ptLog("ProTools is already playing from the top, so it wasn’t stopped"); return; }
     ptSend(MMC_STOP, "Stop");
-    var t = parseTc(state.ptStart);
+    var t = sec != null ? secsToTc(sec) : parseTc(state.ptStart);
     if (t) ptSend(mmcLocate(t), "Go to " + fmtTc(t)); else ptLog("Session start should look like 00:00:00:00");
   }
   function autoTick() {
@@ -3637,13 +3653,20 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     if (n && !state.skips[n.key]) {
       var d = link.done[n.key] || (link.done[n.key] = {}), left = n.pt - now;
       // 30 seconds out: stop anything left running and cue up the top of the session
-      if (!d.cue && left <= (+state.cueLead || 30) * 1000 && left > -1000) { d.cue = true; cueUp(); }
+      if (!d.cue && left <= (+state.cueLead || 30) * 1000 && left > -1000) { d.cue = true; cueUp(n.sw ? n.segPt : null); }
       // 5 seconds out: hand Play to MIDI with an exact timestamp for the start time
       if (!d.play && left <= 5000 && left > -1000) {
         d.play = true;
         if (ptMoving() && fromTop()) ptLog("ProTools is already playing, so auto-start stood down");
-        else if (ptSend(MMC_PLAY, "Play (auto-start)", performance.now() + Math.max(0, left))) {
+        else if (ptSend(MMC_PLAY, "Play (auto-start" + (n.sw ? ", " + n.name : "") + ")", performance.now() + Math.max(0, left))) {
           var tgt = n.pt; link.watch = { target: tgt, key: n.key };
+          if (n.sw) {
+            // mark the SWITCH part as started at its planned moment (timecode corrects it if ProTools is off)
+            var nn = n; setTimeout(function () {
+              var a = state.swLive && state.swLive.key === nn.key && state.swLive.a ? state.swLive.a : {};
+              if (!a[nn.seg]) { a[nn.seg] = nn.pt; state.swLive = { key: nn.key, a: a }; persist(); renderBooth(); }
+            }, Math.max(0, left));
+          }
           setTimeout(function () {
             if (link.watch && link.watch.target === tgt) {
               link.watch = null;
