@@ -2323,6 +2323,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     $("relTable").innerHTML = rt + "</tbody>";
     $("ribbon").innerHTML = ""; $("legend").innerHTML = ""; ribTotal = 0;
     lastCalcHands = null;
+    setTimeout(swApplyFix, 0);
     lastCalc = { program: "switch", segs: segs, dropPT: dropPT, wSeg: wSeg, startRel: firstPt.rel, finalRel: wEnd, len: Math.max(0, wEnd - firstPt.rel), lower: 0, noDrop: true, cues: cues, svcs: svcs, tail: t,
       msg: null, stage: null, mStartRel: null, handsRel: null, parts: [] };
   }
@@ -2688,6 +2689,17 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       if (/message\s*video/i.test(nm) && !it.start) { it.start = true; changed = true; }
     });
     return changed;
+  }
+  var SW_FIX = { id: "2026-11-11-msg", svc: Date.parse("2026-11-11T19:00:00-06:00"), seg: "Message Video", at: Date.parse("2026-11-11T19:25:04-06:00"), until: Date.parse("2026-11-12T03:00:00-06:00") };
+  function swApplyFix() {
+    if (state.swFix === SW_FIX.id || !lastCalc || lastCalc.program !== "switch" || nowMs() > SW_FIX.until) return;
+    var k = -1; lastCalc.segs.forEach(function (sg, i) { if (k < 0 && sg.name === SW_FIX.seg) k = i; });
+    var occ = null; occurrences(nowMs()).forEach(function (o) { if (!occ && Math.abs(o.t - SW_FIX.svc) < 60000) occ = o; });
+    if (k < 1 || !occ) return;
+    var key = keyOf(occ);
+    var a = state.swLive && state.swLive.key === key && state.swLive.a ? state.swLive.a : {};
+    a[k] = SW_FIX.at; state.swLive = { key: key, a: a }; state.swFix = SW_FIX.id;
+    persist(); renderBooth();
   }
   function pcApplySwitch() {
     if (!PC || !PC.switch || !Array.isArray(PC.switch.items)) return false;
