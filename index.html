@@ -1559,7 +1559,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       { sec: "Worship", name: "At The Altar", len: "7:17" },
       { sec: "Message", name: "Transition out of Worship", len: "1:30" },
       { sec: "Message", name: "Offering + Videos", len: "2:00" },
-      { sec: "Message", name: "Switch 180", len: "3:00" },
+      { sec: "Message", name: "Switch 300 (Stagetime)", len: "5:00", start: true },
       { sec: "Message", name: "Small Group Discussion", len: "5:00" },
       { sec: "Message", name: "Message Video", len: "20:00" },
       { sec: "Wrap-Up", name: "Momentum/Next Steps", len: "3:00" },
@@ -1681,7 +1681,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     { sec: "Worship", name: "At The Altar", len: "6:38", lead: "Ana", pt: 1340.807, ptEnd: 1738.925 },
     { sec: "Message", name: "Transition out of Worship", len: "1:30" },
     { sec: "Message", name: "Offering + Videos", len: "2:00" },
-    { sec: "Message", name: "Switch 180", len: "3:00" },
+    { sec: "Message", name: "Switch 300 (Stagetime)", len: "5:00", start: true },
     { sec: "Message", name: "Small Group Discussion", len: "5:00" },
     { sec: "Message", name: "Message Video", len: "20:45", start: true },
     { sec: "Message", name: "Keys", len: "3:24" },
@@ -1699,6 +1699,17 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     if (WEEK_SW.plan) state.swPlan = WEEK_SW.plan;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
+  // Switch 180 is Stagetime (Switch 300) and the message is started by hand, on every device
+  (function () {
+    var items = state.swItems || [], changed = false;
+    items.forEach(function (it) {
+      var nm = String(it.name || "").trim();
+      if (/^switch\s*(180|300)\b/i.test(nm) && nm !== "Switch 300 (Stagetime)") { it.name = "Switch 300 (Stagetime)"; it.len = "5:00"; changed = true; }
+      if (/^switch 300 \(stagetime\)$/i.test(it.name) && !it.start) { it.start = true; changed = true; }
+      if (/message\s*video/i.test(nm) && !it.start) { it.start = true; changed = true; }
+    });
+    if (changed) { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
+  })();
 
   // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
   var WEEK_RESI = { id: "2026-11-07-resi2", msgParts: [
@@ -1712,7 +1723,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-11c";
+  var DATA_VER = "2026-11-11d";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2668,6 +2679,16 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     persist();
     return true;
   }
+  function swNormalize(items) {
+    var changed = false;
+    (items || []).forEach(function (it) {
+      var nm = String(it.name || "").trim();
+      if (/^switch\s*(180|300)\b/i.test(nm) && nm !== "Switch 300 (Stagetime)") { it.name = "Switch 300 (Stagetime)"; it.len = "5:00"; changed = true; }
+      if (/^switch 300 \(stagetime\)$/i.test(it.name) && !it.start) { it.start = true; changed = true; }
+      if (/message\s*video/i.test(nm) && !it.start) { it.start = true; changed = true; }
+    });
+    return changed;
+  }
   function pcApplySwitch() {
     if (!PC || !PC.switch || !Array.isArray(PC.switch.items)) return false;
     var plan = PC.switch;
@@ -2682,6 +2703,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       items.push(it);
     });
     if (!items.length) return false;
+    swNormalize(items);
     state.swItems = items; state.swPlan = plan.plan_id; state.swLive = null;
     persist();
     swApplyResi();
@@ -2703,7 +2725,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       var changed = !PC || PC.updated !== d.updated;
       PC = d;
       try { localStorage.setItem("start-times-pco", JSON.stringify(d)); } catch (e) {}
-      if (pcApplySwitch() | swApplyResi()) { renderSwitch(); }
+      if (pcApplySwitch() | swApplyResi() | swNormalize(state.swItems)) { persist(); renderSwitch(); }
       if (changed) { compute(); }
       renderPcNote();
     }).catch(function () {});
