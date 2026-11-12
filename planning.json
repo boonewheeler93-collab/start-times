@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-11T18:54:54Z",
+  "updated": "2026-11-12T19:13:58Z",
   "weekend": {
     "plan_id": "91142210",
     "title": null,
@@ -62,13 +62,10 @@
         "section": "WALK-IN SONG",
         "length": 240,
         "position": "during",
-        "description": "+ Ana (SAT) / Tara (SUN)\n*BGVs",
+        "description": "+ Ana\n*BGVs",
         "key": null,
         "notes": [],
-        "lead": {
-          "Saturday": "Ana",
-          "Sunday": "Tara"
-        }
+        "lead": "Ana"
       },
       {
         "title": "BEGINS NOW",
