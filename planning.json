@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-12T19:13:58Z",
+  "updated": "2026-11-13T18:50:03Z",
   "weekend": {
     "plan_id": "91142210",
     "title": null,
@@ -171,13 +171,13 @@
     }
   },
   "switch": {
-    "plan_id": "92310717",
+    "plan_id": "92310718",
     "title": null,
     "series": null,
-    "dates": "November 11, 2026",
-    "sort_date": "2026-11-11T19:00:00Z",
+    "dates": "November 18, 2026",
+    "sort_date": "2026-11-18T19:00:00Z",
     "times": [
-      "2026-11-12T01:00:00Z"
+      "2026-11-19T01:00:00Z"
     ],
     "items": [
       {
@@ -238,35 +238,35 @@
         "lead": null
       },
       {
-        "title": "Alleluia",
+        "title": "Thank God I'm Free",
         "type": "song",
         "section": "Worship",
-        "length": 258,
-        "position": "during",
-        "description": "+ BOONE \n*ENERGY",
-        "key": "A",
-        "notes": [],
-        "lead": "BOONE"
-      },
-      {
-        "title": "WASHED",
-        "type": "song",
-        "section": "Worship",
-        "length": 224,
-        "position": "during",
-        "description": "+ ANA",
-        "key": "D",
-        "notes": [],
-        "lead": "ANA"
-      },
-      {
-        "title": "At The Altar",
-        "type": "song",
-        "section": "Worship",
-        "length": 437,
+        "length": 301,
         "position": "during",
         "description": "+ Ana",
-        "key": "D",
+        "key": "E",
+        "notes": [],
+        "lead": "Ana"
+      },
+      {
+        "title": "Yahweh We Love You",
+        "type": "song",
+        "section": "Worship",
+        "length": 424,
+        "position": "during",
+        "description": "+ Boone (Big Intro)",
+        "key": "C",
+        "notes": [],
+        "lead": "Boone (Big Intro)"
+      },
+      {
+        "title": "Trust In God",
+        "type": "song",
+        "section": "Worship",
+        "length": 330,
+        "position": "during",
+        "description": "+ Ana\n*BIG ENDING",
+        "key": "E",
         "notes": [],
         "lead": "Ana"
       },
