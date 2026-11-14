@@ -1,11 +1,12 @@
 {
-  "note": "Song roadmap for The Lord Is With Me (6/8, 79 BPM)",
+  "note": "Lengths from the ProTools markers (!NKC.11.14-15), whole seconds",
   "service_type": "890623",
-  "plan_id": "91142209",
+  "plan_id": "91142210",
   "items": [
-    {
-      "match": "The Lord Is With Me",
-      "description": "+ Ana\n\n--- Song Roadmap ---\n79 BPM (6/8)\nIntro, Verse 1, Verse 2, Chorus, Turnaround, Verse 3, Bridge (2x), Chorus, Bridge (2x), Interlude, Verse 3, Bridge (2x), Chorus, Bridge (2x), Chorus, Ending"
-    }
+    { "match": "Walk-in: Calling All Angels", "length": 231 },
+    { "match": "Begins Now", "length": 29 },
+    { "match": "Standing In Victory", "length": 258 },
+    { "match": "Same God", "length": 351 },
+    { "match": "Holy Forever", "length": 468 }
   ]
 }
