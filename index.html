@@ -1611,21 +1611,22 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 
   // this weekend's message times from Resi, pushed with the app; each device picks them up once
   // this weekend's session (from the ProTools markers), applied once per device
-  // ProTools session !NKC.11.7-8 (markers), Baptism Weekend: lengths chosen so each part lands on its rounded marker
-  var WEEK = { id: "2026-11-07", len: "26:30", countdown: "5:00", mode: "song",
+  // ProTools session !NKC.11.14-15 (markers): lengths chosen so each song lands on its rounded marker
+  var WEEK = { id: "2026-11-14", len: "27:14", countdown: "4:58", mode: "song",
     items: [
-      { t: "song", label: "Alleluia", len: "3:51", lead: "Boone" },
-      { t: "toss", label: "Baptism Toss", len: "1:00", lead: "Boone" },
-      { t: "song", label: "Thank God I\u2019m Free", len: "4:11", lead: { Saturday: "Ady", Sunday: "Tara" } },
-      { t: "song", label: "The Lord Is With Me", len: "8:44", lead: "Ana" }
+      { t: "song", label: "Standing In Victory", len: "4:17", lead: "Boone" },
+      { t: "song", label: "Same God", len: "5:51", lead: "Boone" },
+      { t: "song", label: "Holy Forever", len: "7:48", lead: "Ana" }
     ],
-    // this weekend's Resi cues, from MSG START
+    // Resi cues come later in the week
     msgParts: [
       { name: "Message Start", at: "0:00" },
-      { name: "Keys", at: "22:16" },
-      { name: "Prayer Start", at: "30:46" },
-      { name: "Hands", at: "35:04" }
+      { name: "Keys", at: "" },
+      { name: "Prayer Start", at: "" },
+      { name: "Hands", at: "" }
     ] };
+  // Begins Now leads into the first song by 28.8 s this week
+  if (state.weekB2f !== "2026-11-14") { state.b2f = "0:29"; state.weekB2f = "2026-11-14"; }
   var WEEK_STAGE = { id: "2026-10-31-stage", stageAt: "" };
   if (state.weekStage !== WEEK_STAGE.id) {
     state.stageAt = WEEK_STAGE.stageAt; state.target = "17:45"; state.weekStage = WEEK_STAGE.id;
@@ -1637,7 +1638,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // leaders from the printout (added after the songs were loaded, so apply on its own)
-  var WEEK_LEAD = { id: "2026-11-07-leads", walkSong: { name: "Don\u2019t Stop", lead: "Jess / Kari" } };
+  var WEEK_LEAD = { id: "2026-11-14-leads", walkSong: { name: "Calling All Angels", lead: "Ana" } };
   if (state.weekLead !== WEEK_LEAD.id) {
     state.walkSong = WEEK_LEAD.walkSong;
     if (Array.isArray(state.items) && Array.isArray(WEEK.items)) state.items.forEach(function (it) {
@@ -1712,18 +1713,18 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   })();
 
   // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
-  var WEEK_RESI = { id: "2026-11-07-resi2", msgParts: [
+  var WEEK_RESI = { id: "2026-11-14-resi", msgParts: [
     { name: "Message Start", at: "0:00" },
-    { name: "Keys", at: "22:16" },
-    { name: "Prayer Start", at: "30:46" },
-    { name: "Hands", at: "35:04" }
+    { name: "Keys", at: "" },
+    { name: "Prayer Start", at: "" },
+    { name: "Hands", at: "" }
   ] };
   if (state.weekResi !== WEEK_RESI.id) {
     state.msgParts = JSON.parse(JSON.stringify(WEEK_RESI.msgParts)); state.msgLateKey = null; state.weekResi = WEEK_RESI.id;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-11d";
+  var DATA_VER = "2026-11-14a";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2951,8 +2952,8 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   // Memory Locations from each session's markers (seconds into the session)
   var MARKERS = {
     weekend: [
-      { n: "Start", t: 0 }, { n: "Cover", t: 300.000 }, { n: "Begins Now", t: 497.288 }, { n: "Alleluia", t: 524.488 },
-      { n: "Baptism Toss", t: 754.888 }, { n: "Thank God I\u2019m Free", t: 814.888 }, { n: "The Lord Is With Me", t: 1066.138 }, { n: "End", t: 1590.189 }
+      { n: "Start", t: 0 }, { n: "Cover", t: 298.000 }, { n: "Begins Now", t: 529.075 }, { n: "Standing In Victory", t: 557.875 },
+      { n: "Same God", t: 815.475 }, { n: "Holy Forever", t: 1166.463 }, { n: "End", t: 1633.963 }
     ],
     "switch": [
       { n: "10-Minute Countdown", t: 0 }, { n: "Begins Now", t: 832.000 }, { n: "Alleluia", t: 856.000 },
