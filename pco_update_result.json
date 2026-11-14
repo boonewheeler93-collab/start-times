@@ -1,12 +1,36 @@
 {
-  "ran": "2026-11-05T04:28:26Z",
-  "plan": "91142209",
+  "ran": "2026-11-14T20:28:32Z",
+  "plan": "91142210",
   "changes": [
     {
-      "item": "The Lord Is With Me (Longer Version)",
-      "status": "description set",
-      "before": "+ Ana\n\n105 BPM\nIntro, Verse 1 (2x), PreChorus, Chorus 1, Turnaround, Verse 2, PreChorus, Chorus 2 (2x), Bridge, Breakdown, Build, Chorus 3 (2x), Bridge, Tag, End",
-      "description": "+ Ana\n\n--- Song Roadmap ---\n79 BPM (6/8)\nIntro, Verse 1, Verse 2, Chorus, Turnaround, Verse 3, Bridge (2x), Chorus, Bridge (2x), Interlude, Verse 3, Bridge (2x), Chorus, Bridge (2x), Chorus, Ending"
+      "item": "Walk-in: Calling All Angels - TRAIN  ",
+      "before": 240,
+      "after": 231,
+      "status": "updated"
+    },
+    {
+      "item": "BEGINS NOW",
+      "before": 40,
+      "after": 29,
+      "status": "updated"
+    },
+    {
+      "item": "Standing In Victory",
+      "before": 286,
+      "after": 258,
+      "status": "updated"
+    },
+    {
+      "item": "Same God",
+      "before": 481,
+      "after": 351,
+      "status": "updated"
+    },
+    {
+      "item": "Holy Forever",
+      "before": 503,
+      "after": 468,
+      "status": "updated"
     }
   ]
 }
