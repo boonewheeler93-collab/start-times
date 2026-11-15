@@ -1226,6 +1226,14 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 
 .top-right { display: flex; align-items: center; gap: 12px; }
 .refresh-btn { min-height: 40px; padding: 6px 14px; font-size: 0.9rem; }
+
+/* songs: their titles carry their own color everywhere */
+:root { --song: #c8b4ff; }
+.lcs-row.is-song .lcs-label, .vt-row.is-song .vt-n, .vx-now-name.is-song { color: var(--song); }
+.lcs-row.is-song .lcs-label, .vt-row.is-song .vt-n { font-weight: 800; }
+.lcs-row.is-song.past .lcs-label, .vt-row.is-song.past .vt-n { color: color-mix(in srgb, var(--song) 55%, transparent); }
+.lcs-row.is-song .lcs-dot, .vt-row.is-song .lcs-dot { background: var(--song); border-color: var(--song); }
+.lcs-row.is-song.cur .lcs-label, .vt-row.is-song.cur .vt-n, .lcs-row.is-song.next .lcs-label, .vt-row.is-song.next .vt-n { color: var(--song); }
 </style>
 </head>
 <body>
@@ -2264,7 +2272,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       if (it.start) segs.push({ rel: t, name: nm, pt: pt, ptEnd: null });
       var si = segs.length - 1, sg = segs[si];
       var rel = pt !== null && sg.pt !== null ? sg.rel + (pt - sg.pt) : t;
-      add(nm, rel, "sw" + (it.start ? " swstart" : ""), n ? "Lasts " + fmtDur(n) : "", it.sec, si, pt, pcLeadSw(nm) || it.lead);
+      add(nm, rel, "sw" + (it.start ? " swstart" : "") + (/worship/i.test(String(it.sec || "")) && !it.start ? " song" : ""), n ? "Lasts " + fmtDur(n) : "", it.sec, si, pt, pcLeadSw(nm) || it.lead);
       var ptE = it.ptEnd != null ? +it.ptEnd : pt !== null ? pt + n : null;
       t = ptE !== null && sg.pt !== null ? sg.rel + (ptE - sg.pt) : rel + n;
       if (ptE !== null) sg.ptEnd = Math.max(sg.ptEnd || 0, ptE);
@@ -2449,7 +2457,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
         items.forEach(function (it, i) {
           var at = firstRel + cum;
           if (it.t === "song") {
-            var label = i === 0 ? "First worship song" + (it.name ? " (" + it.name + ")" : "") : (it.name || "Song " + it.songN);
+            var label = it.name || (i === 0 ? "First worship song" : "Song " + it.songN);
             add(label, at, "song", "", pcLead(it.name) || it.lead);
           } else {
             add("Toss" + (it.name ? ": " + it.name : ""), at, "toss", it.len > 0 ? "Lasts " + fmtDur(it.len) : "", it.lead);
@@ -2786,7 +2794,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       var h = '<div class="lcs"><div class="lcs-rail" aria-hidden="true"><div class="lcs-fill"></div><div class="lcs-now"></div></div><ol class="lcs-list">';
       rows.forEach(function (r) {
         var c = r.c, k = c.cls;
-        var kind = /\bsw\b/.test(k) ? " sw" : k.indexOf("part") > -1 ? " svc part" : k.indexOf("toss") > -1 ? " toss" : k.indexOf("hit") > -1 ? " hit" : k.indexOf("final") > -1 ? " final" : k.indexOf("drop") > -1 ? " drop" : k.indexOf("svc") > -1 ? " svc" : "";
+        var kind = (/\bsong\b/.test(k) ? " is-song" : "") + (/\bsw\b/.test(k) ? " sw" : k.indexOf("part") > -1 ? " svc part" : k.indexOf("toss") > -1 ? " toss" : k.indexOf("hit") > -1 ? " hit" : k.indexOf("final") > -1 ? " final" : k.indexOf("drop") > -1 ? " drop" : k.indexOf("svc") > -1 ? " svc" : "");
         // the screen drop is only ever shown as the ProTools time to press the button
         var isDrop = k.indexOf("drop") > -1;
         var isPart = k.indexOf("part") > -1;
@@ -4407,7 +4415,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       if (n === "Message") msgT = r.t;
       if (r.c.sec) { rows.push({ n: n, t: r.t, pt: r.pt, g: n === "Drop screen" ? "drop" : n === "SWITCH ends" ? "done" : secG(r.c.sec), s: n === "SWITCH ends" ? "" : r.c.sec, ld: leadFor(r.c.lead, occ.sv.day) }); return; }
       var g = n === "Drop screen" ? "drop" : /video/i.test(n) ? "toss" : /^Countdown|^Walk-in|^Begins/.test(n) ? "pre" : n === "Stagetime" ? "stage" : n === "HANDS" ? "hands" : /^Message|^Keys|^Prayer/.test(n) ? "msg" : /^Toss/.test(n) ? "toss" : "worship";
-      rows.push({ n: n, t: r.t, g: g, ld: leadFor(r.c.lead, occ.sv.day), pt: r.pt });
+      rows.push({ n: n, t: r.t, g: g, ld: leadFor(r.c.lead, occ.sv.day), pt: r.pt, song: /\bsong\b/.test(r.c.cls || "") });
     });
     // "Message starts" only shows when it differs from the planned Message time
     return rows.filter(function (r) { return !(r.n === "Message starts" && msgT !== null && Math.abs(r.t - msgT) < 2000); });
@@ -4425,7 +4433,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
         var sec = r.s !== undefined ? r.s : r.g === "pre" ? "Before service" : (r.g === "worship" || r.g === "toss" || r.g === "drop") ? "Worship" : "Message";
         var secCol = r.s !== undefined ? r.g : sec === "Before service" ? "pre" : sec === "Worship" ? "worship" : "msg";
         if (sec && sec !== lastSec) { lastSec = sec; h += '<li class="vt-sec" aria-hidden="true"><span class="vx-chip vx-chip-sm" data-g="' + secCol + '">' + esc(sec) + "</span></li>"; }
-        h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + (r.ld ? " has-lead" : "") + '" data-g="' + r.g + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + (r.ld ? '<span class="vt-lead">' + esc(r.ld) + "</span>" : "") + '</span><span class="vt-t">' + vTime(r.t) + "</span></li>";
+        h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + (r.song ? " is-song" : "") + (r.ld ? " has-lead" : "") + '" data-g="' + r.g + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + (r.ld ? '<span class="vt-lead">' + esc(r.ld) + "</span>" : "") + '</span><span class="vt-t">' + vTime(r.t) + "</span></li>";
       });
       host.innerHTML = h + '</ol><div class="vt-spacer" aria-hidden="true"></div></div>';
     }
@@ -4497,6 +4505,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       var cur = rows[done ? rows.length - 1 : nextI - 1];
       var nm = done ? "Service complete" : cur.n;
       if ($("vNowName").textContent !== nm) $("vNowName").textContent = nm;
+      $("vNowName").classList.toggle("is-song", !done && !!cur.song);
       setHtml($("vNowSub"), done ? "" : (cur.ld ? esc(cur.ld) + " \u00b7 " : "") + "since " + vTime(cur.t));
       var pct = done ? 100 : Math.min(100, Math.max(0, (now - cur.t) / (rows[nextI].t - cur.t) * 100));
       $("vBar").style.width = pct.toFixed(2) + "%";
