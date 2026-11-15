@@ -1238,9 +1238,10 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 /* Drop screen: red pill title and a bigger time, on the cue sheets and the public timeline */
 .lcs-row.drop .lcs-label, .vt-row[data-g="drop"] .vt-n {
   display: inline-block; width: fit-content; padding: 0.12em 0.75em; border-radius: 999px; line-height: 1.3;
-  color: #ff8a82; background: rgba(255, 59, 48, 0.18); border: 1.5px solid rgba(255, 59, 48, 0.65); font-weight: 800; }
-.lcs-row.drop .lcs-time { font-size: 1.45em; font-weight: 800; color: #ff5a52; letter-spacing: 0.01em; }
-.vt-row[data-g="drop"] .vt-t { font-size: 1.3em; font-weight: 800; color: #ff5a52; }
+  color: #ff8a82; background: rgba(255, 59, 48, 0.18); border: 1.5px solid rgba(255, 59, 48, 0.65); font-weight: 800; text-transform: capitalize; }
+.lcs-row.drop .lcs-meta:empty { display: none; }
+.lcs-row.drop .lcs-time { font-size: 1.75em; font-weight: 800; color: #ff5a52; letter-spacing: 0.01em; margin-right: 0.9em; }
+.vt-row[data-g="drop"] .vt-t { font-size: 1.45em; font-weight: 800; color: #ff5a52; margin-right: 0.6em; }
 .vt-row[data-g="drop"] .vt-t small { color: #ff8a82; }
 .lcs-row.drop.past .lcs-label, .vt-row[data-g="drop"].past .vt-n { opacity: 0.55; }
 </style>
@@ -2807,7 +2808,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
         // the screen drop is only ever shown as the ProTools time to press the button
         var isDrop = k.indexOf("drop") > -1;
         var isPart = k.indexOf("part") > -1;
-        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : c.rel - lastCalc.msg < 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " early" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message") : isDrop ? "On the ProTools counter" : lastCalc.program === "switch" ? (k.indexOf("swstart") > -1 ? "Starts when you press play" + (c.pt !== null ? ", ProTools " + fmtDur(Math.floor(c.pt)) : "") : c.pt !== null ? "ProTools " + fmtDur(Math.floor(c.pt)) : (swPress(sr.key, c.seg) || c.seg === 0 ? "" : "About ") + fmtSigned(Math.round((r.t - occ.t) / 1000))) : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
+        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : c.rel - lastCalc.msg < 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " early" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message") : isDrop ? "" : lastCalc.program === "switch" ? (k.indexOf("swstart") > -1 ? "Starts when you press play" + (c.pt !== null ? ", ProTools " + fmtDur(Math.floor(c.pt)) : "") : c.pt !== null ? "ProTools " + fmtDur(Math.floor(c.pt)) : (swPress(sr.key, c.seg) || c.seg === 0 ? "" : "About ") + fmtSigned(Math.round((r.t - occ.t) / 1000))) : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
         if (c.extra) meta += ", " + (lastCalc.program === "switch" ? c.extra.replace(/^Lasts/, "lasts") : c.extra.toLowerCase());
         var tm = msClock(r.t), sp = tm.lastIndexOf(" ");
         var right = isDrop ? '<span class="drop-t">' + monoHtml(fmtDur(r.pt)) + "</span>" : monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small>";
