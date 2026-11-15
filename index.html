@@ -1295,6 +1295,20 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   .vx .vt-row .vt-lead { display: inline; margin: 0 0 0 0.7em; font-size: 0.62em; vertical-align: 0.12em; }
   .vx .vt-sec { margin-top: 0.5em; margin-bottom: 0.1em; }
 }
+
+/* ===== multiviewer: much larger timeline text, sized by screen height too ===== */
+@media (min-width: 900px) {
+  .vx .vx-panel-h { display: none; }
+  .vx .vx-panel { padding-top: 0.6vh; }
+  .vx .vt-row { font-size: clamp(1.5rem, min(3.4vw, 5.4vh), 4.6rem); padding-top: 0.12em; padding-bottom: 0.12em; }
+  .vx .vt-row .vt-t { font-size: 0.95em; }
+  .vx .vt-row .vt-lead { font-size: 0.55em; }
+  .vx .vt-sec { font-size: clamp(0.8rem, 1.7vh, 1.4rem); margin: 0.3em 0 0 2.6em; }
+  .vx .vt-row[data-g="drop"] .vt-t { font-size: 1.1em; }
+  .vt-ptk { font-size: 0.42em; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 0.5em; vertical-align: 0.3em; color: #ff8a82; }
+  .vx .vt-row .vt-t small.vt-ptk { font-size: 0.38em; margin-right: 0.6em; vertical-align: 0.45em; letter-spacing: 0.06em; text-transform: uppercase; color: #ff8a82; }
+}
+.vt-ptk { font-size: 0.6em; font-weight: 800; margin-right: 0.45em; color: #ff8a82; }
 </style>
 </head>
 <body>
@@ -4494,7 +4508,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
         var sec = r.s !== undefined ? r.s : r.g === "pre" ? "Before service" : (r.g === "worship" || r.g === "toss" || r.g === "drop") ? "Worship" : "Message";
         var secCol = r.s !== undefined ? r.g : sec === "Before service" ? "pre" : sec === "Worship" ? "worship" : "msg";
         if (sec && sec !== lastSec) { lastSec = sec; h += '<li class="vt-sec" aria-hidden="true"><span class="vx-chip vx-chip-sm" data-g="' + secCol + '">' + esc(sec) + "</span></li>"; }
-        h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + (r.song ? " is-song" : "") + (r.ld ? " has-lead" : "") + '" data-g="' + r.g + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + (r.ld ? '<span class="vt-lead">' + esc(r.ld) + "</span>" : "") + '</span><span class="vt-t">' + vTime(r.t) + "</span></li>";
+        h += '<li class="vt-row' + (r.n === "HANDS" ? " hands" : "") + (r.song ? " is-song" : "") + (r.ld ? " has-lead" : "") + '" data-g="' + r.g + '"><span class="lcs-dot" aria-hidden="true"></span><span class="vt-n">' + esc(r.n) + (r.ld ? '<span class="vt-lead">' + esc(r.ld) + "</span>" : "") + '</span><span class="vt-t">' + (r.g === "drop" && r.pt != null ? '<small class="vt-ptk">ProTools</small>' + fmtDur(Math.round(r.pt)) : vTime(r.t)) + "</span></li>";
       });
       host.innerHTML = h + '</ol><div class="vt-spacer" aria-hidden="true"></div></div>';
     }
@@ -4555,7 +4569,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     var w = el.scrollWidth || 1;
     var label = card.querySelector(".vx-next-k"), sub = card.querySelector(".vx-at");
     var room = card.clientHeight - (label ? label.offsetHeight : 0) - (sub ? sub.offsetHeight : 0) - 40;
-    var size = Math.min(100 * (card.clientWidth * 0.9) / w, room * 0.95);
+    var size = Math.min(100 * (card.clientWidth * 0.88) / w, room * 0.8);
     el.style.fontSize = Math.max(40, Math.floor(size)) + "px";
   }
   window.addEventListener("resize", function () { var el = $("vNextCd"); if (el) el._fitKey = null; fitCountdown(); });
