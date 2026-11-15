@@ -1244,6 +1244,9 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 .vt-row[data-g="drop"] .vt-t { font-size: 1.45em; font-weight: 800; color: #ff5a52; margin-right: 0.6em; }
 .vt-row[data-g="drop"] .vt-t small { color: #ff8a82; }
 .lcs-row.drop.past .lcs-label, .vt-row[data-g="drop"].past .vt-n { opacity: 0.55; }
+
+/* every word capitalized in cue titles (cue sheets, booth, public timeline, Now card, Up next chip) */
+.lcs-label, .vt-n, .vx-now-name, .vx-next-k .vx-chip { text-transform: capitalize; }
 </style>
 </head>
 <body>
