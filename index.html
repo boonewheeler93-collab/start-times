@@ -1269,6 +1269,32 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   .vx-alerts { position: fixed; right: 2vw; bottom: 0.4vh; margin: 0; min-height: 0; padding: 0.25em 0.9em; font-size: clamp(0.7rem, 0.8vw, 1rem); opacity: 0.6; z-index: 5; }
   .vx-alerts.on { opacity: 1; }
 }
+
+/* ===== big screens: countdown on top as the focal point, timeline underneath ===== */
+@media (min-width: 900px) {
+  .vx { grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.45fr); }
+  .vx-top { grid-column: 1 / -1; grid-row: 1; }
+  .vx-next { grid-column: 1; grid-row: 2 / 4; }
+  .vx-now { grid-column: 2; grid-row: 2; align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+  .vx-ptcard { grid-column: 2; grid-row: 3; align-self: stretch; }
+  .vx-ptcard .vx-ptc { height: 100%; box-sizing: border-box; justify-content: center; }
+  .vx-panel { grid-column: 1 / -1; grid-row: 4; }
+  /* when a side card isn't showing, the others take its space */
+  .vx:has(#vNow[hidden]) .vx-ptcard { grid-row: 2 / 4; }
+  .vx:has(#vPtCard[hidden]) .vx-now { grid-row: 2 / 4; }
+  .vx:has(#vNow[hidden]):has(#vPtCard[hidden]) .vx-next { grid-column: 1 / -1; }
+  .vx-now-name { font-size: clamp(1.8rem, 3.4vw, 5rem); }
+  /* timeline underneath: a bit smaller so more cues fit */
+  .vx .vt-row { font-size: clamp(1rem, 1.7vw, 2.3rem); }
+  .vx .vt-sec { font-size: clamp(0.85rem, 1.1vw, 1.5rem); }
+  .vx .vt-spacer { height: 40vh; }
+  /* compact rows: leader sits on the same line as the title */
+  .vx { grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.75fr); }
+  .vx .vt-row { padding-top: 0.22em; padding-bottom: 0.22em; align-items: center; }
+  .vx .vt-row .vt-lead { display: inline; margin: 0 0 0 0.7em; font-size: 0.62em; vertical-align: 0.12em; }
+  .vx .vt-sec { margin-top: 0.5em; margin-bottom: 0.1em; }
+}
 </style>
 </head>
 <body>
