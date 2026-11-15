@@ -1234,6 +1234,15 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 .lcs-row.is-song.past .lcs-label, .vt-row.is-song.past .vt-n { color: color-mix(in srgb, var(--song) 55%, transparent); }
 .lcs-row.is-song .lcs-dot, .vt-row.is-song .lcs-dot { background: var(--song); border-color: var(--song); }
 .lcs-row.is-song.cur .lcs-label, .vt-row.is-song.cur .vt-n, .lcs-row.is-song.next .lcs-label, .vt-row.is-song.next .vt-n { color: var(--song); }
+
+/* Drop screen: red pill title and a bigger time, on the cue sheets and the public timeline */
+.lcs-row.drop .lcs-label, .vt-row[data-g="drop"] .vt-n {
+  display: inline-block; width: fit-content; padding: 0.12em 0.75em; border-radius: 999px; line-height: 1.3;
+  color: #ff8a82; background: rgba(255, 59, 48, 0.18); border: 1.5px solid rgba(255, 59, 48, 0.65); font-weight: 800; }
+.lcs-row.drop .lcs-time { font-size: 1.45em; font-weight: 800; color: #ff5a52; letter-spacing: 0.01em; }
+.vt-row[data-g="drop"] .vt-t { font-size: 1.3em; font-weight: 800; color: #ff5a52; }
+.vt-row[data-g="drop"] .vt-t small { color: #ff8a82; }
+.lcs-row.drop.past .lcs-label, .vt-row[data-g="drop"].past .vt-n { opacity: 0.55; }
 </style>
 </head>
 <body>
