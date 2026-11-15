@@ -1247,6 +1247,28 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 
 /* every word capitalized in cue titles (cue sheets, booth, public timeline, Now card, Up next chip) */
 .lcs-label, .vt-n, .vx-now-name, .vx-next-k .vx-chip { text-transform: capitalize; }
+
+/* ===== big screens / multiviewer: fill the whole screen, nothing cut off ===== */
+@media (min-width: 900px) {
+  .vx { height: 100vh; height: 100dvh; overflow: hidden; box-sizing: border-box;
+    grid-template-rows: auto auto minmax(0, 1fr) auto; align-items: stretch; row-gap: 1.2vh; padding-top: 1.6vh; padding-bottom: 1.6vh; }
+  .vx-top { grid-column: 1 / -1; grid-row: 1; margin: 0; }
+  .vx-now { grid-column: 1; grid-row: 2; align-self: start; }
+  .vx-next { grid-column: 1; grid-row: 3; align-self: stretch; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center;
+    container-type: size; padding: 2vh 2vw; }
+  .vx-now[hidden] + .vx-next { grid-row: 2 / 4; }
+  .vx-ptcard { grid-column: 1; grid-row: 4; align-self: end; }
+  .vx-panel { grid-column: 2; grid-row: 2 / 5; height: auto; min-height: 0; align-self: stretch; }
+  /* the countdown grows with its card */
+  .vx-next .vx-cd { font-size: min(25cqw, 50cqh); margin: 0.04em 0 0.06em; }
+  .vx-next .vx-next-k { font-size: min(4.6cqw, 9cqh); }
+  .vx-next .vx-at { font-size: min(3.4cqw, 6.5cqh); }
+  .vx-now-name { font-size: clamp(2rem, 3.8vw, 5.5rem); }
+  /* footer bits float small in the corners instead of taking rows */
+  .vx-foot { position: fixed; left: 2vw; bottom: 0.4vh; margin: 0; font-size: clamp(0.7rem, 0.8vw, 1rem); opacity: 0.7; z-index: 5; }
+  .vx-alerts { position: fixed; right: 2vw; bottom: 0.4vh; margin: 0; min-height: 0; padding: 0.25em 0.9em; font-size: clamp(0.7rem, 0.8vw, 1rem); opacity: 0.6; z-index: 5; }
+  .vx-alerts.on { opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -4495,6 +4517,22 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     box.classList.toggle("is-red", toDrop <= 0);
     requestAnimationFrame(ptcFrame);
   }
+  // big screens: size the countdown to fill its card (width and height), whatever its length
+  function fitCountdown() {
+    var el = $("vNextCd"), card = $("vNext");
+    if (!el || !card || card.hidden) return;
+    if (window.innerWidth < 900) { if (el.style.fontSize) el.style.fontSize = ""; el._fitKey = null; return; }
+    var key = el.textContent.length + "|" + card.clientWidth + "x" + card.clientHeight;
+    if (el._fitKey === key) return;
+    el._fitKey = key;
+    el.style.fontSize = "100px";
+    var w = el.scrollWidth || 1;
+    var label = card.querySelector(".vx-next-k"), sub = card.querySelector(".vx-at");
+    var room = card.clientHeight - (label ? label.offsetHeight : 0) - (sub ? sub.offsetHeight : 0) - 40;
+    var size = Math.min(100 * (card.clientWidth * 0.9) / w, room * 0.95);
+    el.style.fontSize = Math.max(40, Math.floor(size)) + "px";
+  }
+  window.addEventListener("resize", function () { var el = $("vNextCd"); if (el) el._fitKey = null; fitCountdown(); });
   function renderViewer() {
     if (!document.body.classList.contains("view-mode")) return;
     var now = nowMs(), cp = centralParts(now);
@@ -4534,6 +4572,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       var r = rows[nextI], left = Math.ceil((r.t - now) / 1000);
       setHtml($("vNextK"), (started ? "" : "First up ") + '<span class="vx-chip" data-g="' + r.g + '">' + esc(r.n) + "</span> in");
       setHtml($("vNextCd"), monoHtml(left >= 3600 ? fmtHMS(left) : fmtMMSS(left)));
+      fitCountdown();
       setHtml($("vNextSub"), "at " + vTime(r.t) + (r.g === "drop" && r.pt != null ? ' <span class="vx-pt">ProTools ' + fmtDur(Math.round(r.pt)) + "</span>" : ""));
       nx.classList.toggle("is-drop", r.g === "drop");
       nx.classList.toggle("drop-hot", r.g === "drop" && left <= 30);
