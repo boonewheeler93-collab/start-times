@@ -4046,7 +4046,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     sync.err = ""; renderSync();
     firebase.auth().signInWithEmailAndPassword(SYNC_LOGIN, String(pw).trim()).then(function () { $("syncPw").value = ""; }, function (e) {
       var c = (e && e.code) || "";
-      sync.err = /wrong-password|invalid-credential|invalid-login|user-not-found/.test(c) ? "That didn\u2019t work for " + SYNC_LOGIN + ". Check that this exact email is in Firebase \u203a Authentication \u203a Users, and the password matches."
+      sync.err = /wrong-password|invalid-credential|invalid-login|user-not-found/.test(c) ? "That didn\u2019t work for " + SYNC_LOGIN + " in Firebase project " + FIREBASE_CONFIG.projectId + " (" + c + ", tried at " + new Date().toLocaleTimeString() + "). Check that this email is under Authentication \u203a Users in that project, and the password matches."
         : c === "auth/too-many-requests" ? "Too many tries. Wait a minute and try again."
         : "Couldn\u2019t unlock" + (c ? " (" + c + ")" : "") + ".";
       renderSync();
