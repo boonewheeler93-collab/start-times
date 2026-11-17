@@ -1,17 +1,17 @@
 {
-  "updated": "2026-11-16T21:18:55Z",
+  "updated": "2026-11-17T20:07:07Z",
   "weekend": {
-    "plan_id": "91142210",
+    "plan_id": "91142211",
     "title": null,
     "series": "Supernatural",
-    "dates": "November 14 & 15, 2026",
-    "sort_date": "2026-11-14T17:00:00Z",
+    "dates": "November 21 & 22, 2026",
+    "sort_date": "2026-11-21T17:00:00Z",
     "times": [
-      "2026-11-14T23:00:00Z",
-      "2026-11-15T14:30:00Z",
-      "2026-11-15T16:00:00Z",
-      "2026-11-15T17:30:00Z",
-      "2026-11-15T19:00:00Z"
+      "2026-11-21T23:00:00Z",
+      "2026-11-22T14:30:00Z",
+      "2026-11-22T16:00:00Z",
+      "2026-11-22T17:30:00Z",
+      "2026-11-22T19:00:00Z"
     ],
     "items": [
       {
@@ -57,21 +57,10 @@
         "lead": null
       },
       {
-        "title": "Walk-in: Calling All Angels - TRAIN  ",
+        "title": "Walk-in:  Waiting On The World To Change - John Mayer",
         "type": "item",
         "section": "WALK-IN SONG",
-        "length": 231,
-        "position": "during",
-        "description": "+ Ana\n*BGVs",
-        "key": null,
-        "notes": [],
-        "lead": "Ana"
-      },
-      {
-        "title": "BEGINS NOW",
-        "type": "item",
-        "section": "WORSHIP",
-        "length": 29,
+        "length": 240,
         "position": "during",
         "description": null,
         "key": null,
@@ -79,37 +68,48 @@
         "lead": null
       },
       {
-        "title": "Standing In Victory",
-        "type": "song",
+        "title": "BEGINS NOW",
+        "type": "item",
         "section": "WORSHIP",
-        "length": 258,
+        "length": 40,
         "position": "during",
-        "description": "+ Boone\n* Energy",
-        "key": "Bb",
+        "description": null,
+        "key": null,
         "notes": [],
-        "lead": "Boone"
+        "lead": null
       },
       {
-        "title": "Same God",
+        "title": "The Joy",
         "type": "song",
         "section": "WORSHIP",
-        "length": 351,
+        "length": 330,
         "position": "during",
-        "description": "+ Boone",
-        "key": "C",
-        "notes": [],
-        "lead": "Boone"
-      },
-      {
-        "title": "Holy Forever",
-        "type": "song",
-        "section": "WORSHIP",
-        "length": 468,
-        "position": "during",
-        "description": "+ Ana\nLEAD IN\n*ends with an extra upbeat chorus BIG ENDING*",
+        "description": "+ Tara\n*WELCOME",
         "key": "G",
         "notes": [],
-        "lead": "Ana"
+        "lead": "Tara"
+      },
+      {
+        "title": "I Know A Name",
+        "type": "song",
+        "section": "WORSHIP",
+        "length": 326,
+        "position": "during",
+        "description": "+ Boone",
+        "key": "D",
+        "notes": [],
+        "lead": "Boone"
+      },
+      {
+        "title": "More Than Able",
+        "type": "song",
+        "section": "WORSHIP",
+        "length": 300,
+        "position": "during",
+        "description": "+ Boone / Ana",
+        "key": "D",
+        "notes": [],
+        "lead": "Boone / Ana"
       },
       {
         "title": "Offering + Stage Time",
@@ -255,7 +255,7 @@
         "length": 424,
         "position": "during",
         "description": "+ Boone (Big Intro)",
-        "key": "C",
+        "key": "B",
         "notes": [],
         "lead": "Boone (Big Intro)"
       },
