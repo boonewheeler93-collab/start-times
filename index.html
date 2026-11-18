@@ -1333,6 +1333,11 @@ body.tv-mode .vx-then:empty { display: none; }
 .vx-then-song { color: var(--song); }
 .vx-then-ld { font-size: 0.6em; color: var(--accent, #9db0ff); margin-left: 0.2em; }
 .vx-then-t { font-size: 0.75em; color: var(--ink-2, #b8c0dc); margin-left: 0.5em; font-variant-numeric: tabular-nums; }
+
+.vx-top-r { display: inline-flex; align-items: center; gap: 10px; }
+.vx-refresh { font: inherit; font-weight: 700; font-size: 0.85em; padding: 0.35em 0.9em; border-radius: 999px; cursor: pointer;
+  color: var(--ink-2, #b8c0dc); background: rgba(255,255,255,0.06); border: 1px solid var(--glass-line, rgba(255,255,255,0.12)); min-height: 36px; }
+.vx-refresh:hover { color: var(--ink, #fff); border-color: rgba(255,255,255,0.3); }
 </style>
 </head>
 <body>
@@ -1535,7 +1540,10 @@ body.tv-mode .vx-then:empty { display: none; }
 <div id="viewer" class="vx" hidden>
   <header class="vx-top">
     <span class="vx-svc" id="vSvc"><span class="vx-dot" aria-hidden="true"></span><span id="vSvcT"></span></span>
-    <span class="vx-clock" id="vClock"></span>
+    <span class="vx-top-r">
+      <button type="button" class="vx-refresh" id="vRefresh" aria-label="Refresh to the newest version">Refresh</button>
+      <span class="vx-clock" id="vClock"></span>
+    </span>
   </header>
   <section class="vx-card vx-now" id="vNow" hidden>
     <div class="vx-k"><span>Now</span><span id="vNowSub"></span></div>
@@ -4693,6 +4701,10 @@ body.tv-mode .vx-then:empty { display: none; }
     if (on) { if (booth.open) closeBooth(); document.title = "Start Times (live)"; renderViewer(); }
   }
   window.addEventListener("hashchange", applyViewMode);
+  // public / TV view: reload the newest version, staying in the same view
+  $("vRefresh").addEventListener("click", function () {
+    location.replace(location.pathname + "?v=" + Date.now() + (/^#tv$/i.test(location.hash) ? "#tv" : "#view"));
+  });
   setInterval(renderViewer, 250);
   applyViewMode();
 
