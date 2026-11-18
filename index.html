@@ -1315,6 +1315,24 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
 .lcs-row.drop .drop-at { color: #ff8a82; font-weight: 700; margin-right: 1.4em; }
 .vt-row .vt-t small.vt-dclock, .vx .vt-row .vt-t small.vt-dclock { display: block; font-size: 0.4em; font-weight: 700; color: #ff8a82; text-align: right; line-height: 1.1; margin-top: 0.1em; }
 .vt-dclock small { font-size: 0.8em; }
+
+/* ===== TV view (#tv): just the countdown, as big as the screen allows, and the next item ===== */
+.vx-then { display: none; }
+body.tv-mode .vx { display: grid !important; grid-template-columns: 1fr !important; grid-template-rows: auto minmax(0, 1fr) !important;
+  height: 100vh; height: 100dvh; overflow: hidden; box-sizing: border-box; padding: 1.2vh 1.6vw; row-gap: 1vh; max-width: none !important; }
+body.tv-mode .vx-top { grid-row: 1; grid-column: 1; margin: 0; font-size: clamp(0.8rem, 1.6vh, 1.4rem); }
+body.tv-mode .vx-now, body.tv-mode .vx-ptcard, body.tv-mode .vx-panel, body.tv-mode .vx-foot, body.tv-mode .vx-alerts { display: none !important; }
+body.tv-mode .vx-next { grid-row: 2 !important; grid-column: 1 !important; align-self: stretch; min-height: 0; height: 100%; box-sizing: border-box;
+  display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1.5vh 2vw; }
+body.tv-mode .vx-next .vx-next-k { font-size: clamp(1.2rem, min(4.2vw, 7vh), 5rem); }
+body.tv-mode .vx-next .vx-at { font-size: clamp(1rem, min(2.6vw, 4.4vh), 3rem); }
+body.tv-mode .vx-then { text-transform: capitalize; display: block; margin-top: 1.2vh; margin-bottom: 1.5vh; line-height: 1.25; font-weight: 800; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  font-size: clamp(1.2rem, min(4vw, 6.6vh), 5rem); color: var(--ink, #eef1ff); }
+body.tv-mode .vx-then:empty { display: none; }
+.vx-then-k { font-size: 0.6em; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3, #8a93b3); margin-right: 0.3em; vertical-align: 0.12em; }
+.vx-then-song { color: var(--song); }
+.vx-then-ld { font-size: 0.6em; color: var(--accent, #9db0ff); margin-left: 0.2em; }
+.vx-then-t { font-size: 0.75em; color: var(--ink-2, #b8c0dc); margin-left: 0.5em; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -1528,6 +1546,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     <div class="vx-next-k" id="vNextK"></div>
     <div class="vx-cd" id="vNextCd"></div>
     <div class="vx-at" id="vNextSub"></div>
+    <div class="vx-then" id="vThen"></div>
   </section>
   <section class="vx-card vx-ptcard" id="vPtCard" hidden aria-label="ProTools position">
     <div class="vx-ptc" id="vPtc"><span class="vx-ptc-k">ProTools</span><span class="vx-ptc-n" id="vPtcN"></span><span class="vx-ptc-s" id="vPtcS"></span></div>
@@ -4572,8 +4591,10 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     el.style.fontSize = "100px";
     var w = el.scrollWidth || 1;
     var label = card.querySelector(".vx-next-k"), sub = card.querySelector(".vx-at");
-    var room = card.clientHeight - (label ? label.offsetHeight : 0) - (sub ? sub.offsetHeight : 0) - 40;
-    var size = Math.min(100 * (card.clientWidth * 0.88) / w, room * 0.8);
+    var then = card.querySelector(".vx-then");
+    var room = card.clientHeight - (label ? label.offsetHeight : 0) - (sub ? sub.offsetHeight : 0) - (then ? then.offsetHeight : 0) - 40;
+    var tvMode = document.body.classList.contains("tv-mode");
+    var size = Math.min(100 * (card.clientWidth * 0.88) / w, room * (tvMode ? 0.68 : 0.8));
     el.style.fontSize = Math.max(40, Math.floor(size)) + "px";
   }
   window.addEventListener("resize", function () { var el = $("vNextCd"); if (el) el._fitKey = null; fitCountdown(); });
@@ -4619,6 +4640,10 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       fitCountdown();
       setHtml($("vNextSub"), "at " + vTime(r.t) + (r.g === "drop" && r.pt != null ? ' <span class="vx-pt">ProTools ' + fmtDur(Math.round(r.pt)) + "</span>" : ""));
       nx.classList.toggle("is-drop", r.g === "drop");
+      // TV view: one line with the item after this one
+      var th = rows[nextI + 1], thH = "";
+      if (th) thH = '<span class="vx-then-k">Then</span> ' + (th.song ? '<span class="vx-then-song">' + esc(th.n) + "</span>" : esc(th.n)) + (th.ld ? ' <span class="vx-then-ld">' + esc(th.ld) + "</span>" : "") + ' <span class="vx-then-t">' + (th.g === "drop" && th.pt != null ? "ProTools " + fmtDur(Math.round(th.pt)) : vTime(th.t)) + "</span>";
+      setHtml($("vThen"), thH);
       nx.classList.toggle("drop-hot", r.g === "drop" && left <= 30);
       nx.classList.toggle("cd-red", left <= 30);
       nx.classList.toggle("cd-yellow", left > 30 && left <= 120);
@@ -4659,8 +4684,11 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     if ($("vFoot").textContent !== foot) $("vFoot").textContent = foot;
   }
   function applyViewMode() {
-    var on = !!window.START_TIMES_VIEW || /^#view$/i.test(location.hash);
+    var tv = /^#tv$/i.test(location.hash);
+    var on = !!window.START_TIMES_VIEW || /^#view$/i.test(location.hash) || tv;
     document.body.classList.toggle("view-mode", on);
+    document.body.classList.toggle("tv-mode", tv);
+    var cdEl = $("vNextCd"); if (cdEl) cdEl._fitKey = null;
     $("viewer").hidden = !on;
     if (on) { if (booth.open) closeBooth(); document.title = "Start Times (live)"; renderViewer(); }
   }
