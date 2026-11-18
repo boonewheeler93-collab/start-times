@@ -1755,22 +1755,19 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   }
 
   // this Wednesday's SWITCH plan from Planning Center, applied once per device
-  // ProTools markers from !SW.11.11 (seconds into the session); Begins Now from its video clip (no marker this week)
-  var WEEK_SW = { id: "2026-11-11", plan: "92310717", resi: "2026-11-11-resi", items: [
-    { sec: "Pre-Experience", name: "10-Minute Countdown", len: "10:03", start: true, pt: 0, ptEnd: 603 },
+  // ProTools markers from !SW.11.18 (seconds into the session)
+  var WEEK_SW = { id: "2026-11-18", plan: "92310718", items: [
+    { sec: "Pre-Experience", name: "10-Minute Countdown", len: "10:01", start: true, pt: 0, ptEnd: 601 },
     { sec: "Opener/Introduction", name: "Welcome", len: "2:00" },
-    { sec: "Opener/Introduction", name: "Begins Now", len: "0:24", start: true, pt: 832.000 },
-    { sec: "Worship", name: "Alleluia", len: "4:13", lead: "Boone", pt: 856.000 },
-    { sec: "Worship", name: "Washed", len: "3:51", lead: "Ana", pt: 1109.440 },
-    { sec: "Worship", name: "At The Altar", len: "6:38", lead: "Ana", pt: 1340.807, ptEnd: 1738.925 },
+    { sec: "Opener/Introduction", name: "Begins Now", len: "0:26", start: true, pt: 672.000 },
+    { sec: "Worship", name: "Thank God I\u2019m Free", len: "4:56", lead: "Ana", pt: 698.000 },
+    { sec: "Worship", name: "Yahweh We Love You", len: "6:20", lead: "Boone", pt: 994.250 },
+    { sec: "Worship", name: "Trust In God", len: "6:19", lead: "Ana", pt: 1374.475, ptEnd: 1753.934 },
     { sec: "Message", name: "Transition out of Worship", len: "1:30" },
     { sec: "Message", name: "Offering + Videos", len: "2:00" },
     { sec: "Message", name: "Switch 300 (Stagetime)", len: "5:00", start: true },
     { sec: "Message", name: "Small Group Discussion", len: "5:00" },
-    { sec: "Message", name: "Message Video", len: "20:45", start: true },
-    { sec: "Message", name: "Keys", len: "3:24" },
-    { sec: "Message", name: "Prayer Start", len: "0:47" },
-    { sec: "Message", name: "Message End", len: "0:00" },
+    { sec: "Message", name: "Message Video", len: "20:00", start: true },
     { sec: "Wrap-Up", name: "Momentum/Next Steps", len: "3:00" },
     { sec: "Wrap-Up", name: "Set Up Switch Groups", len: "1:30" },
     { sec: "Post-Experience", name: "Switch Group Time", len: "30:00" },
@@ -1807,7 +1804,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-14b";
+  var DATA_VER = "2026-11-18a";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2725,6 +2722,7 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
   function pcLeadSw(label) {
     var n = normTitle(label); if (!n || !PC || !PC.switch) return null;
     var hit = null; PC.switch.items.forEach(function (i) { if (!hit && i.type === "song" && i.lead && normTitle(i.title) === n) hit = i.lead; });
+    if (hit) hit = hit.replace(/\s*\([^)]*\)\s*$/, "");
     if (hit && hit === hit.toUpperCase()) hit = hit.toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); });
     return hit;
   }
@@ -3039,8 +3037,8 @@ body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; 
       { n: "Same God", t: 815.475 }, { n: "Holy Forever", t: 1166.463 }, { n: "End", t: 1633.963 }
     ],
     "switch": [
-      { n: "10-Minute Countdown", t: 0 }, { n: "Begins Now", t: 832.000 }, { n: "Alleluia", t: 856.000 },
-      { n: "Washed", t: 1109.440 }, { n: "At The Altar", t: 1340.807 }, { n: "End", t: 1738.925 }
+      { n: "10-Minute Countdown", t: 0 }, { n: "Begins Now", t: 672.000 }, { n: "Thank God I\u2019m Free", t: 698.000 },
+      { n: "Yahweh We Love You", t: 994.250 }, { n: "Trust In God", t: 1374.475 }, { n: "End", t: 1753.934 }
     ]
   };
   function curMarkers() { return MARKERS[lastCalc && lastCalc.program === "switch" ? "switch" : "weekend"] || []; }
