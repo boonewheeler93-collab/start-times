@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-17T20:07:07Z",
+  "updated": "2026-11-18T19:39:50Z",
   "weekend": {
     "plan_id": "91142211",
     "title": null,
@@ -62,10 +62,10 @@
         "section": "WALK-IN SONG",
         "length": 240,
         "position": "during",
-        "description": null,
+        "description": "+ Boone\n*BGV's",
         "key": null,
         "notes": [],
-        "lead": null
+        "lead": "Boone"
       },
       {
         "title": "BEGINS NOW",
