@@ -1353,6 +1353,19 @@ body.tv-mode .vx-then.then-hot .vx-then-k, body.tv-mode .vx-then.then-hot .vx-th
 body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite; }
 @keyframes thenPulse { 50% { background: rgba(255,59,48,0.6); } }
 @media (prefers-reduced-motion: reduce) { body.tv-mode .vx-then.then-pulse { animation: none; } }
+
+.b-mode { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.linkchip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 0.9rem;
+  border: 1px solid var(--glass-line, rgba(255,255,255,0.14)); background: rgba(255,255,255,0.04); color: var(--ink-2, #b8c0dc); }
+.linkchip .lc-dot { width: 10px; height: 10px; border-radius: 50%; background: #6b7390; flex: none; }
+.linkchip.live { color: #b8f5c8; border-color: rgba(74,222,128,0.6); background: rgba(74,222,128,0.12); }
+.linkchip.live .lc-dot { background: #4ade80; box-shadow: 0 0 0 4px rgba(74,222,128,0.25); animation: lcPulse 1s ease-in-out infinite; }
+.linkchip.ok { color: #c9f0d6; border-color: rgba(74,222,128,0.4); }
+.linkchip.ok .lc-dot { background: #4ade80; }
+.linkchip.warn { color: #ffd59a; border-color: rgba(255,194,114,0.5); }
+.linkchip.warn .lc-dot { background: #ffc272; }
+.linkchip.off .lc-dot { background: #ff6b62; }
+@keyframes lcPulse { 50% { box-shadow: 0 0 0 7px rgba(74,222,128,0.08); } }
 </style>
 </head>
 <body>
@@ -1606,7 +1619,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         </div>
       </div>
     </div>
-    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div></div>
+    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><div class="linkchip" id="bLinkChip" role="status"></div></div>
     <div class="b-count" id="bCountBox">
       <div class="b-lab" id="bLab"></div>
       <div class="b-big" id="bBig"></div>
@@ -1904,6 +1917,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   var progManual = null;
   function autoProg() { var d = new Date(Date.now() + (+state.clockOff || 0)).getDay(); return d >= 1 && d <= 3 ? "switch" : "weekend"; }
   function prog() { return progManual || autoProg(); }
+  function startRelGuess() { var L = parseDur(String(state.len || "")), T = parseDur(String(state.target || "")); return L !== null && T !== null ? T - L : -529; }
   function svcList() { return prog() === "switch" ? state.swServices : state.services; }
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
@@ -2660,6 +2674,10 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var svcs = state.services.map(function (s) { return { day: s.day, sec: parseClock(s.time) }; })
       .filter(function (s) { return s.sec !== null; })
       .sort(function (a, b) { return dayRank(a.day) - dayRank(b.day) || a.sec - b.sec; });
+    // TEST (Thursday 11/19 only): a service whose hit play lands at 5:08:00 PM
+    var tNow = nowMs();
+    if (tNow > Date.parse("2026-11-19T16:30:00-06:00") && tNow < Date.parse("2026-11-19T18:30:00-06:00"))
+      svcs.unshift({ day: "Thursday", sec: 17 * 3600 + 21 * 60, test: true });   // 5:21 PM service: hit play 5:12:11 PM
     if (state.sel >= svcs.length || state.sel < 0) state.sel = 0;
 
     var copy = ["Start times (final downbeat " + fmtSigned(finalRel) + ")", ""];
@@ -3112,6 +3130,18 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     persist(); renderLink(); renderTransport();
   }
   function renderTransport() {
+    var lc = $("bLinkChip");
+    if (lc) {
+      var lcls, ltxt;
+      if (!link.midi || !link.out) { lcls = "off"; ltxt = "ProTools link: not connected"; }
+      else if (linkOff()) { lcls = "warn"; ltxt = "ProTools link: off (Link on to send)"; }
+      else if (link.inp && ptMoving()) { lcls = "live"; ltxt = "ProTools link: hearing ProTools \u00b7 Playing " + (link.tc ? fmtTc(link.tc) : ""); }
+      else if (link.inp && link.tc) { lcls = "ok"; ltxt = "ProTools link: connected \u00b7 Stopped at " + fmtTc(link.tc); }
+      else { lcls = "warn"; ltxt = "ProTools link: connected \u00b7 press Play in ProTools to check timecode"; }
+      var lh = '<span class="lc-dot"></span>' + esc(ltxt);
+      if (lc._h !== lh) { lc.innerHTML = lh; lc._h = lh; }
+      if (lc.className !== "linkchip " + lcls) lc.className = "linkchip " + lcls;
+    }
     var box = $("bPt"); if (!box) return;
     var on = !!link.midi && !!link.out;
     document.body.classList.toggle("pt-linked", on);
