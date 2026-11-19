@@ -1,33 +1,11 @@
 {
-  "ran": "2026-11-19T22:10:34Z",
+  "ran": "2026-11-19T22:11:24Z",
   "plan": "91142211",
   "changes": [
     {
-      "item": "Walk-in",
-      "status": "skipped (2 matches)"
-    },
-    {
-      "item": "BEGINS NOW",
-      "before": 40,
-      "after": 29,
-      "status": "updated"
-    },
-    {
-      "item": "The Joy",
-      "before": 330,
-      "after": 291,
-      "status": "updated"
-    },
-    {
-      "item": "I Know A Name",
-      "before": 326,
-      "after": 282,
-      "status": "updated"
-    },
-    {
-      "item": "More Than Able",
-      "before": 300,
-      "after": 456,
+      "item": "Walk-in:  Waiting On The World To Change - John Mayer",
+      "before": 240,
+      "after": 199,
       "status": "updated"
     }
   ]
