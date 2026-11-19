@@ -1342,7 +1342,7 @@ body.tv-mode .vx-then:empty { display: none; }
 /* TV view: the Then pill sits right under the numbers; the bottom stays clear for the multiviewer label */
 body.tv-mode .vx-next { justify-content: flex-start; padding-top: 2vh; padding-bottom: 15vh; }
 body.tv-mode .vx-next .vx-at { display: none; }
-body.tv-mode .vx-then { display: inline-flex; align-items: baseline; gap: 0.35em; width: auto; max-width: 92%; margin: 0.4vh 0 0;
+body.tv-mode .vx-then { overflow: visible; display: inline-flex; align-items: baseline; gap: 0.35em; width: auto; max-width: 92%; margin: 0.4vh 0 0;
   padding: 0.18em 0.85em 0.22em; border-radius: 999px; line-height: 1.2; font-size: clamp(1.2rem, min(3.6vw, 6.2vh), 4.6rem);
   color: #eef1ff; background: rgba(157,176,255,0.16); border: 2px solid rgba(157,176,255,0.55); transition: background 0.4s, border-color 0.4s, color 0.4s; }
 body.tv-mode .vx-then .vx-then-k { color: #b9c6ff; }
@@ -1867,6 +1867,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
   var DATA_VER = "2026-11-21b";
+  var APP_BUILD = "v95";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -4097,7 +4098,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     renderSync();
   }
   var reloadWanted = false;
+  function viewOnly() { return document.body.classList.contains("view-mode") && !booth.open; }
   function safeToReload(now) {
+    if (viewOnly()) return true;   // the public and TV views only display; they can reload any time
     if (!lastCalc) return true;
     var occ = occurrences(now); if (!occ.length) return true;
     var bad = false;
@@ -4108,8 +4111,19 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if (ptMoving && ptMoving()) bad = true;
     return !bad;
   }
+  // check the published app for a newer build (every minute on the public/TV views, every 5 minutes elsewhere)
+  function checkBuild() {
+    try {
+      fetch(location.pathname + "?build=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) {
+        var m = /var APP_BUILD = "([^"]+)"/.exec(t || "");
+        if (m && m[1] !== APP_BUILD) scheduleReload();
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  setTimeout(function loop() { checkBuild(); setTimeout(loop, viewOnly() ? 60000 : 300000); }, 60000);
   function scheduleReload() {
     if (reloadWanted) return; reloadWanted = true;
+    if (viewOnly()) { location.replace(location.pathname + "?v=" + Date.now() + (/^#tv$/i.test(location.hash) ? "#tv" : "#view")); return; }
     var tick = setInterval(function () {
       if (!safeToReload(nowMs())) return;
       clearInterval(tick);
@@ -4690,12 +4704,23 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     box.classList.toggle("is-red", toDrop <= 0);
     requestAnimationFrame(ptcFrame);
   }
+  // TV view: shrink the Then pill's text until the whole line fits (leader and time included)
+  function fitThen(tp) {
+    if (!document.body.classList.contains("tv-mode") || !tp.textContent) { if (tp.style.fontSize) tp.style.fontSize = ""; tp._fitKey = null; return; }
+    var card = $("vNext"), key = tp.textContent + "|" + card.clientWidth;
+    if (tp._fitKey === key) return;
+    tp._fitKey = key; tp.style.fontSize = ""; tp.style.maxWidth = "none";
+    var size = parseFloat(getComputedStyle(tp).fontSize), max = card.clientWidth * 0.9, n = 0;
+    while (tp.offsetWidth > max && size > 14 && n++ < 40) { size *= 0.94; tp.style.fontSize = size + "px"; }
+    tp.style.maxWidth = "";
+  }
   // big screens: size the countdown to fill its card (width and height), whatever its length
   function fitCountdown() {
     var el = $("vNextCd"), card = $("vNext");
     if (!el || !card || card.hidden) return;
     if (window.innerWidth < 900) { if (el.style.fontSize) el.style.fontSize = ""; el._fitKey = null; return; }
-    var key = el.textContent.length + "|" + card.clientWidth + "x" + card.clientHeight;
+    var thenEl = card.querySelector(".vx-then");
+    var key = el.textContent.length + "|" + card.clientWidth + "x" + card.clientHeight + "|" + (thenEl ? thenEl.textContent.length + ":" + thenEl.className : "");
     if (el._fitKey === key) return;
     el._fitKey = key;
     el.style.fontSize = "100px";
@@ -4760,6 +4785,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       tp.classList.toggle("then-warn", left <= 120 && left > 30);
       tp.classList.toggle("then-hot", left <= 30);
       tp.classList.toggle("then-pulse", left <= 10);
+      fitThen(tp);
+      fitCountdown();
       nx.classList.toggle("drop-hot", r.g === "drop" && left <= 30);
       nx.classList.toggle("cd-red", left <= 30);
       nx.classList.toggle("cd-yellow", left > 30 && left <= 120);
