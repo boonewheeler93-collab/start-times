@@ -1852,7 +1852,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-18b";
+  var DATA_VER = "2026-11-18c";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2791,7 +2791,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   function cleanSec(t) { t = String(t || "").trim(); return /^(\S )+\S$/.test(t) ? t.replace(/ (?=\S)/g, "").replace(/-/g, " - ") : t; }
   // SWITCH: load a new Planning Center plan into the run of show
   // SWITCH message cues from Resi (from MSG START), for one plan only, so another week's plan never shows these times
-  var SW_RESI = { id: "2026-11-11-resi", plan: "92310717", keys: 20 * 60 + 45, prayer: 24 * 60 + 9, end: 24 * 60 + 56 };
+  var SW_RESI = { id: "2026-11-18-resi", plan: "92310718", keys: 11 * 60 + 53, prayer: 21 * 60 + 12, end: 21 * 60 + 52 };
   function swApplyResi() {
     if (!SW_RESI.plan || String(state.swPlan) !== SW_RESI.plan || state.swResi === SW_RESI.id) return false;
     var out = [], done = false;
