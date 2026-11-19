@@ -1866,7 +1866,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-21a";
+  var DATA_VER = "2026-11-21b";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2677,7 +2677,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     // TEST (Thursday 11/19 only): a service whose hit play lands at 5:08:00 PM
     var tNow = nowMs();
     if (tNow > Date.parse("2026-11-19T16:30:00-06:00") && tNow < Date.parse("2026-11-19T18:30:00-06:00"))
-      svcs.unshift({ day: "Thursday", sec: 17 * 3600 + 21 * 60, test: true });   // 5:21 PM service: hit play 5:12:11 PM
+      svcs.unshift({ day: "Thursday", sec: 17 * 3600 + 31 * 60, test: true });   // 5:31 PM service: hit play 5:22:11 PM
     if (state.sel >= svcs.length || state.sel < 0) state.sel = 0;
 
     var copy = ["Start times (final downbeat " + fmtSigned(finalRel) + ")", ""];
@@ -4056,6 +4056,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     ready.then(function () {
       if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
       firebase.auth().onAuthStateChanged(onAuth);
+      firebase.database().ref("startTimes/booth").on("value", function (x) { sync.pubBooth = x.val(); }, function () {});
       firebase.database().ref("startTimes/state").on("value", function (x) {
         if (sync.user) return;                      // signed-in devices handle this themselves
         var v = x.val(); if (v) { applyShared(v); sync.follow = true; renderSync(); }
@@ -4665,9 +4666,21 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   function setHtml(el, h) { if (el._h !== h) { el.innerHTML = h; el._h = h; } }
   var vPtc = { on: false, raf: false, base: null };
+  // the booth's shared ProTools status, if fresh: { sec, playing, at }
+  function boothPT() {
+    var t = (sync && (sync.booth || sync.pubBooth)) || null;
+    if (!t || !t.tc || !t.at) return null;
+    var age = Date.now() - t.at; if (age > (t.playing ? 4000 : 8000)) return null;
+    var m = /^(\d+):(\d+):(\d+):(\d+)$/.exec(t.tc); if (!m) return null;
+    var sec = +m[1] * 3600 + +m[2] * 60 + +m[3] + +m[4] / 30;
+    var st = parseTc(state.ptStart); if (st) sec -= tcSecs(st);
+    return { sec: sec, playing: !!t.playing, at: t.at };
+  }
   function ptcFrame() {
     if (!vPtc.on || !vPtc.base) { vPtc.raf = false; return; }
-    var b = vPtc.base, pt = b.pt + (nowMs() - b.t) / 1000;
+    var b = vPtc.base, pt = b.frozen ? b.pt : b.pt + (nowMs() - b.t) / 1000;
+    var k = document.querySelector("#vPtc .vx-ptc-k"), kt = b.frozen ? "ProTools \u00b7 stopped" : "ProTools";
+    if (k && k.textContent !== kt) k.textContent = kt;
     if (pt < 0) pt = 0;
     var mm = Math.floor(pt / 60), ss = Math.floor(pt % 60), ms = Math.floor((pt % 1) * 1000);
     var txt = (mm < 10 ? "0" : "") + mm + ":" + (ss < 10 ? "0" : "") + ss + ":" + ("00" + ms).slice(-3);
@@ -4766,6 +4779,10 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       var ptNow = (now - sAt) / 1000;
       if (ptNow >= 0 && ptNow <= endPt) vPtc.base = { pt: 0, t: sAt, drop: lastCalc.dropPT };
     } else if (dr && dr.pt != null) vPtc.base = { pt: dr.pt, t: dr.t, drop: dr.pt };
+    var bt = boothPT(), dropAt = lastCalc.program === "weekend" ? lastCalc.dropPT : (dr && dr.pt != null ? dr.pt : lastCalc.dropPT);
+    if (bt && bt.playing) vPtc.base = { pt: bt.sec, t: bt.at, drop: dropAt };
+    else if (bt && vPtc.base) vPtc.base = { pt: bt.sec, t: nowMs(), drop: dropAt, frozen: true };
+    vPtc.stopped = !!(vPtc.base && vPtc.base.frozen);
     vPtc.on = !!vPtc.base;
     if (vPtc.on && !vPtc.raf) { vPtc.raf = true; requestAnimationFrame(ptcFrame); }
     $("vPtCard").hidden = !vPtc.on;
