@@ -1,12 +1,10 @@
 {
-  "ran": "2026-11-14T20:28:32Z",
-  "plan": "91142210",
+  "ran": "2026-11-19T22:10:34Z",
+  "plan": "91142211",
   "changes": [
     {
-      "item": "Walk-in: Calling All Angels - TRAIN  ",
-      "before": 240,
-      "after": 231,
-      "status": "updated"
+      "item": "Walk-in",
+      "status": "skipped (2 matches)"
     },
     {
       "item": "BEGINS NOW",
@@ -15,21 +13,21 @@
       "status": "updated"
     },
     {
-      "item": "Standing In Victory",
-      "before": 286,
-      "after": 258,
+      "item": "The Joy",
+      "before": 330,
+      "after": 291,
       "status": "updated"
     },
     {
-      "item": "Same God",
-      "before": 481,
-      "after": 351,
+      "item": "I Know A Name",
+      "before": 326,
+      "after": 282,
       "status": "updated"
     },
     {
-      "item": "Holy Forever",
-      "before": 503,
-      "after": 468,
+      "item": "More Than Able",
+      "before": 300,
+      "after": 456,
       "status": "updated"
     }
   ]
