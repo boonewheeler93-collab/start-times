@@ -3212,7 +3212,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var live = state.live && state.live.key === booth.key ? state.live.at : null;
     var startAt = live !== null ? live : planned;
     var el = (now - startAt) / 1000, L = lastCalc.len, dropEl = lastCalc.dropPT != null ? lastCalc.dropPT : L - lastCalc.lower;
-    var linked = live !== null ? linkElapsed() : null;
+    var rawLinked = linkElapsed();
+    var rehearsal = live === null && rawLinked !== null && rawLinked >= 0 && rawLinked <= lastCalc.len + 60;
+    var linked = live !== null || rehearsal ? rawLinked : null;
     var stopped = live !== null && linked === null ? ptStoppedAt() : null;
     if (linked !== null) el = linked;
     else if (stopped !== null && stopped >= 0) el = stopped;
@@ -3240,7 +3242,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         var dh = 'Stopped at ' + fmtDur(Math.floor(stopped)) + (lastCalc.noDrop ? "" : '. Drop screen at <span class="drop-t">' + fmtDur(dropEl) + "</span>");
         if ($("bSub")._h !== dh) { $("bSub").innerHTML = dh; $("bSub")._h = dh; }
       } else if (el <= L) {
-        $("bLab").textContent = linked !== null ? "ProTools, linked" : "ProTools";
+        $("bLab").textContent = rehearsal ? "ProTools \u00b7 rehearsal" : linked !== null ? "ProTools, linked" : "ProTools";
         // the Big Counter draws itself every frame so the milliseconds run smoothly
         booth.cStart = linked !== null ? now - linked * 1000 : startAt;
         booth.cDrop = lastCalc.noDrop ? 1e9 : dropEl;
@@ -3393,7 +3395,14 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     }
     var rows = sheetRows(occ).rows, nextRow = null;
     rows.forEach(function (r) { if (!nextRow && r.t > now) nextRow = r; });
-    if (pos !== null && swStopped !== null && linked === null) {
+    var swRehearsal = false;
+    if (pos === null && linked !== null && !nearService(key, now)) { pos = linked; swRehearsal = true; }
+    if (swRehearsal) {
+      counting = true; lab = "ProTools \u00b7 rehearsal";
+      booth.cStart = now - pos * 1000; booth.cDrop = lastCalc.dropPT !== null ? lastCalc.dropPT : 1e9;
+      if (!booth.cOn) { booth.cOn = true; $("bBig")._h = ""; requestAnimationFrame(counterFrame); }
+      sub = lastCalc.dropPT !== null ? 'Drop screen at <span class="drop-t">' + fmtDur(Math.round(lastCalc.dropPT)) + "</span>" : "";
+    } else if (pos !== null && swStopped !== null && linked === null) {
       // ProTools is stopped: hold where it stopped
       booth.cOn = false;
       lab = "ProTools stopped";
