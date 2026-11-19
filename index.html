@@ -3213,7 +3213,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var startAt = live !== null ? live : planned;
     var el = (now - startAt) / 1000, L = lastCalc.len, dropEl = lastCalc.dropPT != null ? lastCalc.dropPT : L - lastCalc.lower;
     var linked = live !== null ? linkElapsed() : null;
+    var stopped = live !== null && linked === null ? ptStoppedAt() : null;
     if (linked !== null) el = linked;
+    else if (stopped !== null && stopped >= 0) el = stopped;
     var ast = autoStatus(booth.key);
     paintChip($("bMode"), ast);
     var verb = ast.fires ? "Auto-start" : ast.level === "none" ? "ProTools start" : "Hit play";
@@ -3230,7 +3232,14 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       }
     } else {
       var e = Math.floor(el), after = null;
-      if (el <= L) {
+      if (el <= L && stopped !== null && stopped >= 0 && linked === null) {
+        // ProTools is stopped: hold the counter where it stopped
+        booth.cOn = false;
+        $("bLab").textContent = "ProTools stopped";
+        var sh = monoHtml(fmtCounter(stopped)); if ($("bBig")._h !== sh) { $("bBig").innerHTML = sh; $("bBig")._h = sh; }
+        var dh = 'Stopped at ' + fmtDur(Math.floor(stopped)) + (lastCalc.noDrop ? "" : '. Drop screen at <span class="drop-t">' + fmtDur(dropEl) + "</span>");
+        if ($("bSub")._h !== dh) { $("bSub").innerHTML = dh; $("bSub")._h = dh; }
+      } else if (el <= L) {
         $("bLab").textContent = linked !== null ? "ProTools, linked" : "ProTools";
         // the Big Counter draws itself every frame so the milliseconds run smoothly
         booth.cStart = linked !== null ? now - linked * 1000 : startAt;
@@ -3377,13 +3386,20 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var pos = null, linked = linkElapsed();
     if (lastP > 0) {
       var sg = segs[lastP];
-      pos = linked !== null && sg.pt !== null ? linked : (sg.pt || 0) + (now - swPress(key, lastP)) / 1000;
+      var swStopped = linked === null && sg.pt !== null ? ptStoppedAt() : null;
+      pos = linked !== null && sg.pt !== null ? linked : swStopped !== null ? swStopped : (sg.pt || 0) + (now - swPress(key, lastP)) / 1000;
       if (sg.ptEnd !== null && pos > sg.ptEnd + 0.5) pos = null;
       if (sg.ptEnd === null && sg.pt === null) pos = null;
     }
     var rows = sheetRows(occ).rows, nextRow = null;
     rows.forEach(function (r) { if (!nextRow && r.t > now) nextRow = r; });
-    if (pos !== null) {
+    if (pos !== null && swStopped !== null && linked === null) {
+      // ProTools is stopped: hold where it stopped
+      booth.cOn = false;
+      lab = "ProTools stopped";
+      sub = "Stopped at " + fmtDur(Math.floor(pos)) + (nextSeg !== null && segs[nextSeg].pt !== null ? ". Next: " + segs[nextSeg].name + " (" + fmtDur(Math.floor(segs[nextSeg].pt)) + ")." : ".");
+      var sbh = monoHtml(fmtCounter(pos)); if ($("bBig")._h !== sbh) { $("bBig").innerHTML = sbh; $("bBig")._h = sbh; }
+    } else if (pos !== null) {
       counting = true;
       var sgc = segs[lastP];
       lab = linked !== null ? "ProTools, linked" : "ProTools";
@@ -3759,6 +3775,23 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     }
   }
   function ptMoving() { return performance.now() - link.lastQF < 400; }
+  // ProTools sent timecode earlier but has stopped: where it stopped (seconds into the session)
+  function ptStoppedAt() { return link.inp && link.tc && !ptMoving() ? tcElapsed() : null; }
+  // a "started" mark far from its own service (left over from a test) is cleared
+  function cleanStrayStart() {
+    if (!state.live || !lastCalc || lastCalc.program === "switch") return;
+    var now = nowMs(), o = null;
+    occurrences(now).concat(occurrences(now - 4 * 3600000)).forEach(function (x) { if (!o && keyOf(x) === state.live.key) o = x; });
+    if (!o) return;
+    var planned = o.t + lastCalc.startRel * 1000;
+    if (Math.abs(state.live.at - planned) > 90 * 60000) { state.live = null; persist(); }
+  }
+  setInterval(cleanStrayStart, 30000); setTimeout(cleanStrayStart, 2500);
+  // is this service close enough that starting ProTools means the service is starting?
+  function nearService(key, now) {
+    var o = null; occurrences(now).concat(occurrences(now - 4 * 3600000)).forEach(function (x) { if (!o && keyOf(x) === key) o = x; });
+    return !!o && now >= o.t - 90 * 60000 && now <= o.t + 4 * 3600000;
+  }
   function tcElapsed() { var st = parseTc(state.ptStart); return link.tc && st ? tcSecs(link.tc) - tcSecs(st) : null; }
   function linkElapsed() { return link.inp && ptMoving() ? tcElapsed() : null; }
   function fromTop() { var e = linkElapsed(); return e !== null && e >= 0 && e < 180; }
@@ -3790,7 +3823,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if (lastCalc && lastCalc.program === "switch") {
       // ProTools started near the top of a part: mark that part as started
       var key = booth.swKey || lastFocusKey;
-      if (e === null || !key) return;
+      if (e === null || !key || !nearService(key, ps.at)) return;
       lastCalc.segs.forEach(function (sg, k) {
         if (k > 0 && sg.pt !== null && e >= sg.pt - 2 && e < sg.pt + 20) {
           var a = state.swLive && state.swLive.key === key && state.swLive.a ? state.swLive.a : {};
@@ -4139,6 +4172,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     setTimeout(function () {
       ptSend(MMC_PLAY, "Play (" + (tg.sw ? tg.name : "from the top") + ")");
       var now = nowMs();
+      if (tg.key && !nearService(tg.key, now)) { renderBooth(); return; }   // a test, not a service
       if (tg.sw) {
         // timecode marks the exact moment when it comes back; mark it now in case it doesn't
         var a = state.swLive && state.swLive.key === tg.key && state.swLive.a ? state.swLive.a : {};
