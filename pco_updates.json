@@ -1,12 +1,11 @@
 {
-  "note": "Lengths from the ProTools markers (!NKC.11.21-22), whole seconds",
+  "note": "Walk-in length from the ProTools markers (!NKC.11.21-22)",
   "service_type": "890623",
   "plan_id": "91142211",
   "items": [
-    { "match": "Walk-in", "length": 199 },
-    { "match": "Begins Now", "length": 29 },
-    { "match": "The Joy", "length": 291 },
-    { "match": "I Know A Name", "length": 282 },
-    { "match": "More Than Able", "length": 456 }
+    {
+      "match": "Walk-in:  Waiting On The World",
+      "length": 199
+    }
   ]
 }
