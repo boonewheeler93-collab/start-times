@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-19T22:11:24Z",
+  "updated": "2026-11-20T19:17:33Z",
   "weekend": {
     "plan_id": "91142211",
     "title": null,
@@ -171,13 +171,13 @@
     }
   },
   "switch": {
-    "plan_id": "92310718",
+    "plan_id": "92310720",
     "title": null,
     "series": null,
-    "dates": "November 18, 2026",
-    "sort_date": "2026-11-18T19:00:00Z",
+    "dates": "December 2, 2026",
+    "sort_date": "2026-12-02T19:00:00Z",
     "times": [
-      "2026-11-19T01:00:00Z"
+      "2026-12-03T01:00:00Z"
     ],
     "items": [
       {
@@ -238,37 +238,15 @@
         "lead": null
       },
       {
-        "title": "Thank God I'm Free",
+        "title": "I Thank God",
         "type": "song",
         "section": "Worship",
-        "length": 301,
+        "length": 230,
         "position": "during",
-        "description": "+ Ana",
+        "description": null,
         "key": "E",
         "notes": [],
-        "lead": "Ana"
-      },
-      {
-        "title": "Yahweh We Love You",
-        "type": "song",
-        "section": "Worship",
-        "length": 424,
-        "position": "during",
-        "description": "+ Boone (Big Intro)",
-        "key": "B",
-        "notes": [],
-        "lead": "Boone (Big Intro)"
-      },
-      {
-        "title": "Trust In God",
-        "type": "song",
-        "section": "Worship",
-        "length": 330,
-        "position": "during",
-        "description": "+ Ana\n*BIG ENDING",
-        "key": "E",
-        "notes": [],
-        "lead": "Ana"
+        "lead": null
       },
       {
         "title": "Transition out of Worship",
