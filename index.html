@@ -1366,6 +1366,12 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 .linkchip.warn .lc-dot { background: #ffc272; }
 .linkchip.off .lc-dot { background: #ff6b62; }
 @keyframes lcPulse { 50% { box-shadow: 0 0 0 7px rgba(74,222,128,0.08); } }
+
+.unlock-btn { font: inherit; font-weight: 800; font-size: 0.9rem; padding: 6px 14px; border-radius: 999px; cursor: pointer; min-height: 36px;
+  color: #ffd59a; background: rgba(255,194,114,0.1); border: 1px solid rgba(255,194,114,0.55); position: relative; overflow: hidden; }
+.unlock-btn.holding { background: rgba(255,194,114,0.3); }
+.linkchip.unlocked { color: #ffd59a; border-color: rgba(255,194,114,0.7); background: rgba(255,194,114,0.14); }
+.linkchip.unlocked .lc-dot { background: #ffc272; animation: lcPulse 1s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -1619,7 +1625,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         </div>
       </div>
     </div>
-    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><div class="linkchip" id="bLinkChip" role="status"></div></div>
+    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><div class="linkchip" id="bLinkChip" role="status"></div><button type="button" class="unlock-btn" id="bUnlock" hidden>Hold to unlock</button></div>
     <div class="b-count" id="bCountBox">
       <div class="b-lab" id="bLab"></div>
       <div class="b-big" id="bBig"></div>
@@ -1867,7 +1873,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
   var DATA_VER = "2026-11-21b";
-  var APP_BUILD = "v96";
+  var APP_BUILD = "v97";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -3136,9 +3142,15 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       var lcls, ltxt;
       if (!link.midi || !link.out) { lcls = "off"; ltxt = "ProTools link: not connected"; }
       else if (linkOff()) { lcls = "warn"; ltxt = "ProTools link: off (Link on to send)"; }
-      else if (link.inp && ptMoving()) { lcls = "live"; ltxt = "\ud83d\udd12 Locked while ProTools plays \u00b7 " + (link.tc ? fmtTc(link.tc) : "") + " \u00b7 hold Stop 2 s for an emergency"; }
+      else if (link.inp && ptMoving() && unlockedNow() && inServiceWindow(nowMs())) { var ul = Math.ceil((link.unlockUntil - Date.now()) / 1000); lcls = "unlocked"; ltxt = "\ud83d\udd13 Unlocked \u00b7 relocks in " + Math.floor(ul / 60) + ":" + pad(ul % 60) + " \u00b7 holds and buttons reach ProTools"; }
+      else if (ptLocked()) { lcls = "live"; ltxt = "\ud83d\udd12 Locked while ProTools plays \u00b7 " + (link.tc ? fmtTc(link.tc) : "") + " \u00b7 hold Stop 2 s for an emergency"; }
+      else if (link.inp && ptMoving()) { lcls = "live"; ltxt = "ProTools link: hearing ProTools \u00b7 Playing " + (link.tc ? fmtTc(link.tc) : "") + " \u00b7 rehearsal, not locked"; }
       else if (link.inp && link.tc) { lcls = "ok"; ltxt = "ProTools link: connected \u00b7 Stopped at " + fmtTc(link.tc); }
       else { lcls = "warn"; ltxt = "ProTools link: connected \u00b7 press Play in ProTools to check timecode"; }
+      var ub = $("bUnlock"), showU = link.inp && ptMoving() && inServiceWindow(nowMs());
+      if (ub.hidden === !!showU) ub.hidden = !showU;
+      var ut = unlockedNow() ? "Hold to relock" : "Hold to unlock";
+      if (ub.textContent !== ut) ub.textContent = ut;
       var lh = '<span class="lc-dot"></span>' + esc(ltxt);
       if (lc._h !== lh) { lc.innerHTML = lh; lc._h = lh; }
       if (lc.className !== "linkchip " + lcls) lc.className = "linkchip " + lcls;
@@ -3755,7 +3767,22 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   function linkOff() { return !!state.linkOff; }
   // SERVICE LOCK: while ProTools is playing, nothing is sent except a deliberate emergency stop
-  function ptLocked() { return !!(link.inp && ptMoving()); }
+  // during a service: from 1 minute before hit play to 1 minute after the final downbeat (a real start moves the window with it)
+  function inServiceWindow(now) {
+    if (!lastCalc) return false;
+    var on = false;
+    occurrences(now - 3 * 3600000).forEach(function (o) {
+      if (on) return;
+      var from = o.t + (lastCalc.startRel - 60) * 1000, to = o.t + (lastCalc.finalRel + 60) * 1000;
+      if (lastCalc.program === "weekend" && state.live && state.live.key === keyOf(o)) {
+        var shift = state.live.at - (o.t + lastCalc.startRel * 1000); from += Math.min(0, shift); to += Math.max(0, shift);
+      }
+      if (now >= from && now <= to) on = true;
+    });
+    return on;
+  }
+  function unlockedNow() { return (link.unlockUntil || 0) > Date.now(); }
+  function ptLocked() { return !!(link.inp && ptMoving() && inServiceWindow(nowMs()) && !unlockedNow()); }
   function ptSend(bytes, name, ts, emergency) {
     if (linkOff()) { ptLog("Link is off, so " + name + " wasn\u2019t sent"); return false; }
     if (ptLocked() && !emergency) { ptLog("Locked while ProTools plays, so " + name + " wasn\u2019t sent"); link.lockedAt = Date.now(); return false; }
@@ -4340,6 +4367,12 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if (ptSend(MMC_STOP, "Stop (emergency hold)", null, true)) { el.textContent = "Stopped"; el._lock = Date.now() + 1500; }
   }
   holdToFire($("bStop"), fireStop, 2000);
+  // emergency unlock: hold 2 seconds; controls reach ProTools for 3 minutes, then it relocks (hold again to relock now)
+  holdToFire($("bUnlock"), function () {
+    if (unlockedNow()) { link.unlockUntil = 0; ptLog("Relocked"); }
+    else { link.unlockUntil = Date.now() + 180000; ptLog("Unlocked for 3 minutes"); }
+    renderTransport();
+  }, 2000);
   function flashBtn(el, txt) { var old = el.textContent; el.textContent = txt; setTimeout(function () { el.textContent = old; }, 2000); }
   holdToFire($("bPtPlay"), function () {
     if (linkOff()) return flashBtn($("bPtPlay"), "Link is off");
