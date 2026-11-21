@@ -1867,7 +1867,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
   var DATA_VER = "2026-11-21b";
-  var APP_BUILD = "v95";
+  var APP_BUILD = "v96";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -3136,7 +3136,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       var lcls, ltxt;
       if (!link.midi || !link.out) { lcls = "off"; ltxt = "ProTools link: not connected"; }
       else if (linkOff()) { lcls = "warn"; ltxt = "ProTools link: off (Link on to send)"; }
-      else if (link.inp && ptMoving()) { lcls = "live"; ltxt = "ProTools link: hearing ProTools \u00b7 Playing " + (link.tc ? fmtTc(link.tc) : ""); }
+      else if (link.inp && ptMoving()) { lcls = "live"; ltxt = "\ud83d\udd12 Locked while ProTools plays \u00b7 " + (link.tc ? fmtTc(link.tc) : "") + " \u00b7 hold Stop 2 s for an emergency"; }
       else if (link.inp && link.tc) { lcls = "ok"; ltxt = "ProTools link: connected \u00b7 Stopped at " + fmtTc(link.tc); }
       else { lcls = "warn"; ltxt = "ProTools link: connected \u00b7 press Play in ProTools to check timecode"; }
       var lh = '<span class="lc-dot"></span>' + esc(ltxt);
@@ -3652,7 +3652,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     else if (e.key === "f" || e.key === "F") { e.preventDefault(); toggleFull(); }
     else if ((e.key === "s" || e.key === "S") && !e.repeat && link.out) {
       e.preventDefault(); $("bStop").classList.add("holding");
-      booth.sKey = setTimeout(function () { $("bStop").classList.remove("holding"); booth.sKey = null; fireStop(); }, 500);
+      booth.sKey = setTimeout(function () { $("bStop").classList.remove("holding"); booth.sKey = null; fireStop(); }, 2000);
     }
   });
   document.addEventListener("keyup", function (e) {
@@ -3754,8 +3754,11 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     while (ul.children.length > 40) ul.removeChild(ul.lastChild);
   }
   function linkOff() { return !!state.linkOff; }
-  function ptSend(bytes, name, ts) {
+  // SERVICE LOCK: while ProTools is playing, nothing is sent except a deliberate emergency stop
+  function ptLocked() { return !!(link.inp && ptMoving()); }
+  function ptSend(bytes, name, ts, emergency) {
     if (linkOff()) { ptLog("Link is off, so " + name + " wasn\u2019t sent"); return false; }
+    if (ptLocked() && !emergency) { ptLog("Locked while ProTools plays, so " + name + " wasn\u2019t sent"); link.lockedAt = Date.now(); return false; }
     if (!link.out) { ptLog("Couldn’t send " + name + ": no Send to ProTools port"); return false; }
     try { if (ts != null) link.out.send(bytes, ts); else link.out.send(bytes); ptLog("Sent " + name); return true; }
     catch (e) { ptLog("Send failed: " + e.message); return false; }
@@ -3910,7 +3913,20 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if (n && !state.skips[n.key]) {
       var d = link.done[n.key] || (link.done[n.key] = {}), left = n.pt - now;
       // 30 seconds out: stop anything left running and cue up the top of the session
-      if (!d.cue && left <= (+state.cueLead || 30) * 1000 && left > -1000) { d.cue = true; cueUp(n.sw ? n.segPt : null); }
+      if (!d.cue && left <= (+state.cueLead || 30) * 1000 && left > -1000) {
+        d.cue = true;
+        if (ptLocked() && !fromTop()) { link.result = "ProTools was already playing at cue time, so auto-start left it alone. Stop it and the app will cue the top before " + msClock(n.pt) + "."; link.resultBad = true; ptLog("ProTools already playing at cue time; auto-start stood down"); }
+        else cueUp(n.sw ? n.segPt : null);
+      }
+      // 7 seconds out: if ProTools is stopped somewhere other than the start, cue the start again
+      if (!d.recue && left <= 7000 && left > 5200) {
+        d.recue = true;
+        var want = n.sw ? n.segPt : 0;
+        if (link.inp && link.tc && !ptMoving() && Math.abs(tcElapsed() - want) > 1) {
+          var rt = n.sw ? secsToTc(n.segPt) : parseTc(state.ptStart);
+          if (rt) ptSend(mmcLocate(rt), "Go to " + fmtTc(rt) + " (re-cue before Play)");
+        }
+      }
       // 5 seconds out: hand Play to MIDI with an exact timestamp for the start time
       if (!d.play && left <= 5000 && left > -1000) {
         d.play = true;
@@ -4321,9 +4337,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   function fireStop() {
     var el = $("bStop");
     if (linkOff()) { el.textContent = "Link is off"; el._lock = Date.now() + 2000; return; }
-    if (ptSend(MMC_STOP, "Stop")) { el.textContent = "Stopped"; el._lock = Date.now() + 1500; }
+    if (ptSend(MMC_STOP, "Stop (emergency hold)", null, true)) { el.textContent = "Stopped"; el._lock = Date.now() + 1500; }
   }
-  holdToFire($("bStop"), fireStop, 500);
+  holdToFire($("bStop"), fireStop, 2000);
   function flashBtn(el, txt) { var old = el.textContent; el.textContent = txt; setTimeout(function () { el.textContent = old; }, 2000); }
   holdToFire($("bPtPlay"), function () {
     if (linkOff()) return flashBtn($("bPtPlay"), "Link is off");
