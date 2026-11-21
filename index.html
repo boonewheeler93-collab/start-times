@@ -1862,19 +1862,30 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 
   // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
   // Resi cues for 11/21-22, measured from MSG START (1:22:19.23); no HANDS cue this week, Transition to CP is last
-  var WEEK_RESI = { id: "2026-11-21-resi2", msgParts: [
+  var WEEK_RESI = { id: "2026-11-21-resi3", msgParts: [
     { name: "Message Start", at: "0:00" },
     { name: "Keys", at: "26:58" },
     { name: "Prayer Start", at: "31:05" },
-    { name: "Transition to CP", at: "32:46" }
+    { name: "Transition to CP", at: "32:46" },
+    { name: "Keys End", at: "42:09" }
   ] };
   if (state.weekResi !== WEEK_RESI.id) {
     state.msgParts = JSON.parse(JSON.stringify(WEEK_RESI.msgParts)); state.msgLateKey = null; state.weekResi = WEEK_RESI.id;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-21c";
-  var APP_BUILD = "v98";
+  var DATA_VER = "2026-11-21d";
+  // how long Keys lasts (Keys to Keys End), from the message cues, or null
+  function keysLasts() {
+    var k = null, e = null;
+    (state.msgParts || []).forEach(function (pt) {
+      var n = parseDur(String(pt.at || "").trim()), nm = String(pt.name || "").trim();
+      if (n === null) return;
+      if (/^keys$/i.test(nm)) k = n; else if (/^keys\s*end$/i.test(nm)) e = n;
+    });
+    return k !== null && e !== null && e > k ? e - k : null;
+  }
+  var APP_BUILD = "v99";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2645,7 +2656,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       var n = parseDur(String(pt.at || "").trim()), nm = String(pt.name || "").toLowerCase();
       if (n === null || (n < 0 && !/^message\s*start/.test(nm))) return;
       if (/^message\s*start/.test(nm) && mStart === null) mStart = n;
-      if (/hand/.test(nm)) mHands = n;
+      if (/hand|transition to cp/.test(nm)) mHands = n;
     });
     var ms = $("msgSum");
     if (mHands !== null) {
@@ -2661,7 +2672,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       msgList.push({ name: nm || "Message part", rel: v.msg + mS + n, hands: /hand/i.test(nm) });
     });
     msgList.sort(function (a, b) { return a.rel - b.rel; });
-    var handsRel = lastCalcHands !== null ? lastCalcHands : (msgList.length ? msgList[msgList.length - 1].rel : null);
+    var notEnd = msgList.filter(function (p) { return !/keys\s*end/i.test(p.name); });
+    var handsRel = lastCalcHands !== null ? lastCalcHands : (notEnd.length ? notEnd[notEnd.length - 1].rel : null);
     cues.sort(function (a, b) { return a.rel - b.rel || a.o - b.o; });
     var tosses = cues.filter(function (c) { return c.cls === "toss"; });
 
@@ -2946,7 +2958,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         // the screen drop is only ever shown as the ProTools time to press the button
         var isDrop = k.indexOf("drop") > -1;
         var isPart = k.indexOf("part") > -1;
-        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : c.rel - lastCalc.msg < 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " early" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message") : isDrop ? "" : lastCalc.program === "switch" ? (k.indexOf("swstart") > -1 ? "Starts when you press play" + (c.pt !== null ? ", ProTools " + fmtDur(Math.floor(c.pt)) : "") : c.pt !== null ? "ProTools " + fmtDur(Math.floor(c.pt)) : (swPress(sr.key, c.seg) || c.seg === 0 ? "" : "About ") + fmtSigned(Math.round((r.t - occ.t) / 1000))) : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
+        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : c.rel - lastCalc.msg < 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " early" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message" + (/^keys$/i.test(String(c.label || "").trim()) && keysLasts() !== null ? ", lasts " + fmtDur(keysLasts()) : "")) : isDrop ? "" : lastCalc.program === "switch" ? (k.indexOf("swstart") > -1 ? "Starts when you press play" + (c.pt !== null ? ", ProTools " + fmtDur(Math.floor(c.pt)) : "") : c.pt !== null ? "ProTools " + fmtDur(Math.floor(c.pt)) : (swPress(sr.key, c.seg) || c.seg === 0 ? "" : "About ") + fmtSigned(Math.round((r.t - occ.t) / 1000))) : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
         if (c.extra) meta += ", " + (lastCalc.program === "switch" ? c.extra.replace(/^Lasts/, "lasts") : c.extra.toLowerCase());
         var tm = msClock(r.t), sp = tm.lastIndexOf(" ");
         var right = isDrop ? '<small class="drop-k">ProTools</small><span class="drop-t">' + monoHtml(fmtDur(r.pt)) + "</span>" : monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small>";
@@ -4674,7 +4686,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       var n = viewLabel(r.c); if (!n) return;
       if (n === "Message") msgT = r.t;
       if (r.c.sec) { rows.push({ n: n, t: r.t, pt: r.pt, g: n === "Drop screen" ? "drop" : n === "SWITCH ends" ? "done" : secG(r.c.sec), s: n === "SWITCH ends" ? "" : r.c.sec, ld: leadFor(r.c.lead, occ.sv.day), song: /\bsong\b/.test(r.c.cls || "") }); return; }
-      var g = n === "Drop screen" ? "drop" : /video/i.test(n) ? "toss" : /^Countdown|^Walk-in|^Begins/.test(n) ? "pre" : n === "Stagetime" ? "stage" : n === "HANDS" ? "hands" : /^Message|^Keys|^Prayer/.test(n) ? "msg" : /^Toss/.test(n) ? "toss" : "worship";
+      var g = n === "Drop screen" ? "drop" : /video/i.test(n) ? "toss" : /^Countdown|^Walk-in|^Begins/.test(n) ? "pre" : n === "Stagetime" ? "stage" : n === "HANDS" ? "hands" : /^Message|^Keys|^Prayer|^Transition to CP/i.test(n) ? "msg" : /^Toss/.test(n) ? "toss" : "worship";
       rows.push({ n: n, t: r.t, g: g, ld: leadFor(r.c.lead, occ.sv.day), pt: r.pt, song: /\bsong\b/.test(r.c.cls || "") });
     });
     // "Message starts" only shows when it differs from the planned Message time
