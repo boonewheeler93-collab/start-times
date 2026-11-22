@@ -1507,6 +1507,11 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
 .back-next { font: inherit; font-weight: 800; font-size: 0.95rem; padding: 8px 18px; min-height: 40px; border-radius: 999px; cursor: pointer; border: 0;
   background: var(--ink, #eef1ff); color: #0b1020; box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
 .back-next[hidden] { display: none; }
+
+/* the countdown is the number that matters: larger and heavier than the clock */
+#bCountBox .b-big { display: inline-block; white-space: nowrap; font-size: clamp(5.2rem, 30vw, 13rem); font-weight: 800; letter-spacing: -0.035em; line-height: 0.95; }
+.b-clock { font-size: clamp(3.4rem, 17vw, 8rem); font-weight: 700; opacity: 0.92; }
+.linkchip[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -2033,7 +2038,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v143";
+  var APP_BUILD = "v144";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -3234,6 +3239,16 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     if (b.classList.contains("folded")) { b._open = true; renderReady(); }
     else if (!b.classList.contains("has-bad") && b._shownAt && Date.now() - b._shownAt > 3000) { b._open = false; renderReady(); }
   });
+  // the countdown: as big as the card allows (full size for M:SS, smaller for H:MM:SS)
+  function fitBoothCountdown() {
+    var el = $("bBig"), box = $("bCountBox"); if (!el || !box || !box.clientWidth) return;
+    var len = (el.textContent || "").length, w = box.clientWidth;
+    if (el._fitLen === len && el._fitW === w) return;
+    el._fitLen = len; el._fitW = w;
+    el.style.fontSize = "";
+    var max = parseFloat(getComputedStyle(el).fontSize), room = w - 56, need = el.scrollWidth;
+    if (need > room && need > 0) el.style.fontSize = Math.floor(max * room / need) + "px";
+  }
   function renderReports() {
     var host = $("bReports"); if (!host) return;
     var rs = state.reports || [];
@@ -3534,7 +3549,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     var tc0 = $("bTest"), tOn = !!(state.testRun && nowMs() < state.testRun.until);
     if (tc0 && tc0.hidden === tOn) tc0.hidden = !tOn;
     if (tOn) { var tt = "\u25cf Test run \u00b7 hit play " + msClock(state.testRun.hp); if ($("bTestT").textContent !== tt) $("bTestT").textContent = tt; }
-    renderReady(); renderReports();
+    renderReady(); renderReports(); fitBoothCountdown();
     var lc = $("bLinkChip");
     if (lc) {
       var lcls, ltxt;
@@ -3553,6 +3568,11 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
       var lh = '<span class="lc-dot"></span>' + esc(ltxt);
       if (lc._h !== lh) { lc.innerHTML = lh; lc._h = lh; }
       if (lc.className !== "linkchip " + lcls) lc.className = "linkchip " + lcls;
+      // both green: one "Links Connected" pill (the auto-start pill), carrying whichever note matters
+      var mc = $("bMode"), merge = !!(mc && mc.classList.contains("lvl-ok") && !mc.classList.contains("spin") && (lcls === "ok" || lcls === "live"));
+      lc.hidden = merge;
+      booth.linkNote = lcls === "live" ? ltxt.replace(/^ProTools link: hearing ProTools \u00b7 /, "") : null;
+      booth.linkGreen = lcls === "ok" || lcls === "live";
     }
     var rh = !inServiceWindow(nowMs()), pb = $("bPtPlay"), sb = $("bPtStop");
     var cb = $("bCued");
@@ -4283,6 +4303,8 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     return { fires: true, level: "warn", text: "Auto-start armed", sub: "Not listening to ProTools, so it can\u2019t confirm the start" };
   }
   function paintChip(el, st) {
+    // the booth's auto-start pill becomes one "Links Connected" pill when the ProTools link is green too
+    if (el && el.id === "bMode" && st.level === "ok" && !st.spin && booth.linkGreen) st = { fires: st.fires, level: "ok", text: "Links Connected", sub: booth.linkNote || st.sub };
     var h = '<span class="dot" aria-hidden="true"></span><span class="mt">' + esc(st.text) + '</span><span class="ms">' + esc(st.sub) + "</span>";
     if (el._h !== h) { el.innerHTML = h; el._h = h; }
     var c = "modechip lvl-" + st.level + (st.spin ? " spin" : "");
