@@ -1904,7 +1904,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v111";
+  var APP_BUILD = "v112";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -4015,7 +4015,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       });
       return;
     }
-    if (e === null || e < 0 || e >= 600) return;   // playing from somewhere else in the session
+    // only a start from the top of the session is the service starting; anywhere else is a test, a rehearsal or a song
+    if (e === null || e < 0 || e >= 20) return;
     var key = ps.key || nearestKey(ps.at);
     if (key) { state.live = { key: key, at: nowMs() - e * 1000 }; persist(); }
   }
