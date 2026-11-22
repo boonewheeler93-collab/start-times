@@ -1470,6 +1470,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
               <div class="field"><label for="ptLeadSel">Cue up before start</label><select id="ptLeadSel"><option value="30">30 seconds</option><option value="60">60 seconds</option></select></div>
             </div>
             <label class="pt-ret"><input type="checkbox" id="ptReturnsChk"> When ProTools stops, it jumps back to where playback started (ProTools\u2019 Insertion Follows Playback is off)</label>
+            <label class="pt-ret"><input type="checkbox" id="ptEndStopChk"> 30 seconds past the end of the session, stop ProTools and go back to the top</label>
             <ul class="pt-log" id="ptLog"></ul>
           </div>
         </details>
@@ -1892,7 +1893,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v107";
+  var APP_BUILD = "v108";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -4005,8 +4006,29 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var t = sec != null ? secsToTc(sec) : parseTc(state.ptStart);
     if (t) ptSend(mmcLocate(t), "Go to " + fmtTc(t)); else ptLog("Session start should look like 00:00:00:00");
   }
+  function sessionEndPT() {
+    if (!lastCalc) return null;
+    if (lastCalc.program === "switch") {
+      var e = null; (lastCalc.segs || []).forEach(function (sg) { if (sg.ptEnd != null) e = Math.max(e || 0, sg.ptEnd); });
+      return e;
+    }
+    return lastCalc.len || null;
+  }
+  // 30 seconds past the end of the session with ProTools still rolling: stop it and go back to the top (once per playback)
+  function endStopCheck() {
+    if (state.ptEndStop === false || linkOff() || !link.out || !link.inp || !ptMoving()) return;
+    if (link.endStopped && link.endStopped === link.firstQF) return;
+    var end = sessionEndPT(), pos = ptPosNow();
+    if (end === null || pos === null || pos < end + 30) return;
+    link.endStopped = link.firstQF;
+    ptLog("ProTools ran 30 s past the end of the session, so it was stopped and sent back to the top");
+    ptSend(MMC_STOP, "Stop (end of session)", null, true);
+    var st = parseTc(state.ptStart);
+    if (st) setTimeout(function () { ptSend(mmcLocate(st), "Go to " + fmtTc(st) + " (back to the top)"); }, 700);
+  }
   function autoTick() {
     var now = nowMs();
+    endStopCheck();
     if (linkOff()) { renderLink(null, now); return; }
     var n = state.auto && link.out ? nextAuto(now) : null;
     if (n && !state.skips[n.key]) {
@@ -4126,6 +4148,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     renderLink();
   });
   $("ptReturnsChk").checked = state.ptReturns !== false;
+  $("ptEndStopChk").checked = state.ptEndStop !== false;
+  $("ptEndStopChk").addEventListener("change", function () { state.ptEndStop = this.checked; persist(); });
   $("ptReturnsChk").addEventListener("change", function () { state.ptReturns = this.checked; persist(); renderTransport(); });
   $("ptLocate").addEventListener("click", function () { var t = parseTc(state.ptStart); if (t) ptSend(mmcLocate(t), "Go to " + fmtTc(t)); });
   $("ptPlay").addEventListener("click", function () { ptSend(MMC_PLAY, "Play"); });
