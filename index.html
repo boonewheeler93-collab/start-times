@@ -1379,11 +1379,11 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 .pt-ret { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 4px; font-size: 0.92rem; color: var(--ink-2); line-height: 1.35; }
 .pt-ret input { margin-top: 3px; }
 
-.cued-bar { position: fixed; right: 28px; bottom: 24px; z-index: 60; display: flex; align-items: center; gap: 12px; padding: 12px 14px 12px 20px;
-  border-radius: 18px; background: color-mix(in srgb, #0b1020 92%, transparent); border: 1px solid rgba(74,222,128,0.55); box-shadow: 0 18px 50px rgba(0,0,0,0.55); max-width: min(560px, 46vw); }
+.cued-bar { position: fixed; right: 28px; bottom: 24px; z-index: 60; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 14px 14px 14px 20px;
+  border-radius: 18px; background: color-mix(in srgb, #0b1020 92%, transparent); border: 1px solid rgba(74,222,128,0.55); box-shadow: 0 18px 50px rgba(0,0,0,0.55); width: min(640px, 52vw); box-sizing: border-box; }
 .cued-bar[hidden] { display: none; }
-.cued-t { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; } .cued-t small { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #4ade80; }
-.cued-t span { font-weight: 800; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cued-t { display: flex; flex-direction: column; min-width: 0; flex: 1 1 calc(100% - 60px); order: 0; } .cued-t small { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #4ade80; }
+.cued-t span { font-weight: 800; font-size: 1.1rem; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
 .cued-play { flex: none; position: relative; overflow: hidden; border: 1px solid #4ade80; background: color-mix(in srgb, #4ade80 24%, transparent); color: #d6ffe4; font: inherit; font-weight: 800; font-size: 1.05rem; padding: 12px 18px; border-radius: 14px; cursor: pointer; white-space: nowrap; min-height: 48px; }
 .cued-play::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: #4ade80; }
 .cued-play.holding::after { width: 100%; transition: width var(--hold, 1s) linear; }
@@ -1400,6 +1400,11 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 .reh-chip button { font: inherit; font-weight: 800; padding: 6px 14px; border-radius: 999px; border: 0; background: #c084fc; color: #1a0b2e; cursor: pointer; min-height: 32px; }
 
 .b-pt-sync { font: inherit; font-weight: 800; font-size: 0.85rem; padding: 6px 14px; min-height: 34px; border-radius: 999px; }
+
+.cued-x { order: 1; margin-left: auto; align-self: flex-start; }
+.cued-play { order: 2; } .cued-bar .nudge-btn { order: 3; }
+.cued-play.is-stop { border-color: #ff6b62; background: color-mix(in srgb, #ff5a4f 24%, transparent); color: #ffd2cf; }
+.cued-play.is-stop::after { background: #ff6b62; }
 </style>
 </head>
 <body>
@@ -1918,7 +1923,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v123";
+  var APP_BUILD = "v124";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -3256,9 +3261,16 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var rh = !inServiceWindow(nowMs()), pb = $("bPtPlay"), sb = $("bPtStop");
     var cb = $("bCued");
     if (cb && !cb.hidden) {
-      if (ptMoving() || Date.now() - (link.cuedAt || 0) > 120000) cb.hidden = true;
+      var mv = ptMoving();
+      if (mv) link.cuedSaw = true;
+      if (link.cuedSaw && !mv) { cb.hidden = true; link.cuedSaw = false; }                       // stopped after playing: done
+      else if (!mv && !link.cuedSaw && Date.now() - (link.cuedAt || 0) > 120000) cb.hidden = true;  // never played: tidy away after 2 minutes
       var cp = $("bCuedPlay");
-      if (Date.now() - (cp._fired || 0) > 2100) { var ct0 = rh ? "\u25b6 Play from here" : "Hold \u25b6 Play from here"; if (cp.textContent !== ct0) cp.textContent = ct0; }
+      cp.classList.toggle("is-stop", mv);
+      if (Date.now() - (cp._fired || 0) > 2100) {
+        var ct0 = mv ? (rh ? "\u25a0 Stop" : "Hold \u25a0 Stop") : (rh ? "\u25b6 Play from here" : "Hold \u25b6 Play from here");
+        if (cp.textContent !== ct0) cp.textContent = ct0;
+      }
     }
     if (pb && Date.now() - (pb._fired || 0) > 2100) { var pt0 = rh ? "\u25b6 Play from here" : "Hold to play from here"; if (pb.textContent !== pt0) pb.textContent = pt0; pb.classList.toggle("tap", rh); }
     if (sb && Date.now() - (sb._fired || 0) > 2100) { var st0 = rh ? "\u25a0 Stop" : "Hold to stop"; if (sb.textContent !== st0) sb.textContent = st0; sb.classList.toggle("tap", rh); if (rh) sb.hidden = false; }
@@ -4633,8 +4645,16 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   holdToFire($("bPtPlay"), function () { ptPlayHere($("bPtPlay")); });
   // the Cued bar: tap in rehearsal, hold 1 s during a service
-  holdToFire($("bCuedPlay"), function () { ptPlayHere($("bCuedPlay")); });
-  $("bCuedPlay").addEventListener("click", function () { var el = this; if (!inServiceWindow(nowMs()) && Date.now() - (el._fired || 0) > 1500) ptPlayHere(el); });
+  function cuedAct(el) {
+    if (ptMoving()) {
+      el._fired = Date.now();
+      if (linkOff()) return flashBtn(el, "Link is off");
+      // a deliberate stop from the bar (a 1 s hold during a service), like the red Stop
+      if (ptSend(MMC_STOP, "Stop (Cued bar)", null, true)) { link.cuedStop = true; flashBtn(el, "Stopped"); }
+    } else { ptPlayHere(el); link.cuedPlayed = true; }
+  }
+  holdToFire($("bCuedPlay"), function () { cuedAct($("bCuedPlay")); });
+  $("bCuedPlay").addEventListener("click", function () { var el = this; if (!inServiceWindow(nowMs()) && Date.now() - (el._fired || 0) > 1500) cuedAct(el); });
   $("bCuedX").addEventListener("click", function () { $("bCued").hidden = true; });
   // Sync: playing, snap the app straight onto ProTools' newest timecode (nothing is sent);
   // stopped, send ProTools to the app's spot on the nearest frame so both read exactly the same
@@ -4706,7 +4726,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         if (locateTo(+li.getAttribute("data-pt"), li.getAttribute("data-name"))) {
           li.classList.add("cue-sent"); setTimeout(function () { li.classList.remove("cue-sent"); }, 900);
           var pv = +li.getAttribute("data-pt");
-          link.cued = { name: li.getAttribute("data-name"), at: pv, off: 0 };
+          link.cued = { name: li.getAttribute("data-name"), at: pv, off: 0 }; link.cuedPlayed = false; link.cuedSaw = false; link.cuedStop = false;
           $("bCuedName").textContent = li.getAttribute("data-name") + " (" + fmtPT(pv) + ")";
           $("bCued").hidden = false; link.cuedAt = Date.now();
         }
