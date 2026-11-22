@@ -1888,7 +1888,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v102";
+  var APP_BUILD = "v103";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -3282,6 +3282,10 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var rehearsal = live === null && rawLinked !== null && rawLinked >= 0 && rawLinked <= lastCalc.len + 60;
     var linked = live !== null || rehearsal ? rawLinked : null;
     var stopped = live !== null && linked === null ? ptStoppedAt() : null;
+    var rehStop = false;
+    if (live === null && linked === null && planned - now > 600000 && link.inp && link.tc && nowMs() - (link.lastHeard || 0) < 1800000) {
+      var sp = ptStoppedAt(); if (sp !== null && sp >= 0 && sp <= lastCalc.len + 60) { stopped = sp; rehStop = true; }
+    }
     if (linked !== null) el = linked;
     else if (stopped !== null && stopped >= 0) el = stopped;
     var ast = autoStatus(booth.key);
@@ -3305,7 +3309,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         booth.cOn = false;
         $("bLab").textContent = "ProTools stopped";
         var sh = monoHtml(fmtCounter(stopped)); if ($("bBig")._h !== sh) { $("bBig").innerHTML = sh; $("bBig")._h = sh; }
-        var dh = 'Stopped at ' + fmtDur(Math.floor(stopped)) + (lastCalc.noDrop ? "" : '. Drop screen at <span class="drop-t">' + fmtDur(dropEl) + "</span>");
+        var dh = (rehStop ? "Rehearsal \u00b7 hit play at " + msClock(planned) : 'Stopped at ' + fmtPT(stopped)) + (lastCalc.noDrop ? "" : '. Drop screen at <span class="drop-t">' + fmtDur(dropEl) + "</span>");
         if ($("bSub")._h !== dh) { $("bSub").innerHTML = dh; $("bSub")._h = dh; }
       } else if (el <= L) {
         $("bLab").textContent = rehearsal ? "ProTools \u00b7 rehearsal" : linked !== null ? "ProTools, linked" : "ProTools";
@@ -3861,7 +3865,12 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         link.tcAt = t; link.tcLead = 2 / Math.round(link.fps || 30);
         if (link.pending && link.qfSince >= 8) resolveStart();
       }
-      if (gap > 500) onPtStarted();
+      if (gap > 500) { link.readMiss = 0; onPtStarted(); }
+    } else if (d[0] === 0xF0 && d[1] === 0x7F && d[3] === 0x07 && d[4] === 0x01 && d.length >= 9) {
+      // MMC answer to "where are you?": hours (with rate bits), minutes, seconds, frames
+      link.fps = [24, 25, 29.97, 30][(d[5] >> 5) & 3];
+      link.tc = { h: d[5] & 0x1F, m: d[6] & 0x3F, s: d[7] & 0x3F, f: d[8] & 0x1F };
+      link.tcAt = performance.now(); link.tcLead = 0; link.readMiss = 0; link.readOk = true; link.lastHeard = nowMs();
     } else if (d[0] === 0xF0 && d[1] === 0x7F && d[3] === 0x01 && d[4] === 0x01) {
       link.fps = [24, 25, 29.97, 30][(d[5] >> 5) & 3];
       link.tc = { h: d[5] & 0x1F, m: d[6], s: d[7], f: d[8] }; link.lastHeard = nowMs(); link.tcAt = performance.now(); link.tcLead = 0;
@@ -3870,7 +3879,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   function ptMoving() { return performance.now() - link.lastQF < 400; }
   // ProTools sent timecode earlier but has stopped: where it stopped (seconds into the session)
-  function ptStoppedAt() { return link.inp && link.tc && !ptMoving() ? tcElapsed() : null; }
+  function ptStoppedAt() { return link.inp && link.tc && !ptMoving() ? ptPosNow() : null; }
   // a "started" mark far from its own service (left over from a test) is cleared
   function cleanStrayStart() {
     if (!state.live || !lastCalc || lastCalc.program === "switch") return;
@@ -3888,6 +3897,11 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   function tcElapsed() { var st = parseTc(state.ptStart); return link.tc && st ? tcSecs(link.tc) - tcSecs(st) : null; }
   function linkElapsed() { return link.inp && ptMoving() ? tcElapsed() : null; }
+  // while ProTools is stopped, ask where it is twice a second (harmless: nothing moves); stop asking after 6 unanswered asks until it plays again
+  setInterval(function () {
+    if (!link.out || !link.inp || linkOff() || ptMoving() || (link.readMiss || 0) >= 6) return;
+    try { link.out.send([0xF0, 0x7F, 0x7F, 0x06, 0x42, 0x01, 0x01, 0xF7]); link.readMiss = (link.readMiss || 0) + 1; } catch (e) { link.readMiss = 99; }
+  }, 500);
   // where ProTools is right now, matching its own counter: corrected for the 2-frame timecode delay and
   // carried forward between timecode blocks while it plays; the last heard place when it's stopped
   function ptPosNow() {
