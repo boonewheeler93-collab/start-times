@@ -9,7 +9,7 @@
 <title>Weekend Start Times</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #060914;
@@ -36,7 +36,7 @@
   --seg-begins: #9a7cf5;
   --seg-song-a: #6683ff;
   --seg-song-b: #4fb0ff;
-  --display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --display: "Manrope", "Helvetica Neue", Arial, sans-serif;
   --body: "Manrope", "Helvetica Neue", Arial, sans-serif;
   color-scheme: dark;
   box-sizing: border-box;
@@ -1422,6 +1422,11 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 .rep { padding: 12px 14px; border-radius: 16px; border: 1px solid var(--glass-line, rgba(255,255,255,0.12)); background: rgba(255,255,255,0.04); margin-top: 8px; }
 .rep-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; } .rep-h button { font: inherit; font-size: 0.85rem; padding: 4px 12px; min-height: 32px; border-radius: 999px; }
 .rep ul { margin: 6px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 0.92rem; line-height: 1.4; }
+
+/* headings in Manrope: heavier and slightly tighter so they still stand apart from body text */
+h1, h2, .sheet-head .nm, .b-svc, .hero-label, .sum b, .dropcall b, details > summary, .card-head h2 { font-weight: 800; letter-spacing: -0.015em; }
+h2, .card-head h2 { font-size: 1.35rem; }
+.b-big, .b-clock, .pt-tc, .b-next .nt, .b-checks .cv, .tin.big, .tin.big .colon, .step.hit .sc { font-weight: 700; }
 </style>
 </head>
 <body>
@@ -1946,7 +1951,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v125";
+  var APP_BUILD = "v126";
   try { if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(function () {}); } catch (e) {}
   state.weekVer = DATA_VER;
 
@@ -3026,7 +3031,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
           var ok = function (t) { items.push(["ok", t]); }, warn = function (t) { items.push(["warn", t]); }, bad = function (t) { items.push(["bad", t]); };
           if (link.out && link.inp) ok("ProTools link connected"); else bad("ProTools link not connected: main page \u203a ProTools link \u203a Connect");
           if (link.out && linkOff()) bad("Link is off: tap Link on"); else if (link.out) ok("Link on");
-          if (link.tc && nowMs() - (link.lastHeard || 0) < 12 * 3600000) ok("Timecode heard from ProTools"); else warn("No timecode yet: press Play in ProTools once, away from the top, then stop");
+          var heardAt = link.tc ? link.lastHeard : link.heardBefore;
+          if (heardAt && nowMs() - heardAt < 12 * 3600000) ok("Timecode heard from ProTools" + (link.tc ? "" : " today at " + msClock(heardAt)));
+          else warn("No timecode in the last 12 hours: press Play in ProTools once, away from the top, then stop");
           if (state.auto) ok("Auto-start on: ProTools plays itself at " + msClock(hp)); else warn("Auto-start off: press Play yourself at " + msClock(hp));
           if (state.ptLag != null) ok("Start delay learned: " + (+state.ptLag).toFixed(2) + " s"); else warn("Start delay not learned yet: the first auto-start may be a fraction late");
           if (typeof sync !== "undefined" && sync && sync.ready) ok("Sync on: other screens follow this booth"); else warn("Sync not signed in: other screens won\u2019t follow");
@@ -3373,6 +3380,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       else if (ptLocked()) { lcls = "live"; ltxt = "\ud83d\udd12 Locked while ProTools plays \u00b7 " + (link.tc ? fmtTc(link.tc) : "") + " \u00b7 hold Stop 1 s for an emergency"; }
       else if (link.inp && ptMoving()) { lcls = "live"; ltxt = "ProTools link: hearing ProTools \u00b7 Playing " + (link.tc ? fmtTc(link.tc) : "") + " \u00b7 rehearsal, not locked"; }
       else if (link.inp && link.tc) { lcls = "ok"; ltxt = "ProTools link: connected \u00b7 Stopped at " + fmtTc(link.tc); }
+      else if (link.inp && link.heardBefore && nowMs() - link.heardBefore < 12 * 3600000) { lcls = "ok"; ltxt = "ProTools link: connected \u00b7 timecode heard today at " + msClock(link.heardBefore); }
       else { lcls = "warn"; ltxt = "ProTools link: connected \u00b7 press Play in ProTools to check timecode"; }
       var ub = $("bUnlock"), showU = link.inp && ptMoving() && inServiceWindow(nowMs());
       if (ub.hidden === !!showU) ub.hidden = !showU;
@@ -4008,6 +4016,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if (!link.out || link.out.state === "disconnected") return { fires: false, level: "bad", text: "Auto-start offline", sub: "Can\u2019t reach ProTools. Hit play yourself." };
     if (key && state.skips[key]) return { fires: false, level: "manual", text: "Manual start", sub: "Auto-start skipped for this service" };
     if (link.inp && link.lastHeard) return { fires: true, level: "ok", text: "Auto-start ready", sub: "ProTools answered at " + msClock(link.lastHeard) };
+    if (link.inp && link.heardBefore && nowMs() - link.heardBefore < 12 * 3600000) return { fires: true, level: "ok", text: "Auto-start ready", sub: "ProTools answered today at " + msClock(link.heardBefore) };
     return { fires: true, level: "warn", text: "Auto-start armed", sub: link.inp ? "Not confirmed yet. Use Check link." : "Not listening to ProTools, so it can\u2019t confirm" };
   }
   function paintChip(el, st) {
@@ -4166,13 +4175,13 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   try {
     var savedPT = JSON.parse(localStorage.getItem("st-pt-last") || "null");
-    if (savedPT && Date.now() - savedPT.at < 12 * 3600000) link.restoredPos = savedPT.p;
+    if (savedPT && Date.now() - savedPT.at < 12 * 3600000) { link.restoredPos = savedPT.p; link.heardBefore = savedPT.heard || null; }
   } catch (e) {}
   setInterval(function () {
     if (!link.tc) return;
     var p = ptMoving() ? (state.ptReturns !== false && link.playStart != null ? link.playStart : ptPosNow()) : ptPosNow();
     if (p === null) return;
-    try { localStorage.setItem("st-pt-last", JSON.stringify({ p: Math.round(p * 1000) / 1000, at: Date.now() })); } catch (e) {}
+    try { localStorage.setItem("st-pt-last", JSON.stringify({ p: Math.round(p * 1000) / 1000, at: Date.now(), heard: link.lastHeard || link.heardBefore || null })); } catch (e) {}
   }, 500);
   // a "started" mark far from its own service (left over from a test) is cleared
   function cleanStrayStart() {
