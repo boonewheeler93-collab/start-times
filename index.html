@@ -1432,6 +1432,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
   color: var(--ink-2, #b8c0dc); background: rgba(255,255,255,0.05); border: 1px solid var(--glass-line, rgba(255,255,255,0.14)); }
 .link-test.ok { color: #b8f5c8; border-color: #4ade80; } .link-test.bad { color: #ffd2cf; border-color: #ff6b62; }
 .link-test:disabled { opacity: 0.7; cursor: default; }
+.link-test[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -1956,7 +1957,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v129";
+  var APP_BUILD = "v130";
   try { if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(function () {}); } catch (e) {}
   state.weekVer = DATA_VER;
 
@@ -3383,6 +3384,8 @@ h2, .card-head h2 { font-size: 1.35rem; }
   }
   function renderTransport() {
     var rc = $("bReh"); if (rc && rc.hidden === !!state.rehearsal) rc.hidden = !state.rehearsal;
+    var lt = $("bLinkTest");
+    if (lt) { var showT = !!link.out && (!linkConfirmed() || link.checking || lt.classList.contains("ok") || lt.classList.contains("bad")); if (lt.hidden === showT) lt.hidden = !showT; }
     var tc0 = $("bTest"), tOn = !!(state.testRun && nowMs() < state.testRun.until);
     if (tc0 && tc0.hidden === tOn) tc0.hidden = !tOn;
     if (tOn) { var tt = "\u25cf Test run \u00b7 hit play " + msClock(state.testRun.hp); if ($("bTestT").textContent !== tt) $("bTestT").textContent = tt; }
@@ -3994,6 +3997,10 @@ h2, .card-head h2 { font-size: 1.35rem; }
   });
   $("bRehEnd").addEventListener("click", function () { endRehearsal("ended in the booth"); });
   // TEST: prove both directions without sound: jump to silence past the end, play ~1 s, stop, put ProTools back
+  function linkConfirmed() {
+    var h = link.lastHeard || link.heardBefore || 0;
+    return !!(link.inp && h && nowMs() - h < 12 * 3600000);
+  }
   function linkTestBlocked() {
     if (!link.out || !link.inp) return "Connect first";
     if (linkOff()) return "Link is off";
@@ -4065,7 +4072,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     // pressing Play only needs the connection to ProTools; hearing its timecode just confirms afterwards
     if (link.inp && link.inp.state !== "disconnected") {
       var nx = nextAuto(nowMs());
-      return { fires: true, level: "ok", text: "Auto-start ready", sub: "Connected to ProTools" + (nx ? " \u00b7 plays itself at " + msClock(nx.pt) : "") };
+      return { fires: true, level: "ok", text: "Auto-start ready", sub: "Connected to ProTools \u00b7 not tested today \u00b7 tap Test" };
     }
     return { fires: true, level: "warn", text: "Auto-start armed", sub: "Not listening to ProTools, so it can\u2019t confirm the start" };
   }
