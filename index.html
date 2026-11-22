@@ -1957,7 +1957,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v130";
+  var APP_BUILD = "v132";
   try { if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(function () {}); } catch (e) {}
   state.weekVer = DATA_VER;
 
@@ -3998,7 +3998,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
   $("bRehEnd").addEventListener("click", function () { endRehearsal("ended in the booth"); });
   // TEST: prove both directions without sound: jump to silence past the end, play ~1 s, stop, put ProTools back
   function linkConfirmed() {
-    var h = link.lastHeard || link.heardBefore || 0;
+    var h = link.lastPlayHeard || 0;   // ProTools played (and sent timecode) since this page loaded
     return !!(link.inp && h && nowMs() - h < 12 * 3600000);
   }
   function linkTestBlocked() {
@@ -4013,7 +4013,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
   $("bLinkTest").addEventListener("click", function () {
     var b = this, why = linkTestBlocked(); if (why) { flashBtn(b, why); return; }
     var back = ptPosNow(); if (back === null && link.restoredPos != null) back = link.restoredPos;
-    var silent = sessionEndPT() + 60, before = link.lastHeard || 0;
+    var silent = sessionEndPT() + 60, before = link.lastPlayHeard || 0;
     link.checkBack = back;
     link.checking = true; b.disabled = true; b.textContent = "Testing\u2026";
     locateTo(silent, "link test (silence past the end)");
@@ -4021,8 +4021,15 @@ h2, .card-head h2 { font-size: 1.35rem; }
     setTimeout(function () { ptSend(MMC_STOP, "Stop (link test)", null, true); }, 1700);
     setTimeout(function () {
       if (back !== null) locateTo(back, "back where it was");
-      var ok = (link.lastHeard || 0) > before;
-      setTimeout(function () { link.checking = false; link.checkBack = null; if (back !== null) { link.playStart = back; } b.disabled = false; }, 800);
+      var ok = (link.lastPlayHeard || 0) > before;
+      setTimeout(function () {
+        link.checking = false; link.checkBack = null; b.disabled = false;
+        if (back !== null) {
+          link.settleUntil = Date.now() + 2500; link.readOk = false;
+          var fps = Math.round(+state.ptRate || 30), snap = Math.round(back * fps) / fps;
+          locateTo(snap, "back where it was (sync)"); link.playStart = snap;
+        }
+      }, 800);
       b.textContent = ok ? "Link OK \u2713" : "No timecode came back";
       b.classList.toggle("ok", ok); b.classList.toggle("bad", !ok);
       ptLog(ok ? "Link test: ProTools played and sent timecode back" : "Link test: Play sent, but no timecode came back (check ProTools' MTC Generator port)");
@@ -4068,7 +4075,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     if (!link.out || link.out.state === "disconnected") return { fires: false, level: "bad", text: "Auto-start offline", sub: "Can\u2019t reach ProTools. Hit play yourself." };
     if (key && state.skips[key]) return { fires: false, level: "manual", text: "Manual start", sub: "Auto-start skipped for this service" };
     if (link.inp && link.lastHeard) return { fires: true, level: "ok", text: "Auto-start ready", sub: "ProTools answered at " + msClock(link.lastHeard) };
-    if (link.inp && link.heardBefore && nowMs() - link.heardBefore < 12 * 3600000) return { fires: true, level: "ok", text: "Auto-start ready", sub: "ProTools answered today at " + msClock(link.heardBefore) };
+    if (link.inp && link.heardBefore && nowMs() - link.heardBefore < 12 * 3600000) return { fires: true, level: "ok", text: "Auto-start ready", sub: "ProTools answered today at " + msClock(link.heardBefore) + " \u00b7 tap Test to re-check" };
     // pressing Play only needs the connection to ProTools; hearing its timecode just confirms afterwards
     if (link.inp && link.inp.state !== "disconnected") {
       var nx = nextAuto(nowMs());
@@ -4178,7 +4185,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     var d = e.data;
     if (d[0] === 0xF1) {
       var t = performance.now(), gap = t - link.lastQF;
-      link.lastQF = t; link.lastHeard = nowMs();
+      link.lastQF = t; link.lastHeard = nowMs(); link.lastPlayHeard = nowMs();
       var piece = d[1] >> 4; link.qf[piece] = d[1] & 0x0F;
       if (gap > 500) { link.qfSince = 0; link.qfMask = 0; }
       link.qfMask = (link.qfMask || 0) | (1 << piece);
@@ -4212,6 +4219,8 @@ h2, .card-head h2 { font-size: 1.35rem; }
         if (link.pending && link.qfSince >= 8) resolveStart();
       }
       if (gap > 500) { link.readMiss = 0; link.firstQF = t; link.startPending = true; link.sm = null; onPtStarted(); }
+    } else if (d[0] === 0xF0 && d[1] === 0x7F && d[3] === 0x07 && d[4] === 0x01 && d.length >= 9 && (link.checking || Date.now() < (link.settleUntil || 0))) {
+      // a position answer during or right after a link test may describe where ProTools was a moment ago: ignore it
     } else if (d[0] === 0xF0 && d[1] === 0x7F && d[3] === 0x07 && d[4] === 0x01 && d.length >= 9) {
       // MMC answer to "where are you?": hours (with rate bits), minutes, seconds, frames
       link.fps = [24, 25, 29.97, 30][(d[5] >> 5) & 3];
