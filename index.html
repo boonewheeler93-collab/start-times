@@ -809,11 +809,11 @@ details > summary { border-radius: var(--radius); }
 .msg-sum.odd { color: var(--toss); }
 
 /* message view: section countdowns */
-.b-parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.b-parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
 .b-parts[hidden] { display: none; }
-.bp { padding: 12px 14px; border-radius: 16px; text-align: center; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-line); transition: border-color 0.3s, background-color 0.3s; }
+.bp { container-type: inline-size; min-width: 0; padding: 12px 10px; border-radius: 16px; text-align: center; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-line); transition: border-color 0.3s, background-color 0.3s; }
 .bpn { font-weight: 700; color: var(--ink-2); font-size: 0.9rem; }
-.bpt { font-family: var(--clockfont); font-weight: 700; font-size: clamp(1.8rem, 6vw, 2.6rem); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.bpt { font-family: var(--clockfont); font-weight: 700; font-size: min(2.6rem, 23cqi); line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bpt .mono-d { width: 0.6em; }
 .bp.next { border-color: rgba(180,165,255,0.55); background: rgba(180,165,255,0.10); }
 .bp.yellow { border-color: rgba(255,211,25,0.55); background: rgba(255,211,25,0.08); } .bp.yellow .bpt { color: #ffd319; }
@@ -852,7 +852,7 @@ details > summary { border-radius: var(--radius); }
 /* message view: the three section timers are the main display */
 .b-parts .bp { padding: 16px 12px 14px; border-radius: 20px; }
 .b-parts .bpn { font-size: 1rem; letter-spacing: 0.01em; }
-.b-parts .bpt { font-size: clamp(2.4rem, 7.5vw, 4.4rem); line-height: 1.05; margin: 4px 0 2px; }
+.b-parts .bpt { font-size: min(4.4rem, 24cqi); line-height: 1.05; margin: 4px 0 2px; white-space: nowrap; }
 .b-parts .bpa { font-family: var(--clockfont); font-weight: 600; font-size: 0.9rem; color: var(--ink-3); }
 .b-parts .bpa small { font-size: 0.85em; margin-left: 2px; }
 .b-parts .bp.hands .bpn { font-weight: 800; letter-spacing: 0.06em; color: var(--ink); }
@@ -1911,7 +1911,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v117";
+  var APP_BUILD = "v118";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -3403,7 +3403,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 
     // message view: from Message Start, count the whole message down to Hands, plus each section
     var msgMode = false, msgLeft = null, mOcc = booth.manual ? null : sheetFocus(now, cur);
-    if (mOcc && lastCalc.handsRel !== null && lastCalc.handsRel !== undefined && now >= mOcc.t + lastCalc.mStartRel * 1000) {
+    // on the ProTools Mac, ProTools playing inside the set keeps the set view up, whatever the clock says
+    var ptInSet = !!(link.inp && ptMoving() && linkElapsed() !== null && linkElapsed() >= 0 && linkElapsed() <= lastCalc.len + 30);
+    if (mOcc && !ptInSet && lastCalc.handsRel !== null && lastCalc.handsRel !== undefined && now >= mOcc.t + lastCalc.mStartRel * 1000) {
       msgMode = true; booth.cOn = false;
       var handsT = mOcc.t + lastCalc.handsRel * 1000;
       msgLeft = Math.max(0, Math.ceil((handsT - now) / 1000));
