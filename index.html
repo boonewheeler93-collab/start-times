@@ -1398,6 +1398,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 .reh-chip { display: inline-flex; align-items: center; gap: 10px; padding: 5px 6px 5px 16px; border-radius: 999px; border: 1px solid #c084fc; background: color-mix(in srgb, #c084fc 14%, transparent); color: #e9d5ff; font-weight: 800; font-size: 0.9rem; }
 .reh-chip[hidden] { display: none; }
 .reh-chip button { font: inherit; font-weight: 800; padding: 6px 14px; border-radius: 999px; border: 0; background: #c084fc; color: #1a0b2e; cursor: pointer; min-height: 32px; }
+
+.b-pt-sync { font: inherit; font-weight: 800; font-size: 0.85rem; padding: 6px 14px; min-height: 34px; border-radius: 999px; }
 </style>
 </head>
 <body>
@@ -1686,6 +1688,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         <span class="b-pt-k">ProTools</span>
         <span class="b-pt-tc" id="bPtTc">--:--:--</span>
         <span class="pill-s" id="bPtPill">No timecode</span>
+        <button type="button" class="ghost b-pt-sync" id="bPtSync" title="Make the app and ProTools read the same spot">Sync</button>
         <button type="button" class="ghost b-pt-link" id="bLinkTog" aria-pressed="true">Link on</button>
       </div>
       <p class="b-pt-note" id="bPtNote"></p>
@@ -1915,7 +1918,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v122";
+  var APP_BUILD = "v123";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -4633,6 +4636,23 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   holdToFire($("bCuedPlay"), function () { ptPlayHere($("bCuedPlay")); });
   $("bCuedPlay").addEventListener("click", function () { var el = this; if (!inServiceWindow(nowMs()) && Date.now() - (el._fired || 0) > 1500) ptPlayHere(el); });
   $("bCuedX").addEventListener("click", function () { $("bCued").hidden = true; });
+  // Sync: playing, snap the app straight onto ProTools' newest timecode (nothing is sent);
+  // stopped, send ProTools to the app's spot on the nearest frame so both read exactly the same
+  $("bPtSync").addEventListener("click", function () {
+    var b = this;
+    if (!link.out || !link.inp) { flashBtn(b, "Connect first"); return; }
+    if (ptMoving()) {
+      link.sm = null;
+      var e = tcElapsed(); if (e !== null) link.sm = { p: e + (link.tcLead || 0), t: link.tcAt || performance.now() };
+      flashBtn(b, "Synced"); return;
+    }
+    try { link.out.send([0xF0, 0x7F, 0x7F, 0x06, 0x42, 0x01, 0x01, 0xF7]); } catch (er) {}   // in case ProTools answers with its spot
+    var p = ptPosNow(); if (p === null && link.restoredPos != null) p = link.restoredPos;
+    if (p === null) { flashBtn(b, "Play once first"); return; }
+    var fps = Math.round(+state.ptRate || 30), snapped = Math.round(p * fps) / fps;
+    if (linkOff()) { flashBtn(b, "Link is off"); return; }
+    if (locateTo(snapped, "sync")) { link.playStart = snapped; flashBtn(b, "Synced"); } else flashBtn(b, "Not sent");
+  });
   // -10 s / +10 s: from where ProTools is (stopped or playing); the service lock still applies while it plays
   document.addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest(".nudge-btn") : null; if (!b || !link.out) return;
