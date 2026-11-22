@@ -2033,7 +2033,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v142";
+  var APP_BUILD = "v143";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -4173,9 +4173,13 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
       tries++;
       if (!link.autoTestPending) { clearInterval(t); return; }
       if (!link.out || !link.inp || !lastCalc) { if (tries > 40) { link.autoTestPending = false; clearInterval(t); } return; }   // wait up to ~20 s for MIDI
-      if (tries < 5) return;                                     // let the page settle (~2.5 s)
+      if (tries < 8) return;                                     // listen for 4 s first
       clearInterval(t);
       var why = linkTestBlocked();
+      if (!why && link.lastQF) why = "ProTools sent timecode since the reload (it may be playing)";
+      if (!why && link.playingBefore && Date.now() - link.playingBefore < 10 * 60000) why = "ProTools was playing shortly before the reload";
+      if (!why && state.rehearsal) why = "a rehearsal run is on";
+      if (!why && state.testRun && nowMs() < state.testRun.until) { var tl = state.live, tk = null; occurrences(nowMs() - 3600000).forEach(function (o) { if (isTestOcc(o)) tk = keyOf(o); }); if (tk && tl && tl.key === tk) why = "the test run has started"; }
       link.autoTestPending = false;
       if (!why) { ptLog("Automatic link test after loading"); $("bLinkTest").click(); }
       else ptLog("Automatic link test skipped: " + why);
@@ -4437,13 +4441,13 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
   }
   try {
     var savedPT = JSON.parse(localStorage.getItem("st-pt-last") || "null");
-    if (savedPT && Date.now() - savedPT.at < 12 * 3600000) { link.restoredPos = savedPT.p; link.heardBefore = savedPT.heard || null; }
+    if (savedPT && Date.now() - savedPT.at < 12 * 3600000) { link.restoredPos = savedPT.p; link.heardBefore = savedPT.heard || null; link.playingBefore = savedPT.playingAt || null; }
   } catch (e) {}
   setInterval(function () {
     if (!link.tc) return;
     var p = ptMoving() ? (state.ptReturns !== false && link.playStart != null ? link.playStart : ptPosNow()) : ptPosNow();
     if (p === null) return;
-    try { localStorage.setItem("st-pt-last", JSON.stringify({ p: Math.round(p * 1000) / 1000, at: Date.now(), heard: link.lastHeard || link.heardBefore || null })); } catch (e) {}
+    try { localStorage.setItem("st-pt-last", JSON.stringify({ p: Math.round(p * 1000) / 1000, at: Date.now(), heard: link.lastHeard || link.heardBefore || null, playingAt: ptMoving() ? Date.now() : (link.playingBefore || null) })); } catch (e) {}
   }, 500);
   // a "started" mark far from its own service (left over from a test) is cleared
   function cleanStrayStart() {
@@ -4585,7 +4589,9 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     // only trust timecode heard since this playback began (never a position left over from before), and no unconfirmed jump
     if (link.startPending || link.jumpCand || !link.tcAt || !link.firstQF || link.tcAt <= link.firstQF + 40) { link.endSeen = 0; return; }
     var end = sessionEndPT(), pos = ptPosNow();
+    if (end !== null && pos !== null && pos < end) link.belowEnd = link.firstQF;      // this playback was seen inside the session
     if (end === null || pos === null || pos < end + 30) { link.endSeen = 0; return; }
+    if (link.belowEnd !== link.firstQF) return;                                       // it must have played THROUGH the end, not just appear past it
     if (!link.endSeen) { link.endSeen = link.tcAt; return; }          // first block past the line: wait for the next one
     if (link.tcAt === link.endSeen) return;                           // same block: still waiting
     link.endStopped = link.firstQF;
