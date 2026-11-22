@@ -1394,6 +1394,10 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 .nudge-btn:active { background: rgba(255,255,255,0.16); }
 .b-pt-nudge { grid-column: 1 / -1; display: flex; gap: 10px; justify-content: center; }
 .b-pt-nudge .nudge-btn { flex: 1; max-width: 180px; }
+
+.reh-chip { display: inline-flex; align-items: center; gap: 10px; padding: 5px 6px 5px 16px; border-radius: 999px; border: 1px solid #c084fc; background: color-mix(in srgb, #c084fc 14%, transparent); color: #e9d5ff; font-weight: 800; font-size: 0.9rem; }
+.reh-chip[hidden] { display: none; }
+.reh-chip button { font: inherit; font-weight: 800; padding: 6px 14px; border-radius: 999px; border: 0; background: #c084fc; color: #1a0b2e; cursor: pointer; min-height: 32px; }
 </style>
 </head>
 <body>
@@ -1649,7 +1653,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         </div>
       </div>
     </div>
-    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><div class="linkchip" id="bLinkChip" role="status"></div><button type="button" class="unlock-btn" id="bUnlock" hidden>Hold to unlock</button></div>
+    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><div class="linkchip" id="bLinkChip" role="status"></div><div class="reh-chip" id="bReh" hidden><span>● Rehearsal run</span><button type="button" id="bRehEnd">End rehearsal</button></div><button type="button" class="unlock-btn" id="bUnlock" hidden>Hold to unlock</button></div>
     <div class="b-count" id="bCountBox">
       <div class="b-lab" id="bLab"></div>
       <div class="b-big" id="bBig"></div>
@@ -1911,7 +1915,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v119";
+  var APP_BUILD = "v120";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2964,6 +2968,38 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if (ptMoving()) return pos;
     return now < sr.startAt + (lastCalc.len + 60) * 1000 ? pos : null;
   }
+  // REHEARSAL RUN: playing from the top in rehearsal shifts the app's clock so the run-through is the next service's hit play;
+  // songs, Stagetime, Go to Message, the message cues and alerts then all run on their real timings
+  function startRehearsal(e) {
+    if (!lastCalc || lastCalc.program === "switch" || state.rehearsal) return false;
+    var now = nowMs(), occs = occurrences(now), o = null;
+    occs.forEach(function (x) { if (!o && keyOf(x) === booth.key) o = x; }); if (!o) o = occs[0]; if (!o) return false;
+    var planned = o.t + lastCalc.startRel * 1000, base = +state.clockOff || 0;
+    state.rehearsal = { base: base, key: keyOf(o), at: Date.now() };
+    state.clockOff = base + (planned + e * 1000 - now);
+    state.live = { key: keyOf(o), at: planned };
+    link.done[keyOf(o)] = { cue: true, recue: true, play: true };
+    ptLog("Rehearsal run started: the booth runs as if " + o.sv.day + " " + svcClock(o.sv.sec) + " started now");
+    persist(); return true;
+  }
+  function endRehearsal(why) {
+    if (!state.rehearsal) return;
+    var k = state.rehearsal.key;
+    state.clockOff = state.rehearsal.base || 0;
+    if (state.live && state.live.key === k) state.live = null;
+    delete link.done[k];
+    state.rehearsal = null;
+    ptLog("Rehearsal run ended" + (why ? " (" + why + ")" : ""));
+    persist(); if (booth.open) renderBooth();
+  }
+  // a rehearsal run ends itself 15 minutes before any real hit play, or after 2 hours
+  setInterval(function () {
+    if (!state.rehearsal || !lastCalc) return;
+    var real = Date.now() + (+state.rehearsal.base || 0), soon = false;
+    occurrences(real).forEach(function (o) { var hp = o.t + lastCalc.startRel * 1000; if (hp - real < 15 * 60000 && hp - real > -60000) soon = true; });
+    if (soon) endRehearsal("a real service is 15 minutes away");
+    else if (Date.now() - (state.rehearsal.at || 0) > 2 * 3600000) endRehearsal("2 hours");
+  }, 5000);
   function scrollSheetTo(host, li) {
     var box = host.closest ? host.closest(".b-right") : null;
     if (!box || !li) return;
@@ -3195,6 +3231,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     persist(); renderLink(); renderTransport();
   }
   function renderTransport() {
+    var rc = $("bReh"); if (rc && rc.hidden === !!state.rehearsal) rc.hidden = !state.rehearsal;
     var lc = $("bLinkChip");
     if (lc) {
       var lcls, ltxt;
@@ -3792,7 +3829,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     state.live = { key: booth.key, at: nowMs() };
     persist(); renderBooth();
   });
+  $("bRehEnd").addEventListener("click", function () { endRehearsal("ended in the booth"); });
   $("bReset").addEventListener("click", function () {
+    if (state.rehearsal) { endRehearsal("Reset in the booth"); return; }
     if (lastCalc && lastCalc.program === "switch") state.swLive = null; else state.live = null;
     persist(); renderBooth();
   });
@@ -3861,7 +3900,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   // SERVICE LOCK: while ProTools is playing, nothing is sent except a deliberate emergency stop
   // during a service: from 1 minute before hit play to 1 minute after the final downbeat (a real start moves the window with it)
   function inServiceWindow(now) {
-    if (!lastCalc) return false;
+    if (!lastCalc || state.rehearsal) return false;
     var on = false;
     occurrences(now - 3 * 3600000).forEach(function (o) {
       if (on) return;
@@ -4059,6 +4098,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     // only a start from the top of the session is the service starting; anywhere else is a test, a rehearsal or a song
     if (e === null || e < 0 || e >= 20) return;
     var key = ps.key || nearestKey(ps.at);
+    if (!key && !state.rehearsal && !inServiceWindow(nowMs())) { if (startRehearsal(e)) { renderBooth(); } return; }
     if (key) { state.live = { key: key, at: nowMs() - e * 1000 }; persist(); }
   }
   function nextAuto(now) {
@@ -4271,7 +4311,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   var FB_VERSION = "10.12.2";
   // every device unlocks with one shared password for this sign-in
   var SYNC_LOGIN = window.START_TIMES_LOGIN || "booth@northland-start-times.app";
-  var SHARED = ["msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems", "swLive", "dropBy", "ptCues", "walkSong", "stageAt", "weekVer"];
+  var SHARED = ["rehearsal", "msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems", "swLive", "dropBy", "ptCues", "walkSong", "stageAt", "weekVer"];
   var sync = { ready: false, applying: false, user: null, db: null, timer: null, device: "", role: "", peers: {}, booth: null, lastTele: "", teleAt: 0, err: "", offs: [] };
   try { sync.device = localStorage.getItem("st-device") || ""; } catch (e) {}
   if (!sync.device) { sync.device = "d" + Math.random().toString(36).slice(2, 10); try { localStorage.setItem("st-device", sync.device); } catch (e) {} }
@@ -5018,6 +5058,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     rows.forEach(function (r, i) { if (nextI < 0 && r.t > now) nextI = i; });
     var started = rows.length && now >= rows[0].t, done = started && nextI < 0;
     var svcT = (lastCalc.program === "switch" ? "SWITCH " : focus.sv.day + " ") + svcClock(focus.sv.sec);
+    if (state.rehearsal) svcT = "Rehearsal \u00b7 " + svcT;
     if ($("vSvcT").textContent !== svcT) $("vSvcT").textContent = svcT;
     $("vSvc").classList.toggle("is-live", started && !done);
 
