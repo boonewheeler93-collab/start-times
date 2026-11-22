@@ -1375,6 +1375,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 
 .b-pt-play.tap { background: color-mix(in srgb, #4ade80 22%, transparent); border-color: #4ade80; color: #d6ffe4; font-weight: 800; }
 .b-pt-stop.tap { background: color-mix(in srgb, #ff5a4f 16%, transparent); border-color: #ff6b62; color: #ffd2cf; font-weight: 800; }
+
+.pt-ret { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 4px; font-size: 0.92rem; color: var(--ink-2); line-height: 1.35; }
+.pt-ret input { margin-top: 3px; }
 </style>
 </head>
 <body>
@@ -1466,6 +1469,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
               <div class="field"><label for="ptRateSel">Frame rate</label><select id="ptRateSel"><option value="30">30</option><option value="29.97">29.97 drop</option><option value="25">25</option><option value="24">24</option></select></div>
               <div class="field"><label for="ptLeadSel">Cue up before start</label><select id="ptLeadSel"><option value="30">30 seconds</option><option value="60">60 seconds</option></select></div>
             </div>
+            <label class="pt-ret"><input type="checkbox" id="ptReturnsChk"> When ProTools stops, it jumps back to where playback started (ProTools\u2019 Insertion Follows Playback is off)</label>
             <ul class="pt-log" id="ptLog"></ul>
           </div>
         </details>
@@ -1888,7 +1892,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v104";
+  var APP_BUILD = "v105";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2697,10 +2701,6 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var svcs = state.services.map(function (s) { return { day: s.day, sec: parseClock(s.time) }; })
       .filter(function (s) { return s.sec !== null; })
       .sort(function (a, b) { return dayRank(a.day) - dayRank(b.day) || a.sec - b.sec; });
-    // TEST (Saturday 11/21 evening only): an 8:35 PM service, hit play 8:26:11 PM; gone at 9:30 PM
-    var tNow = nowMs();
-    if (tNow > Date.parse("2026-11-21T19:45:00-06:00") && tNow < Date.parse("2026-11-21T21:30:00-06:00"))
-      svcs.unshift({ day: "Saturday", sec: 20 * 3600 + 35 * 60, test: true });
     if (state.sel >= svcs.length || state.sel < 0) state.sel = 0;
 
     var copy = ["Start times (final downbeat " + fmtSigned(finalRel) + ")", ""];
@@ -3813,6 +3813,12 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   function ptSend(bytes, name, ts, emergency) {
     if (linkOff()) { ptLog("Link is off, so " + name + " wasn\u2019t sent"); return false; }
     if (ptLocked() && !emergency) { ptLog("Locked while ProTools plays, so " + name + " wasn\u2019t sent"); link.lockedAt = Date.now(); return false; }
+    if (bytes[0] === 0xF0 && bytes[4] === 0x44 && !ptMoving()) {
+      var at = setTimeout(function () {
+        link.tc = { h: bytes[7] & 0x1F, m: bytes[8], s: bytes[9], f: bytes[10] }; link.tcAt = performance.now(); link.tcLead = 0;
+        var e1 = tcElapsed(); if (e1 !== null) link.playStart = e1;
+      }, ts != null ? Math.max(0, ts - performance.now()) : 0);
+    }
     if (!link.out) { ptLog("Couldn’t send " + name + ": no Send to ProTools port"); return false; }
     try { if (ts != null) link.out.send(bytes, ts); else link.out.send(bytes); ptLog("Sent " + name); return true; }
     catch (e) { ptLog("Send failed: " + e.message); return false; }
@@ -3863,9 +3869,10 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         link.fps = [24, 25, 29.97, 30][(q[7] >> 1) & 3];
         link.tc = { h: q[6] | ((q[7] & 1) << 4), m: q[4] | (q[5] << 4), s: q[2] | (q[3] << 4), f: q[0] | (q[1] << 4) };
         link.tcAt = t; link.tcLead = 2 / Math.round(link.fps || 30);
+        if (link.startPending) { link.startPending = false; var e0 = tcElapsed(); if (e0 !== null) link.playStart = Math.max(0, e0 + link.tcLead - (t - (link.firstQF || t)) / 1000); }
         if (link.pending && link.qfSince >= 8) resolveStart();
       }
-      if (gap > 500) { link.readMiss = 0; onPtStarted(); }
+      if (gap > 500) { link.readMiss = 0; link.firstQF = t; link.startPending = true; onPtStarted(); }
     } else if (d[0] === 0xF0 && d[1] === 0x7F && d[3] === 0x07 && d[4] === 0x01 && d.length >= 9) {
       // MMC answer to "where are you?": hours (with rate bits), minutes, seconds, frames
       link.fps = [24, 25, 29.97, 30][(d[5] >> 5) & 3];
@@ -3907,7 +3914,11 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   function ptPosNow() {
     var e = tcElapsed(); if (e === null) return null;
     // stopped: the last block plus the time ProTools kept rolling after it (up to the last quarter-frame)
-    if (!(link.inp && ptMoving())) return link.tcAt && link.lastQF >= link.tcAt ? e + (link.tcLead || 0) + Math.min(0.1, (link.lastQF - link.tcAt) / 1000) : e;
+    if (!(link.inp && ptMoving())) {
+      if (link.readOk && link.tcLead === 0) return e;                       // ProTools told us where it is
+      if (state.ptReturns !== false && link.playStart != null && link.lastQF && link.tcAt && link.lastQF >= link.tcAt) return link.playStart;   // it jumped back
+      return link.tcAt && link.lastQF >= link.tcAt ? e + (link.tcLead || 0) + Math.min(0.1, (link.lastQF - link.tcAt) / 1000) : e;
+    }
     return e + (link.tcLead || 0) + Math.min(0.25, Math.max(0, (performance.now() - (link.tcAt || performance.now())) / 1000));
   }
   // ProTools' own Min:Sec style, e.g. 11:54.072
@@ -4104,6 +4115,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if (state.auto) { link.result = ""; lockScreen(); }
     renderLink();
   });
+  $("ptReturnsChk").checked = state.ptReturns !== false;
+  $("ptReturnsChk").addEventListener("change", function () { state.ptReturns = this.checked; persist(); renderTransport(); });
   $("ptLocate").addEventListener("click", function () { var t = parseTc(state.ptStart); if (t) ptSend(mmcLocate(t), "Go to " + fmtTc(t)); });
   $("ptPlay").addEventListener("click", function () { ptSend(MMC_PLAY, "Play"); });
   $("ptStop").addEventListener("click", function () { ptSend(MMC_STOP, "Stop"); });
