@@ -1028,7 +1028,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .b-pt[hidden] { display: none; }
 .b-pt-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .b-pt-k { font-weight: 800; }
-.b-pt-tc { font-family: var(--clockfont); font-weight: 700; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.b-pt-tc { font-family: var(--clockfont); font-weight: 700; font-size: 1.25rem; font-variant-numeric: tabular-nums; min-width: 6.2ch; display: inline-block; }
 .b-pt-link { margin-left: auto; min-height: 40px; padding: 4px 14px; color: var(--ok); border-color: rgba(111,227,180,0.5); }
 .b-pt-link.is-off { color: var(--warn); border-color: rgba(255,157,138,0.55); background: var(--warn-soft); }
 .b-pt-note { margin: 0; color: var(--warn); font-weight: 700; font-size: 0.88rem; }
@@ -1915,7 +1915,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v120";
+  var APP_BUILD = "v121";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -3986,10 +3986,18 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         }
         link.tc = tcNew;
         link.tcAt = t; link.tcLead = 2 / Math.round(link.fps || 30);
+        if (eNew !== null) {
+          var meas = eNew + link.tcLead;
+          if (!link.sm) link.sm = { p: meas, t: t };
+          else {
+            var pred = link.sm.p + (t - link.sm.t) / 1000, err = meas - pred;
+            link.sm = Math.abs(err) > 0.15 ? { p: meas, t: t } : { p: pred + err * 0.12, t: t };
+          }
+        }
         if (link.startPending) { link.startPending = false; var e0 = tcElapsed(); if (e0 !== null) link.playStart = Math.max(0, e0 + link.tcLead - (t - (link.firstQF || t)) / 1000); }
         if (link.pending && link.qfSince >= 8) resolveStart();
       }
-      if (gap > 500) { link.readMiss = 0; link.firstQF = t; link.startPending = true; onPtStarted(); }
+      if (gap > 500) { link.readMiss = 0; link.firstQF = t; link.startPending = true; link.sm = null; onPtStarted(); }
     } else if (d[0] === 0xF0 && d[1] === 0x7F && d[3] === 0x07 && d[4] === 0x01 && d.length >= 9) {
       // MMC answer to "where are you?": hours (with rate bits), minutes, seconds, frames
       link.fps = [24, 25, 29.97, 30][(d[5] >> 5) & 3];
@@ -4050,6 +4058,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       if (state.ptReturns !== false && link.playStart != null && link.lastQF && link.tcAt && link.lastQF >= link.tcAt) return link.playStart;   // it jumped back
       return link.tcAt && link.lastQF >= link.tcAt ? e + (link.tcLead || 0) + Math.min(0.1, (link.lastQF - link.tcAt) / 1000) : e;
     }
+    if (link.sm) { var sdt = (performance.now() - link.sm.t) / 1000; if (sdt >= 0 && sdt < 0.5) return link.sm.p + sdt; }
     return e + (link.tcLead || 0) + Math.min(0.25, Math.max(0, (performance.now() - (link.tcAt || performance.now())) / 1000));
   }
   // ProTools' own Min:Sec style, e.g. 11:54.072
@@ -4072,9 +4081,16 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var now = nowMs(), key = null;
     ptLog("ProTools started playing");
     if (link.watch) {
-      var delta = (now - link.watch.target) / 1000;
+      var delta = (now - link.watch.target) / 1000, lead = +state.ptLag || 0;
       link.result = "Auto-start: ProTools started " + Math.abs(delta).toFixed(2) + " s " + (delta >= 0 ? "after" : "before") + " the target.";
       link.resultBad = Math.abs(delta) > 0.5;
+      // ProTools' own start-up time = how late it was + how early Play went out; keep a smoothed figure for next time
+      var lag = delta + lead;
+      if (lag > -0.5 && lag < 2.5) {
+        var nl = Math.max(0, Math.min(2, state.ptLag == null ? lag : lead * 0.5 + lag * 0.5));
+        state.ptLag = Math.round(nl * 1000) / 1000; persist();
+        link.result += " ProTools takes about " + state.ptLag.toFixed(2) + " s to start after Play, so the next start sends Play that much early.";
+      }
       key = link.watch.key; link.watch = null;
     }
     // wait for a full timecode position before deciding whether this is a service starting
@@ -4176,7 +4192,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         d.play = true;
         if (left < -150) ptLog("Auto-start check ran " + (-left / 1000).toFixed(1) + " s late, so Play went out right away");
         if (ptMoving() && fromTop()) ptLog("ProTools is already playing, so auto-start stood down");
-        else if (ptSend(MMC_PLAY, "Play (auto-start" + (n.sw ? ", " + n.name : "") + ")", performance.now() + Math.max(0, left))) {
+        else if (ptSend(MMC_PLAY, "Play (auto-start" + (n.sw ? ", " + n.name : "") + ")", performance.now() + Math.max(0, left - (+state.ptLag || 0) * 1000))) {
           var tgt = n.pt; link.watch = { target: tgt, key: n.key };
           if (n.sw) {
             // mark the SWITCH part as started at its planned moment (timecode corrects it if ProTools is off)
