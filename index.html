@@ -2033,7 +2033,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v141";
+  var APP_BUILD = "v142";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -3158,8 +3158,9 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
           var ok = function (t) { items.push(["ok", t]); }, warn = function (t) { items.push(["warn", t]); }, bad = function (t) { items.push(["bad", t]); };
           if (link.out && link.inp) ok("ProTools link connected"); else bad("ProTools link not connected: main page \u203a ProTools link \u203a Connect");
           if (link.out && linkOff()) bad("Link is off: tap Link on"); else if (link.out) ok("Link on");
-          var heardAt = link.tc ? link.lastHeard : link.heardBefore;
-          if (heardAt && nowMs() - heardAt < 12 * 3600000) ok("Timecode heard from ProTools" + (link.tc ? "" : " today at " + msClock(heardAt)));
+          // the latest time ProTools was really heard: this page load or remembered across a refresh (never where the app sent it)
+          var heardAt = Math.max(link.lastHeard || 0, link.heardBefore || 0);
+          if (heardAt && nowMs() - heardAt < 12 * 3600000) ok("Timecode heard from ProTools " + (link.lastHeard && heardAt === link.lastHeard ? "at " : "today at ") + msClock(heardAt));
           else warn("No timecode in the last 12 hours: press Play in ProTools once, away from the top, then stop");
           if (state.auto) ok("Auto-start on: ProTools plays itself at " + msClock(hp)); else warn("Auto-start off: press Play yourself at " + msClock(hp));
           if (state.ptLag != null) ok("Start delay learned: " + (+state.ptLag).toFixed(2) + " s"); else warn("Start delay not learned yet: the first auto-start may be a fraction late");
