@@ -1786,7 +1786,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
       <h3 class="b-times-h" id="bRepH">Service reports</h3>
       <div id="bReports"><p class="b-mem-h">A short report appears here about 2 minutes after each service ends (after HANDS and the last message cue).</p></div>
     </section>
-    <p class="b-keys">Space: Started. Hold S: stop ProTools. Up and down arrows: adjust the clock. F: full screen. Esc: close.</p>
+    <p class="b-keys">Space: Started. Hold S: stop ProTools. F: full screen. Esc: close. (Change the clock with Adjust clock.)</p>
     </div>
     <div class="b-right">
       <div class="card-head"><h2>Cue Sheet</h2><div class="card-meta"><span class="live-badge" id="bLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="bSheetSvc"></span></div></div>
@@ -1999,7 +1999,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v136";
+  var APP_BUILD = "v137";
   try { if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(function () {}); } catch (e) {}
   state.weekVer = DATA_VER;
 
@@ -4015,8 +4015,6 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     var tg = e.target && e.target.tagName;
     if (tg === "INPUT" || tg === "SELECT" || tg === "TEXTAREA") return;
     if (e.key === " " || e.code === "Space") { e.preventDefault(); if (!e.repeat) $("bGo").click(); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setOff((+state.clockOff || 0) + 1000); }
-    else if (e.key === "ArrowDown") { e.preventDefault(); setOff((+state.clockOff || 0) - 1000); }
     else if (e.key === "f" || e.key === "F") { e.preventDefault(); toggleFull(); }
     else if ((e.key === "s" || e.key === "S") && !e.repeat && link.out) {
       e.preventDefault(); $("bStop").classList.add("holding");
