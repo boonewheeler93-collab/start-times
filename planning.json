@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-21T18:19:50Z",
+  "updated": "2026-11-22T06:52:48Z",
   "weekend": {
     "plan_id": "91142211",
     "title": null,
@@ -105,7 +105,8 @@
         "key": "D",
         "notes": [],
         "lead": {
-          "Saturday": "Ana"
+          "Saturday": "Ana",
+          "Sunday": "Boone"
         }
       },
       {
@@ -117,7 +118,7 @@
         "description": "+ Ana \n*pad in D",
         "key": null,
         "notes": [],
-        "lead": null
+        "lead": "Ana"
       },
       {
         "title": "More Than Able",
@@ -129,7 +130,8 @@
         "key": "D",
         "notes": [],
         "lead": {
-          "Saturday": "Ana"
+          "Saturday": "Kari / Ana",
+          "Sunday": "Boone / Ana"
         }
       },
       {
@@ -149,7 +151,7 @@
         "section": "M E S S A G E",
         "length": 2160,
         "position": "during",
-        "description": "* Pastor Craig",
+        "description": "* Pastor Craig\n“Pastors, will you take this over now - it’s your time to PRAY…” ",
         "key": null,
         "notes": [
           {
@@ -161,6 +163,17 @@
             "content": "Craig"
           }
         ],
+        "lead": null
+      },
+      {
+        "title": "PASTOR MIKE - HANDS PRAYER",
+        "type": "item",
+        "section": "M E S S A G E",
+        "length": 60,
+        "position": "during",
+        "description": "+ Mike will take over once Pastor Craig says so in the message.",
+        "key": null,
+        "notes": [],
         "lead": null
       },
       {
