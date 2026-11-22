@@ -1459,6 +1459,16 @@ body.tv-mode.drop-now .drop-take-box { background: #ff3b30; animation: none; }
 .dt-drop { font-weight: 900; font-size: min(30vw, 50vh); letter-spacing: 0.04em; }
 @keyframes dropBreath { 50% { background: #b3140f; } }
 @media (prefers-reduced-motion: reduce) { body.tv-mode.drop-take .drop-take-box { animation: none; } }
+
+.ready.folded { display: inline-flex; padding: 0; border: 0; background: transparent; margin: 0 0 10px; align-self: center; }
+.ready-pill { display: inline-flex; align-items: center; gap: 10px; font: inherit; font-weight: 800; font-size: 0.95rem; padding: 8px 18px; min-height: 40px; border-radius: 999px; cursor: pointer;
+  color: #c9f7d8; background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.6); }
+.rc-dot { width: 10px; height: 10px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 0 rgba(74,222,128,0.6); animation: rcPulse 1.6s ease-out infinite; }
+@keyframes rcPulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.55); } 80%, 100% { box-shadow: 0 0 0 9px rgba(74,222,128,0); } }
+.ready li.checking { color: var(--ink-2, #b8c0dc); }
+.rc-spin { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #9db0ff; border-right-color: transparent; animation: chipSpin 0.8s linear infinite; vertical-align: -1px; }
+.ready { cursor: default; } .ready:not(.has-bad) .ready-h { cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .rc-dot { animation-duration: 3.2s; } .rc-spin { animation-duration: 2.4s; } }
 </style>
 </head>
 <body>
@@ -1985,7 +1995,7 @@ body.tv-mode.drop-now .drop-take-box { background: #ff3b30; animation: none; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v134";
+  var APP_BUILD = "v135";
   try { if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(function () {}); } catch (e) {}
   state.weekVer = DATA_VER;
 
@@ -3075,11 +3085,22 @@ body.tv-mode.drop-now .drop-take-box { background: #ff3b30; animation: none; }
       }
     }
     if (box.hidden === show) box.hidden = !show;
-    if (!show) return;
+    if (!show) { box._shownAt = 0; box._open = false; return; }
+    // each line is "checked" in turn (a spinner, then its result); all green folds into a pulsing pill
+    var t0 = box._shownAt || (box._shownAt = Date.now()), age = Date.now() - t0;
     var bads = items.filter(function (i) { return i[0] !== "ok"; }).length;
-    var h = '<div class="ready-h">' + (bads ? "Ready check \u00b7 " + bads + " to look at" : "Ready check \u00b7 all set") + "</div><ul>" +
-      items.map(function (i) { return '<li class="' + i[0] + '"><span>' + (i[0] === "ok" ? "\u2713" : "\u26a0") + "</span>" + esc(i[1]) + "</li>"; }).join("") + "</ul>";
-    if (box._h !== h) { box.innerHTML = h; box._h = h; box.classList.toggle("has-bad", bads > 0); }
+    var doneAt = 500 + items.length * 350, checking = age < doneAt;
+    var fold = !checking && bads === 0 && age > doneAt + 1200 && !box._open;
+    var h;
+    if (fold) h = '<button type="button" class="ready-pill"><span class="rc-dot"></span>Ready check \u00b7 all set</button>';
+    else h = '<div class="ready-h">' + (checking ? "Ready check \u00b7 checking\u2026" : bads ? "Ready check \u00b7 " + bads + " to look at" : "Ready check \u00b7 all set") + "</div><ul>" +
+      items.map(function (i, k) {
+        var pending = age < 500 + k * 350;
+        return '<li class="' + (pending ? "checking" : i[0]) + '"><span>' + (pending ? '<i class="rc-spin"></i>' : i[0] === "ok" ? "\u2713" : "\u26a0") + "</span>" + esc(i[1]) + "</li>";
+      }).join("") + "</ul>";
+    if (box._h !== h) { box.innerHTML = h; box._h = h; }
+    box.classList.toggle("has-bad", !checking && bads > 0);
+    box.classList.toggle("folded", fold);
   }
   // SERVICE LOG and REPORTS: what actually happened, written up ~2 minutes after the hand-off
   function svcLogFor(key) { if (!key || state.rehearsal) return null; state.svcLog = state.svcLog || {}; return state.svcLog[key] || (state.svcLog[key] = {}); }
@@ -3123,6 +3144,11 @@ body.tv-mode.drop-now .drop-take-box { background: #ff3b30; animation: none; }
     state.reports = [{ key: k, title: title, lines: lines, at: Date.now() }].concat((state.reports || []).filter(function (r) { return r.key !== k; })).slice(0, 12);
     ptLog("Service report written: " + title);
   }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("#bReady") : null; if (!b) return;
+    if (b.classList.contains("folded")) { b._open = true; renderReady(); }
+    else if (!b.classList.contains("has-bad") && b._shownAt && Date.now() - b._shownAt > 3000) { b._open = false; renderReady(); }
+  });
   function renderReports() {
     var host = $("bReports"); if (!host) return;
     var rs = state.reports || [];
