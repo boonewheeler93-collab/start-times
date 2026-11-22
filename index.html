@@ -1501,6 +1501,12 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
 #bCountBox.cd-red { background: rgba(74,222,128,0.10); border-color: rgba(74,222,128,0.6); }
 #bCountBox.cd-red .b-big, #bCountBox.cd-red .b-lab { color: #4ade80; text-shadow: 0 0 22px rgba(74,222,128,0.35); }
 #bPtSync.b-pt-sync { min-height: 38px; height: 38px; padding-top: 0; padding-bottom: 0; }
+
+#bHoldPlay, #mHoldPlay { white-space: nowrap; }
+.reh-chip { padding-right: 16px; }
+.back-next { font: inherit; font-weight: 800; font-size: 0.95rem; padding: 8px 18px; min-height: 40px; border-radius: 999px; cursor: pointer; border: 0;
+  background: var(--ink, #eef1ff); color: #0b1020; box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+.back-next[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -1757,7 +1763,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
         </div>
       </div>
     </div>
-    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><button type="button" class="link-test" id="bLinkTest" title="Play 1 second in silence past the end of the session, then put ProTools back">Test</button><div class="linkchip" id="bLinkChip" role="status"></div><div class="svc-chip" id="bSvcView">Service view \u00b7 hold Unlock for rehearsal tools</div><div class="reh-chip" id="bReh" hidden><span>● Rehearsal run</span><button type="button" id="bRehEnd">End rehearsal</button></div><div class="reh-chip test-chip" id="bTest" hidden><span id="bTestT">● Test run</span><button type="button" id="bTestEnd">End test</button></div><button type="button" class="unlock-btn" id="bUnlock" hidden>Hold to unlock</button></div>
+    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><button type="button" class="link-test" id="bLinkTest" title="Play 1 second in silence past the end of the session, then put ProTools back">Test</button><div class="linkchip" id="bLinkChip" role="status"></div><div class="svc-chip" id="bSvcView">Service view \u00b7 hold Unlock for rehearsal tools</div><div class="reh-chip" id="bReh" hidden><span>● Rehearsal run</span><button type="button" id="bRehEnd" hidden>End rehearsal</button></div><div class="reh-chip test-chip" id="bTest" hidden><span id="bTestT">● Test run</span><button type="button" id="bTestEnd" hidden>End test</button></div><button type="button" class="back-next" id="bBackNext" hidden>↩ Back to Next Service</button><button type="button" class="unlock-btn" id="bUnlock" hidden>Hold to unlock</button></div>
     <div class="ready" id="bReady" hidden></div>
     <div class="undo-bar" id="bUndo" hidden><span id="bUndoT"></span><button type="button" id="bUndoBtn">Undo</button></div>
     <div class="b-count" id="bCountBox">
@@ -2027,7 +2033,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v139";
+  var APP_BUILD = "v140";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -3516,6 +3522,8 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
   }
   function renderTransport() {
     var rc = $("bReh"); if (rc && rc.hidden === !!state.rehearsal) rc.hidden = !state.rehearsal;
+    var bn = $("bBackNext"), offNormal = !!(state.rehearsal || (state.testRun && nowMs() < state.testRun.until) || booth.manual || booth.rehStopShown);
+    if (bn && bn.hidden === offNormal) bn.hidden = !offNormal;
     // service view: during a service, rehearsal tools step aside (holding Unlock brings them back)
     var svcView = inServiceWindow(nowMs()) && !unlockedNow();
     if (document.body.classList.contains("svc-view") !== svcView) document.body.classList.toggle("svc-view", svcView);
@@ -3676,9 +3684,10 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
       if (sp !== null && sp >= 0 && sp <= lastCalc.len + 60) {
         if (live !== null) { if ((now - startAt) / 1000 <= lastCalc.len + 1) stopped = sp; }   // stopped mid-set; once the set's time has passed, move on to Stagetime
         else if (now >= planned) { stopped = sp; notStarted = true; }           // past hit play, no start heard
-        else if (planned - now > 600000 && nowMs() - (link.lastHeard || 0) < 1800000) { stopped = sp; rehStop = true; }   // rehearsal
+        else if (planned - now > 600000 && nowMs() - (link.lastRealPlay || 0) < 1800000) { stopped = sp; rehStop = true; }   // rehearsal (real playback, not the link test)
       }
     }
+    booth.rehStopShown = rehStop;
     if (linked !== null) el = linked;
     else if (stopped !== null && stopped >= 0) el = stopped;
     var ast = autoStatus(booth.key);
@@ -4135,7 +4144,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     undo.snap = snap; $("bUndoT").textContent = label; $("bUndo").hidden = false;
     clearTimeout(undo.timer); undo.timer = setTimeout(function () { $("bUndo").hidden = true; undo.snap = null; }, 10000);
   }
-  ["bGo", "bReset", "bRehEnd", "bTestEnd"].forEach(function (id) {
+  ["bGo", "bReset", "bRehEnd", "bTestEnd", "bBackNext"].forEach(function (id) {
     var el = $(id); if (!el) return;
     el.addEventListener("click", function () {
       var snap = takeSnap(), before = JSON.stringify(snap), label = el.textContent.trim();
@@ -4146,6 +4155,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     if (!undo.snap) return;
     Object.keys(undo.snap).forEach(function (k) { if (undo.snap[k] === null) delete state[k]; else state[k] = undo.snap[k]; });
     undo.snap = null; $("bUndo").hidden = true; clearTimeout(undo.timer);
+    booth.manual = false; booth.key = null;
     ptLog("Undone"); persist(); compute(); renderBooth();
   });
   $("bRehEnd").addEventListener("click", function () { endRehearsal("ended in the booth"); });
@@ -4207,6 +4217,15 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     }, 2500);
   });
   $("bTestEnd").addEventListener("click", function () { endTestRun(); });
+  // one way back to the normal countdown: ends a rehearsal or test run, and returns from browsing other services
+  $("bBackNext").addEventListener("click", function () {
+    if (state.rehearsal) endRehearsal("Back to Next Service");
+    if (state.testRun) endTestRun();
+    booth.manual = false; booth.key = null; link.unlockUntil = 0; link.lastRealPlay = 0;
+    if ($("bCued")) $("bCued").hidden = true;
+    ptLog("Back to the next service's countdown");
+    persist(); compute(); renderBooth();
+  });
   Array.prototype.forEach.call(document.querySelectorAll("[data-test]"), function (b) {
     b.addEventListener("click", function () { startTestRun(+b.getAttribute("data-test")); });
   });
@@ -4360,6 +4379,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     if (d[0] === 0xF1) {
       var t = performance.now(), gap = t - link.lastQF;
       link.lastQF = t; link.lastHeard = nowMs(); link.lastPlayHeard = nowMs();
+      if (!link.checking) link.lastRealPlay = nowMs();
       var piece = d[1] >> 4; link.qf[piece] = d[1] & 0x0F;
       if (gap > 500) { link.qfSince = 0; link.qfMask = 0; }
       link.qfMask = (link.qfMask || 0) | (1 << piece);
@@ -4914,7 +4934,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     var st = parseTc(state.ptStart);
     return st ? { sw: false, key: key2, name: "from the top", pt: tcSecs(st) - tcSecs(parseTc("00:00:00:00")) } : null;
   }
-  function playLabel(tg) { return !tg ? "Hold to play ProTools" : tg.sw ? "Hold to play " + tg.name + " (" + fmtDur(Math.floor(tg.pt)) + ")" : "Hold to play ProTools from the top"; }
+  function playLabel(tg) { return !tg ? "Hold to play" : tg.sw ? "Hold to play " + tg.name : "Hold to play from top"; }
   function ptStartNext() {
     var tg = playTarget(); if (!tg || !link.out) return false;
     var tc = tg.sw ? secsToTc(tg.pt) : parseTc(state.ptStart);
