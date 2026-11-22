@@ -1486,7 +1486,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
               <div class="field"><label for="ptLeadSel">Cue up before start</label><select id="ptLeadSel"><option value="30">30 seconds</option><option value="60">60 seconds</option></select></div>
             </div>
             <label class="pt-ret"><input type="checkbox" id="ptReturnsChk"> When ProTools stops, it jumps back to where playback started (ProTools\u2019 Insertion Follows Playback is off)</label>
-            <label class="pt-ret"><input type="checkbox" id="ptEndStopChk"> 30 seconds past the end of the session, stop ProTools and go back to the top</label>
+            <label class="pt-ret"><input type="checkbox" id="ptEndStopChk"> 30 seconds past the end of the session, pause ProTools there</label>
             <ul class="pt-log" id="ptLog"></ul>
           </div>
         </details>
@@ -1911,7 +1911,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v116";
+  var APP_BUILD = "v117";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2956,6 +2956,14 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     }).sort(function (a, b) { return a.t - b.t || a.c.o - b.c.o; });
     return { rows: rows, key: key, startAt: startAt };
   }
+  // where ProTools is, for the booth cue sheet to follow (weekend): while it plays, or stopped before/within the set; otherwise the clock
+  function ptFollowPos(sr, now) {
+    if (!lastCalc || lastCalc.program === "switch" || !link.inp || !(link.tc || link.restoredPos != null)) return null;
+    var pos = link.tc ? ptPosNow() : link.restoredPos;
+    if (pos === null || pos < 0) return null;
+    if (ptMoving()) return pos;
+    return now < sr.startAt + (lastCalc.len + 60) * 1000 ? pos : null;
+  }
   function scrollSheetTo(host, li) {
     var box = host.closest ? host.closest(".b-right") : null;
     if (!box || !li) return;
@@ -2973,7 +2981,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   function renderLiveSheet(host, occ, now, badge) {
     if (!host) return;
     if (!lastCalc || !occ) { if (host._sig) { host.innerHTML = ""; host._sig = ""; } if (badge) badge.hidden = true; return; }
-    var sr = sheetRows(occ), rows = sr.rows;
+    var sr = sheetRows(occ), rows = sr.rows, realNow = now;
+    if (host.id === "bSheet") { var fp = ptFollowPos(sr, now); if (fp !== null) now = sr.startAt + fp * 1000; }
     var sig = sr.key + "|" + Math.round(sr.startAt) + "|" + JSON.stringify(state.swLive || 0) + "|" + rows.map(function (r) { return r.c.label + "@" + Math.round(r.t) + r.c.extra; }).join(",");
     if (host._sig !== sig) {
       host._sig = sig;
@@ -3016,7 +3025,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       // message parts: always counting down to their own time, holding at 00:00
       var cdEl = li.querySelector(".lcs-cd");
       if (cdEl) {
-        var lf = Math.max(0, Math.ceil((rows[i].t - now) / 1000)), ctx = lf >= 3600 ? fmtHMS(lf) : fmtMMSS(lf);
+        var lf = Math.max(0, Math.ceil((rows[i].t - realNow) / 1000)), ctx = lf >= 3600 ? fmtHMS(lf) : fmtMMSS(lf);
         if (cdEl._t !== ctx) { cdEl.innerHTML = monoHtml(ctx); cdEl._t = ctx; }
         var cr = lf > 0 && lf <= 30, cy = lf > 30 && lf <= 120;
         if (li.classList.contains("cd-red") !== cr) li.classList.toggle("cd-red", cr);
@@ -3922,7 +3931,19 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       if (piece === 7 && link.qfMask === 0xFF) {   // only a block made entirely of fresh pieces (none left over from before a start)
         var q = link.qf;
         link.fps = [24, 25, 29.97, 30][(q[7] >> 1) & 3];
-        link.tc = { h: q[6] | ((q[7] & 1) << 4), m: q[4] | (q[5] << 4), s: q[2] | (q[3] << 4), f: q[0] | (q[1] << 4) };
+        var tcNew = { h: q[6] | ((q[7] & 1) << 4), m: q[4] | (q[5] << 4), s: q[2] | (q[3] << 4), f: q[0] | (q[1] << 4) };
+        var stT = parseTc(state.ptStart), eNew = stT ? tcSecs(tcNew) - tcSecs(stT) : null;
+        // a jump while playing: trust the new spot only once a second block agrees (the first one after a jump can mix old and new pieces)
+        if (!link.startPending && link.tc && link.tcAt && eNew !== null && stT && link.tcLead) {
+          var eOld = tcSecs(link.tc) - tcSecs(stT), want = eOld + (t - link.tcAt) / 1000;
+          if (Math.abs(eNew - want) > 0.25) {
+            var jc = link.jumpCand;
+            if (!(jc && Math.abs(eNew - (jc.e + (t - jc.t) / 1000)) < 0.25)) { link.jumpCand = { e: eNew, t: t }; return; }
+            link.jumpCand = null;
+            link.playStart = Math.max(0, jc.e + 2 / Math.round(link.fps || 30));   // playback now runs from the new spot; that's where ProTools returns on stop
+          } else link.jumpCand = null;
+        }
+        link.tc = tcNew;
         link.tcAt = t; link.tcLead = 2 / Math.round(link.fps || 30);
         if (link.startPending) { link.startPending = false; var e0 = tcElapsed(); if (e0 !== null) link.playStart = Math.max(0, e0 + link.tcLead - (t - (link.firstQF || t)) / 1000); }
         if (link.pending && link.qfSince >= 8) resolveStart();
@@ -4080,10 +4101,11 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var end = sessionEndPT(), pos = ptPosNow();
     if (end === null || pos === null || pos < end + 30) return;
     link.endStopped = link.firstQF;
-    ptLog("ProTools ran 30 s past the end of the session, so it was stopped and sent back to the top");
+    ptLog("ProTools ran 30 s past the end of the session, so it was paused there");
+    var here = pos;
     ptSend(MMC_STOP, "Stop (end of session)", null, true);
-    var st = parseTc(state.ptStart);
-    if (st) setTimeout(function () { ptSend(mmcLocate(st), "Go to " + fmtTc(st) + " (back to the top)"); }, 700);
+    // ProTools jumps back to where playback started when it stops; put it back where it stopped (a pause)
+    setTimeout(function () { locateTo(here, "where it stopped"); }, 700);
   }
   function autoTick() {
     var now = nowMs();
