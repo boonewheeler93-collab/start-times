@@ -2020,11 +2020,10 @@ body.pt-held #vNextCd { opacity: 0.75; }
 
   // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
   // Resi cues for 11/21-22, measured from MSG START (1:22:19.23); no HANDS cue this week, Transition to CP is last
-  var WEEK_RESI = { id: "2026-11-21-resi5", msgParts: [
+  var WEEK_RESI = { id: "2026-11-21-resi6", msgParts: [
     { name: "Message Start", at: "0:00" },
     { name: "Keys Start", at: "26:58" },
     { name: "Prayer Start", at: "31:05" },
-    { name: "NKC-30", at: "32:16" },
     { name: "Transition to CP", at: "32:46" },
     { name: "Keys End", at: "42:09" }
   ] };
@@ -2033,7 +2032,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-22b";
+  var DATA_VER = "2026-11-22c";
   // how long Keys lasts (Keys to Keys End), from the message cues, or null
   function keysLasts() {
     var k = null, e = null;
@@ -2044,7 +2043,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v151";
+  var APP_BUILD = "v152";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -3799,9 +3798,11 @@ body.pt-held #vNextCd { opacity: 0.75; }
       $("bBig")._h = mh;
       var sameSvc = keyOf(mOcc) === keyOf(cur);
       $("bSub").textContent = "Hands at " + msClock(handsT) + (sameSvc ? "" : ". Next: " + cur.sv.day + " " + svcClock(cur.sv.sec) + ", ProTools start at " + msClock(startAt)); $("bSub")._h = "";
-      var ph = "", seenNext = false;
+      var ph = "", seenNext = false, shown = 0;
       lastCalc.parts.forEach(function (pt) {
         var left = Math.max(0, Math.ceil((svcT(mOcc) + pt.rel * 1000 - now) / 1000));
+        if (left === 0 || shown >= 3) return;      // just the next three
+        shown++;
         var st = left === 0 ? " done" : left <= 30 ? " red" : left <= 120 ? " yellow" : "";
         var isNext = left > 0 && !seenNext; if (isNext) seenNext = true;
         var ptT = msClock(svcT(mOcc) + pt.rel * 1000), ptS = ptT.lastIndexOf(" ");
