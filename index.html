@@ -1473,6 +1473,10 @@ body.tv-mode.drop-now .drop-take-box { background: #ff3b30; animation: none; }
 
 /* the ready check stands in for the status pills while it's up */
 body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.ready-on #bSvcView { display: none !important; }
+
+/* line the Cue Sheet heading up with the cue names below it */
+.cue-h { padding-left: 42px; }
+@media (max-width: 440px) { .cue-h { padding-left: 38px; } }
 </style>
 </head>
 <body>
@@ -1646,7 +1650,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
 
     <section class="card glass" aria-labelledby="cue-h" style="order:7">
       <div class="card-head">
-        <h2 id="cue-h">Cue Sheet</h2>
+        <h2 id="cue-h" class="cue-h">Cue Sheet</h2>
         <div class="card-meta"><span class="live-badge" id="sheetLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="sheetSvc"></span></div>
       </div>
       <div id="sheet"></div>
@@ -1789,7 +1793,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     <p class="b-keys">Space: Started. Hold S: stop ProTools. F: full screen. Esc: close. (Change the clock with Adjust clock.)</p>
     </div>
     <div class="b-right">
-      <div class="card-head"><h2>Cue Sheet</h2><div class="card-meta"><span class="live-badge" id="bLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="bSheetSvc"></span></div></div>
+      <div class="card-head"><h2 class="cue-h">Cue Sheet</h2><div class="card-meta"><span class="live-badge" id="bLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="bSheetSvc"></span></div></div>
       <div id="bSheet"></div>
     </div>
     </div>
@@ -1999,7 +2003,39 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v137";
+  var APP_BUILD = "v138";
+  (function titleCaseLabels() {
+    var SEL = "h1, h2, h3, button, .b-lab, .modechip .mt, .ready-h, .ready-pill, .svc-chip, .reh-chip > span, .cued-t small, .b-times-h, .vx-next-k, .pill-s, .live-badge, summary, label.field-l, .field > label";
+    var MINOR = { a: 1, an: 1, the: 1, and: 1, but: 1, or: 1, nor: 1, for: 1, on: 1, at: 1, to: 1, from: 1, by: 1, of: 1, "in": 1, with: 1, as: 1, vs: 1, per: 1 };
+    function fix(el) {
+      if (el.closest("[data-no-tc]")) return;
+      var first = true, walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), n;
+      while ((n = walker.nextNode())) {
+        var t = n.nodeValue, out = t.replace(/(^|[^A-Za-z'\u2019])([A-Za-z][A-Za-z'\u2019]*)/g, function (m, pre, w, off, str) {
+          var isFirst = first; first = false;
+          if (/\d\s*$/.test(str.slice(0, off + pre.length)) && /^(s|ms|min|sec|secs|h|hr|hrs|fps|am|pm)$/i.test(w)) return pre + w;   // units after a number
+          if (/^(on|off)$/i.test(w) && !/\S/.test(str.slice(off + m.length))) return pre + w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();   // "Link On"
+          if (/[A-Z]/.test(w.slice(1))) return pre + w;                  // ProTools, HANDS, OK
+          if (w.length === 1 && !isFirst && w !== "a") return pre + w;     // units like "s"
+          var lw = w.toLowerCase();
+          if (!isFirst && MINOR[lw] && pre !== "-" && !/[:\u00b7]\s*$/.test(pre)) return pre + lw;
+          return pre + w.charAt(0).toUpperCase() + w.slice(1);
+        });
+        if (out !== t) n.nodeValue = out;
+      }
+    }
+    function sweep(root) {
+      if (root.nodeType !== 1) root = root.parentElement; if (!root) return;
+      var hit = root.closest ? root.closest(SEL) : null; if (hit) fix(hit);
+      if (root.querySelectorAll) Array.prototype.forEach.call(root.querySelectorAll(SEL), fix);
+    }
+    var busy = false;
+    new MutationObserver(function (ms) {
+      if (busy) return; busy = true;
+      try { ms.forEach(function (m) { if (m.target && m.target.id !== "bBig" && m.target.id !== "bPtTc" && m.target.id !== "vNextCd") sweep(m.target); }); } finally { busy = false; }
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    sweep(document.body);
+  })();
   try { if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(function () {}); } catch (e) {}
   state.weekVer = DATA_VER;
 
@@ -4108,6 +4144,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
   $("bLinkTest").addEventListener("click", function () {
     var b = this, why = linkTestBlocked(); if (why) { flashBtn(b, why); return; }
     var back = ptPosNow(); if (back === null && link.restoredPos != null) back = link.restoredPos;
+    if (back === null) back = 0;          // nothing remembered: finish at the top of the session
     var silent = sessionEndPT() + 60, before = link.lastPlayHeard || 0;
     link.checkBack = back;
     link.checking = true; b.disabled = true; b.textContent = "Testing\u2026";
@@ -4486,8 +4523,12 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
   function endStopCheck() {
     if (link.checking || state.ptEndStop === false || linkOff() || !link.out || !link.inp || !ptMoving()) return;
     if (link.endStopped && link.endStopped === link.firstQF) return;
+    // only trust timecode heard since this playback began (never a position left over from before), and no unconfirmed jump
+    if (link.startPending || link.jumpCand || !link.tcAt || !link.firstQF || link.tcAt <= link.firstQF + 40) { link.endSeen = 0; return; }
     var end = sessionEndPT(), pos = ptPosNow();
-    if (end === null || pos === null || pos < end + 30) return;
+    if (end === null || pos === null || pos < end + 30) { link.endSeen = 0; return; }
+    if (!link.endSeen) { link.endSeen = link.tcAt; return; }          // first block past the line: wait for the next one
+    if (link.tcAt === link.endSeen) return;                           // same block: still waiting
     link.endStopped = link.firstQF;
     ptLog("ProTools ran 30 s past the end of the session, so it was paused there");
     var here = pos;
