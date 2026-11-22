@@ -1372,6 +1372,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 .unlock-btn.holding { background: rgba(255,194,114,0.3); }
 .linkchip.unlocked { color: #ffd59a; border-color: rgba(255,194,114,0.7); background: rgba(255,194,114,0.14); }
 .linkchip.unlocked .lc-dot { background: #ffc272; animation: lcPulse 1s ease-in-out infinite; }
+
+.b-pt-play.tap { background: color-mix(in srgb, #4ade80 22%, transparent); border-color: #4ade80; color: #d6ffe4; font-weight: 800; }
+.b-pt-stop.tap { background: color-mix(in srgb, #ff5a4f 16%, transparent); border-color: #ff6b62; color: #ffd2cf; font-weight: 800; }
 </style>
 </head>
 <body>
@@ -1885,7 +1888,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v99";
+  var APP_BUILD = "v100";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -3168,6 +3171,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       if (lc._h !== lh) { lc.innerHTML = lh; lc._h = lh; }
       if (lc.className !== "linkchip " + lcls) lc.className = "linkchip " + lcls;
     }
+    var rh = !inServiceWindow(nowMs()), pb = $("bPtPlay"), sb = $("bPtStop");
+    if (pb && Date.now() - (pb._fired || 0) > 2100) { var pt0 = rh ? "\u25b6 Play from here" : "Hold to play from here"; if (pb.textContent !== pt0) pb.textContent = pt0; pb.classList.toggle("tap", rh); }
+    if (sb && Date.now() - (sb._fired || 0) > 2100) { var st0 = rh ? "\u25a0 Stop" : "Hold to stop"; if (sb.textContent !== st0) sb.textContent = st0; sb.classList.toggle("tap", rh); if (rh) sb.hidden = false; }
     var box = $("bPt"); if (!box) return;
     var on = !!link.midi && !!link.out;
     document.body.classList.toggle("pt-linked", on);
@@ -3188,7 +3194,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if ($("bPtNote").textContent !== note) $("bPtNote").textContent = note;
     $("bPtNote").hidden = !note;
     ["bPtPlay", "bPtStop"].forEach(function (id) { $(id).classList.toggle("is-off", off); $(id).setAttribute("aria-disabled", off ? "true" : "false"); });
-    $("bPtPlay").hidden = moving; $("bPtStop").hidden = true;
+    var rehearse = !inServiceWindow(nowMs());
+    $("bPtPlay").hidden = rehearse ? false : moving; $("bPtStop").hidden = !rehearse;
     var st = $("bStop"), showStop = moving || !link.inp;
     if (st.hidden !== !showStop) st.hidden = !showStop;
     st.classList.toggle("is-off", off);
@@ -3953,7 +3960,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if (n && !state.skips[n.key]) {
       var d = link.done[n.key] || (link.done[n.key] = {}), left = n.pt - now;
       // 30 seconds out: stop anything left running and cue up the top of the session
-      if (!d.cue && left <= (+state.cueLead || 30) * 1000 && left > -1000) {
+      if (!d.cue && left <= (+state.cueLead || 30) * 1000 && left > -3000) {
         d.cue = true;
         if (ptLocked() && !fromTop()) { link.result = "ProTools was already playing at cue time, so auto-start left it alone. Stop it and the app will cue the top before " + msClock(n.pt) + "."; link.resultBad = true; ptLog("ProTools already playing at cue time; auto-start stood down"); }
         else cueUp(n.sw ? n.segPt : null);
@@ -3968,8 +3975,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         }
       }
       // 5 seconds out: hand Play to MIDI with an exact timestamp for the start time
-      if (!d.play && left <= 5000 && left > -1000) {
+      if (!d.play && left <= 5000 && left > -3000) {
         d.play = true;
+        if (left < -150) ptLog("Auto-start check ran " + (-left / 1000).toFixed(1) + " s late, so Play went out right away");
         if (ptMoving() && fromTop()) ptLog("ProTools is already playing, so auto-start stood down");
         else if (ptSend(MMC_PLAY, "Play (auto-start" + (n.sw ? ", " + n.name : "") + ")", performance.now() + Math.max(0, left))) {
           var tgt = n.pt; link.watch = { target: tgt, key: n.key };
@@ -4079,6 +4087,12 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if (!document.hidden && state.auto && link.out) ptLog("This window was hidden. Keep it visible so auto-start runs on time.");
   });
   setInterval(autoTick, 100);
+  // Chrome slows timers in a hidden tab (the booth behind ProTools) to as little as once a minute;
+  // a worker's timer isn't slowed that way, so it also drives auto-start
+  try {
+    var tickWorker = new Worker(URL.createObjectURL(new Blob(["setInterval(function(){postMessage(0)},200)"], { type: "text/javascript" })));
+    tickWorker.onmessage = function () { if (document.hidden) autoTick(); };
+  } catch (e) {}
   if (state.ptOut) ptConnect(true);
 
   // ---------- sync across devices (Firebase Realtime Database) ----------
@@ -4387,14 +4401,21 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     renderTransport();
   }, 2000);
   function flashBtn(el, txt) { var old = el.textContent; el.textContent = txt; setTimeout(function () { el.textContent = old; }, 2000); }
-  holdToFire($("bPtPlay"), function () {
-    if (linkOff()) return flashBtn($("bPtPlay"), "Link is off");
-    if (ptSend(MMC_PLAY, "Play (from here)")) flashBtn($("bPtPlay"), "Playing");
-  });
-  holdToFire($("bPtStop"), function () {
-    if (linkOff()) return flashBtn($("bPtStop"), "Link is off");
-    if (ptSend(MMC_STOP, "Stop")) flashBtn($("bPtStop"), "Stopped");
-  });
+  function ptPlayHere(el) {
+    el._fired = Date.now();
+    if (linkOff()) return flashBtn(el, "Link is off");
+    if (ptSend(MMC_PLAY, "Play (from here)")) flashBtn(el, "Playing");
+  }
+  function ptStopHere(el) {
+    el._fired = Date.now();
+    if (linkOff()) return flashBtn(el, "Link is off");
+    if (ptSend(MMC_STOP, "Stop")) flashBtn(el, "Stopped");
+  }
+  holdToFire($("bPtPlay"), function () { ptPlayHere($("bPtPlay")); });
+  holdToFire($("bPtStop"), function () { ptStopHere($("bPtStop")); });
+  // rehearsal (outside a service): a single tap is enough
+  $("bPtPlay").addEventListener("click", function () { var el = this; if (!inServiceWindow(nowMs()) && Date.now() - (el._fired || 0) > 1500) ptPlayHere(el); });
+  $("bPtStop").addEventListener("click", function () { var el = this; if (!inServiceWindow(nowMs()) && Date.now() - (el._fired || 0) > 1500) ptStopHere(el); });
   (function () {
     var mem = $("bMem"), t = null, btn = null;
     function go(b) {
