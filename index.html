@@ -1388,6 +1388,12 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 .cued-play::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: #4ade80; }
 .cued-play.holding::after { width: 100%; transition: width var(--hold, 1s) linear; }
 .cued-x { flex: none; border: 0; background: transparent; color: var(--ink-3, #8a93b3); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 40px; min-height: 40px; }
+
+.nudge-btn { flex: none; font: inherit; font-weight: 800; font-size: 1rem; min-height: 48px; min-width: 64px; padding: 0 12px; border-radius: 14px; cursor: pointer;
+  color: var(--ink, #eef1ff); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); }
+.nudge-btn:active { background: rgba(255,255,255,0.16); }
+.b-pt-nudge { grid-column: 1 / -1; display: flex; gap: 10px; justify-content: center; }
+.b-pt-nudge .nudge-btn { flex: 1; max-width: 180px; }
 </style>
 </head>
 <body>
@@ -1681,8 +1687,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       <p class="b-pt-note" id="bPtNote"></p>
       <div class="b-pt-btns">
         <button type="button" class="ghost hold-btn b-pt-play" id="bPtPlay">Hold to play from here</button>
-        <div class="cued-bar" id="bCued" hidden><div class="cued-t"><small>Cued</small><span id="bCuedName"></span></div><button type="button" class="hold-btn cued-play" id="bCuedPlay">▶ Play from here</button><button type="button" class="cued-x" id="bCuedX" aria-label="Close">✕</button></div>
+        <div class="cued-bar" id="bCued" hidden><div class="cued-t"><small>Cued</small><span id="bCuedName"></span></div><button type="button" class="hold-btn cued-play" id="bCuedPlay">▶ Play from here</button><button type="button" class="nudge-btn" data-nudge="-10">−10 s</button><button type="button" class="nudge-btn" data-nudge="10">+10 s</button><button type="button" class="cued-x" id="bCuedX" aria-label="Close">✕</button></div>
         <button type="button" class="ghost hold-btn b-pt-stop" id="bPtStop">Hold to stop</button>
+        <div class="b-pt-nudge"><button type="button" class="nudge-btn" data-nudge="-10">−10 s</button><button type="button" class="nudge-btn" data-nudge="10">+10 s</button></div>
       </div>
       <p class="b-mem-h">Hold a moment on the cue sheet for 1 second to cue ProTools there.</p>
       <div class="b-mem" id="bMem" hidden></div>
@@ -1904,7 +1911,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v115";
+  var APP_BUILD = "v116";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -4546,6 +4553,22 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   holdToFire($("bCuedPlay"), function () { ptPlayHere($("bCuedPlay")); });
   $("bCuedPlay").addEventListener("click", function () { var el = this; if (!inServiceWindow(nowMs()) && Date.now() - (el._fired || 0) > 1500) ptPlayHere(el); });
   $("bCuedX").addEventListener("click", function () { $("bCued").hidden = true; });
+  // -10 s / +10 s: from where ProTools is (stopped or playing); the service lock still applies while it plays
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".nudge-btn") : null; if (!b || !link.out) return;
+    var d = +b.getAttribute("data-nudge"), base = ptPosNow();
+    if (base === null && link.cued) base = link.cued.at + link.cued.off;
+    if (base === null) { flashBtn(b, "Play once first"); return; }
+    var tgt = Math.max(0, base + d);
+    if (linkOff()) { flashBtn(b, "Link is off"); return; }
+    if (!locateTo(tgt, (d < 0 ? "back " : "ahead ") + Math.abs(d) + " s")) { flashBtn(b, ptLocked() ? "Locked" : "Not sent"); return; }
+    if (link.cued && !$("bCued").hidden) {
+      link.cued.off = Math.round((tgt - link.cued.at) * 10) / 10;
+      var o = link.cued.off;
+      $("bCuedName").textContent = link.cued.name + (o ? " " + (o < 0 ? "\u2212" : "+") + Math.abs(o) + " s" : "") + " (" + fmtPT(tgt) + ")";
+      link.cuedAt = Date.now();
+    }
+  });
   holdToFire($("bPtStop"), function () { ptStopHere($("bPtStop")); });
   // rehearsal (outside a service): a single tap is enough
   $("bPtPlay").addEventListener("click", function () { var el = this; if (!inServiceWindow(nowMs()) && Date.now() - (el._fired || 0) > 1500) ptPlayHere(el); });
@@ -4583,6 +4606,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         if (locateTo(+li.getAttribute("data-pt"), li.getAttribute("data-name"))) {
           li.classList.add("cue-sent"); setTimeout(function () { li.classList.remove("cue-sent"); }, 900);
           var pv = +li.getAttribute("data-pt");
+          link.cued = { name: li.getAttribute("data-name"), at: pv, off: 0 };
           $("bCuedName").textContent = li.getAttribute("data-name") + " (" + fmtPT(pv) + ")";
           $("bCued").hidden = false; link.cuedAt = Date.now();
         }
