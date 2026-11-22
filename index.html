@@ -1892,7 +1892,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v105";
+  var APP_BUILD = "v106";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -3281,10 +3281,15 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var rawLinked = linkElapsed();
     var rehearsal = live === null && rawLinked !== null && rawLinked >= 0 && rawLinked <= lastCalc.len + 60;
     var linked = live !== null || rehearsal ? rawLinked : null;
-    var stopped = live !== null && linked === null ? ptStoppedAt() : null;
-    var rehStop = false;
-    if (live === null && linked === null && planned - now > 600000 && link.inp && link.tc && nowMs() - (link.lastHeard || 0) < 1800000) {
-      var sp = ptStoppedAt(); if (sp !== null && sp >= 0 && sp <= lastCalc.len + 60) { stopped = sp; rehStop = true; }
+    // with the ProTools link hearing ProTools, a stopped ProTools is shown where it really is, never a counter running on the plan
+    var stopped = null, rehStop = false, notStarted = false;
+    if (linked === null && link.inp && link.tc) {
+      var sp = ptStoppedAt();
+      if (sp !== null && sp >= 0 && sp <= lastCalc.len + 60) {
+        if (live !== null) stopped = sp;                                        // the service started; ProTools is stopped now
+        else if (now >= planned) { stopped = sp; notStarted = true; }           // past hit play, no start heard
+        else if (planned - now > 600000 && nowMs() - (link.lastHeard || 0) < 1800000) { stopped = sp; rehStop = true; }   // rehearsal
+      }
     }
     if (linked !== null) el = linked;
     else if (stopped !== null && stopped >= 0) el = stopped;
@@ -3307,9 +3312,9 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       if (el <= L && stopped !== null && stopped >= 0 && linked === null) {
         // ProTools is stopped: hold the counter where it stopped
         booth.cOn = false;
-        $("bLab").textContent = "ProTools stopped";
+        $("bLab").textContent = notStarted ? "ProTools stopped \u00b7 not started yet" : "ProTools stopped";
         var sh = monoHtml(fmtCounter(stopped)); if ($("bBig")._h !== sh) { $("bBig").innerHTML = sh; $("bBig")._h = sh; }
-        var dh = (rehStop ? "Rehearsal \u00b7 hit play at " + msClock(planned) : 'Stopped at ' + fmtPT(stopped)) + (lastCalc.noDrop ? "" : '. Drop screen at <span class="drop-t">' + fmtDur(dropEl) + "</span>");
+        var dh = (rehStop ? "Rehearsal \u00b7 hit play at " + msClock(planned) : notStarted ? "Hit play was " + msClock(planned) + ". Start ProTools to begin" : 'Stopped at ' + fmtPT(stopped)) + (lastCalc.noDrop ? "" : '. Drop screen at <span class="drop-t">' + fmtDur(dropEl) + "</span>");
         if ($("bSub")._h !== dh) { $("bSub").innerHTML = dh; $("bSub")._h = dh; }
       } else if (el <= L) {
         $("bLab").textContent = rehearsal ? "ProTools \u00b7 rehearsal" : linked !== null ? "ProTools, linked" : "ProTools";
@@ -3862,9 +3867,10 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       var t = performance.now(), gap = t - link.lastQF;
       link.lastQF = t; link.lastHeard = nowMs();
       var piece = d[1] >> 4; link.qf[piece] = d[1] & 0x0F;
-      if (gap > 500) link.qfSince = 0;
+      if (gap > 500) { link.qfSince = 0; link.qfMask = 0; }
+      link.qfMask = (link.qfMask || 0) | (1 << piece);
       link.qfSince = (link.qfSince || 0) + 1;
-      if (piece === 7) {
+      if (piece === 7 && link.qfMask === 0xFF) {   // only a block made entirely of fresh pieces (none left over from before a start)
         var q = link.qf;
         link.fps = [24, 25, 29.97, 30][(q[7] >> 1) & 3];
         link.tc = { h: q[6] | ((q[7] & 1) << 4), m: q[4] | (q[5] << 4), s: q[2] | (q[3] << 4), f: q[0] | (q[1] << 4) };
