@@ -1433,6 +1433,10 @@ h2, .card-head h2 { font-size: 1.35rem; }
 .link-test.ok { color: #b8f5c8; border-color: #4ade80; } .link-test.bad { color: #ffd2cf; border-color: #ff6b62; }
 .link-test:disabled { opacity: 0.7; cursor: default; }
 .link-test[hidden] { display: none; }
+
+.modechip.spin .dot { background: transparent !important; border: 2px solid currentColor; border-right-color: transparent; box-sizing: border-box; animation: chipSpin 0.8s linear infinite; box-shadow: none !important; }
+@keyframes chipSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .modechip.spin .dot { animation-duration: 2.4s; } }
 </style>
 </head>
 <body>
@@ -1957,7 +1961,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v132";
+  var APP_BUILD = "v133";
   try { if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(function () {}); } catch (e) {}
   state.weekVer = DATA_VER;
 
@@ -3433,11 +3437,11 @@ h2, .card-head h2 { font-size: 1.35rem; }
     if (!on) { $("bStop").hidden = true; return; }
     var off = linkOff(), moving = ptMoving(), pos = link.tc ? tcElapsed() : null;
     if (!booth.ptRaf) { booth.ptRaf = true; requestAnimationFrame(function readout() {
-      var p = link.tc ? ptPosNow() : null, tx = p === null ? "--:--.---" : fmtPT(p), el = $("bPtTc");
+      var p = link.tc ? ptPosNow() : link.restoredPos != null ? link.restoredPos : null, tx = p === null ? "--:--.---" : fmtPT(p), el = $("bPtTc");
       if (el && el.textContent !== tx) el.textContent = tx;
       if (booth.open) requestAnimationFrame(readout); else booth.ptRaf = false;
     }); }
-    var pill = $("bPtPill"), pt = !link.inp ? "Not listening" : !link.tc ? "No timecode" : moving ? "Playing" : "Stopped", pc = "pill-s" + (moving ? " play" : link.tc ? " stopped" : "");
+    var pill = $("bPtPill"), known = link.tc || link.restoredPos != null, pt = !link.inp ? "Not listening" : !known ? "No timecode" : moving ? "Playing" : "Stopped", pc = "pill-s" + (moving ? " play" : known ? " stopped" : "");
     if (pill.textContent !== pt) pill.textContent = pt;
     if (pill.className !== pc) pill.className = pc;
     var lt = $("bLinkTog"), ltx = off ? "Link off" : "Link on";
@@ -4001,6 +4005,21 @@ h2, .card-head h2 { font-size: 1.35rem; }
     var h = link.lastPlayHeard || 0;   // ProTools played (and sent timecode) since this page loaded
     return !!(link.inp && h && nowMs() - h < 12 * 3600000);
   }
+  // after each load of booth mode: once the link is up, run the silent test automatically (if it's safe to)
+  setTimeout(function autoTest() {      // after the whole app (and its ProTools link) has set up
+    link.autoTestPending = /^#booth$/i.test(location.hash);
+    var tries = 0, t = setInterval(function () {
+      tries++;
+      if (!link.autoTestPending) { clearInterval(t); return; }
+      if (!link.out || !link.inp || !lastCalc) { if (tries > 40) { link.autoTestPending = false; clearInterval(t); } return; }   // wait up to ~20 s for MIDI
+      if (tries < 5) return;                                     // let the page settle (~2.5 s)
+      clearInterval(t);
+      var why = linkTestBlocked();
+      link.autoTestPending = false;
+      if (!why) { ptLog("Automatic link test after loading"); $("bLinkTest").click(); }
+      else ptLog("Automatic link test skipped: " + why);
+    }, 500);
+  }, 0);
   function linkTestBlocked() {
     if (!link.out || !link.inp) return "Connect first";
     if (linkOff()) return "Link is off";
@@ -4022,6 +4041,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     setTimeout(function () {
       if (back !== null) locateTo(back, "back where it was");
       var ok = (link.lastPlayHeard || 0) > before;
+      link.testFailedAt = ok ? null : Date.now();
       setTimeout(function () {
         link.checking = false; link.checkBack = null; b.disabled = false;
         if (back !== null) {
@@ -4074,6 +4094,10 @@ h2, .card-head h2 { font-size: 1.35rem; }
     if (!state.auto) return { fires: false, level: "manual", text: "Manual start", sub: "Auto-start is off" };
     if (!link.out || link.out.state === "disconnected") return { fires: false, level: "bad", text: "Auto-start offline", sub: "Can\u2019t reach ProTools. Hit play yourself." };
     if (key && state.skips[key]) return { fires: false, level: "manual", text: "Manual start", sub: "Auto-start skipped for this service" };
+    if (link.checking) return { fires: true, level: "warn", spin: true, text: "Checking link\u2026", sub: "Playing 1 second in silence past the end, then back" };
+    if (link.inp && link.autoTestPending && !link.lastPlayHeard) return { fires: true, level: "warn", spin: true, text: "Checking link\u2026", sub: "Starting the automatic test" };
+    if (link.testFailedAt && !(link.lastPlayHeard > link.testFailedAt)) return { fires: true, level: "bad", text: "No timecode came back", sub: "Play was sent; check ProTools\u2019 MTC Generator port, then tap Test" };
+    if (link.inp && link.lastPlayHeard) return { fires: true, level: "ok", text: "Link confirmed", sub: "ProTools answered at " + msClock(link.lastPlayHeard) };
     if (link.inp && link.lastHeard) return { fires: true, level: "ok", text: "Auto-start ready", sub: "ProTools answered at " + msClock(link.lastHeard) };
     if (link.inp && link.heardBefore && nowMs() - link.heardBefore < 12 * 3600000) return { fires: true, level: "ok", text: "Auto-start ready", sub: "ProTools answered today at " + msClock(link.heardBefore) + " \u00b7 tap Test to re-check" };
     // pressing Play only needs the connection to ProTools; hearing its timecode just confirms afterwards
@@ -4086,7 +4110,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
   function paintChip(el, st) {
     var h = '<span class="dot" aria-hidden="true"></span><span class="mt">' + esc(st.text) + '</span><span class="ms">' + esc(st.sub) + "</span>";
     if (el._h !== h) { el.innerHTML = h; el._h = h; }
-    var c = "modechip lvl-" + st.level;
+    var c = "modechip lvl-" + st.level + (st.spin ? " spin" : "");
     if (el.className !== c) el.className = c;
   }
   function checkLink() {
