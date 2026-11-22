@@ -87,7 +87,7 @@ def plan_detail(type_id, plan):
             "description": a.get("description"), "key": a.get("key_name"),
             "notes": nn,
             # only songs and the walk-in have a leader; other items use "+" for bullet points
-            "lead": find_lead(a.get("description"), nn) if (a.get("item_type") == "song" or re.match(r"\s*walk-?in", a.get("title") or "", re.I)) else None,
+            "lead": find_lead(a.get("description"), nn) if (a.get("item_type") == "song" or re.match(r"\s*(walk-?in|pastoral moment)", a.get("title") or "", re.I)) else None,
         })
     times, _ = get_all(f"/service_types/{type_id}/plans/{pid}/plan_times")
     return {
@@ -99,21 +99,38 @@ def plan_detail(type_id, plan):
 
 
 def find_lead(desc, notes):
-    """Who's leading: a '+ Name' line, or a Lead/Who/Person note. Day splits like 'Jill (SAT) / Tara (SUN)' become a dict."""
+    """Who's leading, from every '+ Name' line (or a Lead/Who/Person note).
+    'Ady (SAT) / Tara (SUN)' and 'Kari / Ana (SAT)' + 'Boone / Ana (SUN)' on separate lines become {'Saturday': ..., 'Sunday': ...};
+    a line with no day applies to both days."""
     text = ""
     for n in notes or []:
         if (n.get("category") or "").lower() in ("lead", "who", "person", "worship leader", "vocals"):
             text = n.get("content") or ""
             if text.strip():
                 break
-    m = re.search(r"^\s*\+\s*(.+)$", (desc or "") + "\n" + text, re.M)
-    raw = (m.group(1) if m else text).strip()
-    if not raw:
-        return None
-    parts = re.findall(r"([A-Za-z][\w .'\-]*?)\s*\((SAT|SATURDAY|SUN|SUNDAY)\)", raw, re.I)
-    if parts:
-        return {("Saturday" if d.upper().startswith("SAT") else "Sunday"): n.strip() for n, d in parts}
-    return raw.splitlines()[0].strip()
+    lines = [m.group(1).strip() for m in re.finditer(r"^\s*\+\s*(.+)$", (desc or "") + "\n" + text, re.M)]
+    if not lines and text.strip():
+        lines = [l.strip() for l in text.splitlines() if l.strip()][:1]
+    days, undayed = {}, []
+    tag = re.compile(r"\((SAT|SATURDAY|SUN|SUNDAY)\)", re.I)
+    for line in lines:
+        if tag.search(line):
+            pos = 0
+            for m in tag.finditer(line):
+                names = line[pos:m.start()].strip().strip("/").strip()
+                pos = m.end()
+                if names:
+                    day = "Saturday" if m.group(1).upper().startswith("SAT") else "Sunday"
+                    days[day] = (days[day] + " / " + names) if day in days else names
+        elif line:
+            undayed.append(line)
+    if days:
+        both = " / ".join(undayed)
+        if both:
+            for d in ("Saturday", "Sunday"):
+                days.setdefault(d, both)
+        return days
+    return " / ".join(undayed) if undayed else None
 
 
 def main():
