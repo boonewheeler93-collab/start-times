@@ -1512,6 +1512,9 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
 #bCountBox .b-big { display: inline-block; white-space: nowrap; font-size: clamp(5.2rem, 30vw, 13rem); font-weight: 800; letter-spacing: -0.035em; line-height: 0.95; }
 .b-clock { font-size: clamp(3.4rem, 17vw, 8rem); font-weight: 700; opacity: 0.92; }
 .linkchip[hidden] { display: none; }
+
+.vx-held { display: inline-block; margin-right: 8px; padding: 2px 10px; border-radius: 999px; font-size: 0.8em; font-weight: 800; color: #ffd2cf; background: rgba(255,90,79,0.18); border: 1px solid rgba(255,107,98,0.6); }
+body.pt-held #vNextCd { opacity: 0.75; }
 </style>
 </head>
 <body>
@@ -2038,7 +2041,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v144";
+  var APP_BUILD = "v145";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -2813,7 +2816,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
             var label = it.name || (i === 0 ? "First worship song" : "Song " + it.songN);
             add(label, at, "song", "", pcLead(it.name) || it.lead);
           } else {
-            add("Toss" + (it.name ? ": " + it.name : ""), at, "toss", it.len > 0 ? "Lasts " + fmtDur(it.len) : "", it.lead);
+            add("Toss" + (it.name ? ": " + it.name : ""), at, "toss", it.len > 0 ? "Lasts " + fmtDur(it.len) : "", pcLeadAny(it.name) || it.lead);
           }
           cum += it.len;
         });
@@ -3013,6 +3016,12 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
   function pcLead(label) {
     var n = normTitle(label); if (!n) return null;
     var hit = null; pcSongs().forEach(function (i) { if (!hit && i.lead && normTitle(i.title) === n) hit = i.lead; });
+    return hit;
+  }
+  // a leader for any Planning Center item with one (like Pastoral Moment), matched by title
+  function pcLeadAny(label) {
+    var n = normTitle(label); if (!n || !PC || !PC.weekend) return null;
+    var hit = null; PC.weekend.items.forEach(function (i) { if (!hit && i.lead && normTitle(i.title) === n) hit = i.lead; });
     return hit;
   }
   function pcWalk() {
@@ -3326,7 +3335,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     if (!lastCalc || !occ) { if (host._sig) { host.innerHTML = ""; host._sig = ""; } if (badge) badge.hidden = true; return; }
     var sr = sheetRows(occ), rows = sr.rows, realNow = now;
     if (host.id === "bSheet") { var fp = ptFollowPos(sr, now); if (fp !== null) now = sr.startAt + fp * 1000; }
-    var sig = sr.key + "|" + Math.round(sr.startAt) + "|" + JSON.stringify(state.swLive || 0) + "|" + rows.map(function (r) { return r.c.label + "@" + Math.round(r.t) + r.c.extra; }).join(",");
+    var sig = sr.key + "|" + Math.round(sr.startAt) + "|" + JSON.stringify(state.swLive || 0) + "|" + rows.map(function (r) { return r.c.label + "@" + Math.round(r.t) + r.c.extra + "~" + JSON.stringify(r.c.lead || ""); }).join(",");
     if (host._sig !== sig) {
       host._sig = sig;
       var h = '<div class="lcs"><div class="lcs-rail" aria-hidden="true"><div class="lcs-fill"></div><div class="lcs-now"></div></div><ol class="lcs-list">';
@@ -4941,7 +4950,8 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     if (role !== sync.role) { sync.role = role; sync.db.ref("startTimes/presence/" + sync.device).update({ role: role, at: Date.now() }); }
     if (role !== "booth") return;
     var n = nextAuto(nowMs()), st = autoStatus(n ? n.key : null);
-    var t = { level: st.level, text: st.text, sub: st.sub, fires: !!st.fires, tc: link.tc ? fmtTc(link.tc) : "", playing: ptMoving(), result: link.result || "" };
+    var pp = link.tc ? ptPosNow() : null;
+    var t = { level: st.level, text: st.text, sub: st.sub, fires: !!st.fires, tc: link.tc ? fmtTc(link.tc) : "", pos: pp == null ? null : Math.round(pp * 100) / 100, playing: ptMoving(), result: link.result || "" };
     var js = JSON.stringify(t), now = Date.now();
     if (js !== sync.lastTele || now - sync.teleAt > 5000) { sync.lastTele = js; sync.teleAt = now; t.at = now; sync.db.ref("startTimes/booth").set(t); }
   }
@@ -5498,6 +5508,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     var m = /^(\d+):(\d+):(\d+):(\d+)$/.exec(t.tc); if (!m) return null;
     var sec = +m[1] * 3600 + +m[2] * 60 + +m[3] + +m[4] / 30;
     var st = parseTc(state.ptStart); if (st) sec -= tcSecs(st);
+    if (t.pos != null) sec = +t.pos;           // the booth's own reading (includes ProTools' jump back on Stop)
     return { sec: sec, playing: !!t.playing, at: t.at };
   }
   function ptcFrame() {
@@ -5554,7 +5565,16 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     occ.forEach(function (o) { if (!pick && now < o.t + ((lastCalc.tail || lastCalc.msg || 0) + 5) * 1000) pick = o; });
     var focus = pick ? sheetFocus(now, pick) : heldOcc(now);
     if (!focus) focus = occ[0];
-    var rows = viewRows(focus), nextI = -1;
+    var rows = viewRows(focus), nextI = -1, viewHeld = false;
+    if (lastCalc.program !== "switch" && state.live && state.live.key === keyOf(focus)) {
+      var bp = boothPT(), s0 = state.live.at;
+      if (bp) {
+        var ppos = bp.sec + (bp.playing ? (Date.now() - bp.at) / 1000 : 0);
+        if (bp.playing && ppos >= 0 && ppos <= lastCalc.len + 30) now = s0 + ppos * 1000;
+        else if (!bp.playing && ppos >= 0 && ppos <= lastCalc.len && now < s0 + (lastCalc.len + 1) * 1000) { now = s0 + ppos * 1000; viewHeld = true; }
+      }
+    }
+    document.body.classList.toggle("pt-held", viewHeld);
     rows.forEach(function (r, i) { if (nextI < 0 && r.t > now) nextI = i; });
     var started = rows.length && now >= rows[0].t, done = started && nextI < 0;
     var svcT = (lastCalc.program === "switch" ? "SWITCH " : focus.sv.day + " ") + svcClock(focus.sv.sec);
@@ -5583,7 +5603,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     nx.hidden = done || !rows.length;
     if (!nx.hidden) {
       var r = rows[nextI], left = Math.ceil((r.t - now) / 1000);
-      setHtml($("vNextK"), (started ? "" : "First up ") + '<span class="vx-chip" data-g="' + r.g + '">' + esc(r.n) + "</span> in");
+      setHtml($("vNextK"), (viewHeld ? '<span class="vx-held">ProTools Stopped</span> ' : "") + (started ? "" : "First up ") + '<span class="vx-chip" data-g="' + r.g + '">' + esc(r.n) + "</span> in");
       setHtml($("vNextCd"), monoHtml(left >= 3600 ? fmtHMS(left) : fmtMMSS(left)));
       fitCountdown();
       setHtml($("vNextSub"), "at " + vTime(r.t) + (r.g === "drop" && r.pt != null ? ' <span class="vx-pt">ProTools ' + fmtDur(Math.round(r.pt)) + "</span>" : ""));
