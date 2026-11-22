@@ -2043,7 +2043,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v146";
+  var APP_BUILD = "v147";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -3152,6 +3152,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     if (!lastCalc || lastCalc.program === "switch" || state.rehearsal) return false;
     var now = nowMs(), occs = occurrences(now), o = null;
     occs.forEach(function (x) { if (!o && keyOf(x) === booth.key) o = x; }); if (!o) o = occs[0]; if (!o) return false;
+    if (state.testRun) { var tk0 = null; occurrences(now - 3 * 3600000).forEach(function (x) { if (isTestOcc(x)) tk0 = keyOf(x); }); if (tk0 && state.live && state.live.key === tk0) state.live = null; state.testRun = null; }
     var planned = o.t + lastCalc.startRel * 1000, base = +state.clockOff || 0;
     state.rehearsal = { base: base, key: keyOf(o), at: Date.now() };
     state.clockOff = base + (planned + e * 1000 - now);
@@ -3270,6 +3271,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
   }
   function startTestRun(min) {
     if (!lastCalc) return;
+    if (state.rehearsal) endRehearsal("a test run started");
     var now = nowMs(), sr = lastCalc.startRel * 1000;
     // hit play exactly `min` minutes from now (to the second)
     var svcAt = Math.round((now + min * 60000 - sr) / 1000) * 1000, d = new Date(svcAt);
@@ -4953,7 +4955,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     if (role !== "booth") return;
     var n = nextAuto(nowMs()), st = autoStatus(n ? n.key : null);
     var pp = link.tc ? ptPosNow() : null;
-    var t = { level: st.level, text: st.text, sub: st.sub, fires: !!st.fires, tc: link.tc ? fmtTc(link.tc) : "", pos: pp == null ? null : Math.round(pp * 100) / 100, playing: ptMoving(), result: link.result || "" };
+    var t = { level: st.level, text: st.text, sub: st.sub, fires: !!st.fires, tc: link.tc ? fmtTc(link.tc) : "", pos: pp == null ? null : Math.round(pp * 100) / 100, playing: ptMoving(), result: link.result || "", focus: booth.open && booth.key ? booth.key : null };
     var js = JSON.stringify(t), now = Date.now();
     if (js !== sync.lastTele || now - sync.teleAt > 5000) { sync.lastTele = js; sync.teleAt = now; t.at = now; sync.db.ref("startTimes/booth").set(t); }
   }
@@ -5569,6 +5571,13 @@ body.pt-held #vNextCd { opacity: 0.75; }
     occ.forEach(function (o) { if (!pick && now < o.t + ((lastCalc.tail || lastCalc.msg || 0) + 5) * 1000) pick = o; });
     var focus = pick ? sheetFocus(now, pick) : heldOcc(now);
     if (!focus) focus = occ[0];
+    // follow the booth: show the same service it shows
+    var tbF = (sync && (sync.booth || sync.pubBooth)) || null, rxF = tbF ? (tbF === sync.booth ? sync.boothRx : sync.pubBoothRx) : 0;
+    if (tbF && tbF.focus && Date.now() - (rxF || 0) < 20000) {
+      occurrences(now - 6 * 3600000).forEach(function (o) { if (keyOf(o) === tbF.focus) focus = o; });
+    } else if (state.rehearsal && state.rehearsal.key) {
+      occurrences(now - 6 * 3600000).forEach(function (o) { if (keyOf(o) === state.rehearsal.key) focus = o; });
+    }
     var rows = viewRows(focus), nextI = -1, viewHeld = false;
     if (lastCalc.program !== "switch" && state.live && state.live.key === keyOf(focus)) {
       var bp = boothPT(), s0 = state.live.at;
@@ -5582,7 +5591,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     if (/[?&]debug\b/.test(location.search)) {
       var dbg = $("vDebug"); if (!dbg) { dbg = document.createElement("pre"); dbg.id = "vDebug"; document.body.appendChild(dbg); }
       var tb = (sync && (sync.booth || sync.pubBooth)) || null, rxx = tb ? (tb === sync.booth ? sync.boothRx : sync.pubBoothRx) : 0;
-      dbg.textContent = "service shown: " + keyOf(focus) + "\nstarted (live): " + (state.live ? state.live.key + " at " + new Date(state.live.at).toLocaleTimeString() : "none") +
+      dbg.textContent = "service shown: " + keyOf(focus) + "\nbooth is showing: " + (tb && tb.focus ? tb.focus : "unknown") + "\nrehearsal: " + (state.rehearsal ? "on" : "off") + " \u00b7 test run: " + (state.testRun ? "on" : "off") + "\nstarted (live): " + (state.live ? state.live.key + " at " + new Date(state.live.at).toLocaleTimeString() : "none") +
         "\nkeys match: " + !!(state.live && state.live.key === keyOf(focus)) +
         "\nbooth report: " + (tb ? JSON.stringify({ tc: tb.tc, pos: tb.pos, playing: tb.playing }) : "none") +
         "\narrived: " + (rxx ? ((Date.now() - rxx) / 1000).toFixed(1) + " s ago" : "never") + (tb && tb.at ? " (booth clock is " + ((Date.now() - tb.at) / 1000).toFixed(1) + " s behind this one)" : "") +
