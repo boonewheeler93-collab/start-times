@@ -595,7 +595,7 @@ details.pt-set > .body { border-radius: 4px 4px 14px 14px; -webkit-backdrop-filt
 .sync-devs:empty { display: none; }
 #bHoldStop { position: relative; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
 #bHoldStop::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: var(--warn); }
-#bHoldStop.holding::after { width: 100%; transition: width 1s linear; }
+#bHoldStop.holding::after { width: 100%; transition: width var(--hold, 1s) linear; }
 
 .sync-pw { display: flex; gap: 10px; margin-top: 12px; }
 .sync-pw input { flex: 1; min-width: 0; font: inherit; font-weight: 700; color: var(--ink); background: var(--field); border: 1px solid var(--glass-line); border-radius: 14px; padding: 10px 14px; min-height: 52px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.35); }
@@ -1014,7 +1014,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 /* hold to play: a fill runs across while held */
 .hold-btn { position: relative; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
 .hold-btn::after { content: ""; position: absolute; left: 0; bottom: 0; height: 5px; width: 0; background: #0a3d22; opacity: 0.6; }
-.hold-btn.holding::after { width: 100%; transition: width 1s linear; }
+.hold-btn.holding::after { width: 100%; transition: width var(--hold, 1s) linear; }
 .b-go.b-play { color: #062414; background: linear-gradient(135deg, #a8f0c8, #6fe3b4); box-shadow: 0 14px 34px -14px rgba(111,227,180,0.9); }
 .b-go.b-play[hidden] { display: none; }
 .b-actions { flex-wrap: wrap; }
@@ -1049,7 +1049,7 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .mem-btn.flash-off { border-color: var(--warn); }
 .mem-btn.is-off { opacity: 0.45; }
 .mem-btn::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: var(--accent-2); }
-.mem-btn.holding::after { width: 100%; transition: width 1s linear; }
+.mem-btn.holding::after { width: 100%; transition: width var(--hold, 1s) linear; }
 .b-pt-btns .hold-btn.is-off { opacity: 0.45; }
 .b-mem[hidden] { display: none; }
 
@@ -1178,12 +1178,12 @@ body.view-mode .wrap, body.view-mode #booth { display: none !important; }
 .b-go.b-stop[hidden] { display: none; }
 .b-go.b-stop.is-off { opacity: 0.5; }
 .b-go.b-stop::after { background: #fff; opacity: 0.55; }
-.b-go.b-stop.holding::after { transition: width 0.5s linear; }
+.b-go.b-stop.holding::after { transition: width var(--hold, 1s) linear; }
 /* hold a cue sheet moment to cue ProTools */
 body.pt-linked #bSheet li.can-cue { cursor: pointer; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
 #bSheet li.can-cue { position: relative; overflow: hidden; }
 #bSheet li.can-cue::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: var(--accent-2); }
-#bSheet li.can-cue.holding::after { width: 100%; transition: width 1s linear; }
+#bSheet li.can-cue.holding::after { width: 100%; transition: width var(--hold, 1s) linear; }
 #bSheet li.can-cue.cue-sent { box-shadow: inset 0 0 0 2px var(--ok); }
 #bSheet li.can-cue.cue-off { box-shadow: inset 0 0 0 2px var(--warn); }
 .b-mem-h { margin: 0; }
@@ -1888,7 +1888,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v101";
+  var APP_BUILD = "v102";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -3159,7 +3159,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
       if (!link.midi || !link.out) { lcls = "off"; ltxt = "ProTools link: not connected"; }
       else if (linkOff()) { lcls = "warn"; ltxt = "ProTools link: off (Link on to send)"; }
       else if (link.inp && ptMoving() && unlockedNow() && inServiceWindow(nowMs())) { var ul = Math.ceil((link.unlockUntil - Date.now()) / 1000); lcls = "unlocked"; ltxt = "\ud83d\udd13 Unlocked \u00b7 relocks in " + Math.floor(ul / 60) + ":" + pad(ul % 60) + " \u00b7 holds and buttons reach ProTools"; }
-      else if (ptLocked()) { lcls = "live"; ltxt = "\ud83d\udd12 Locked while ProTools plays \u00b7 " + (link.tc ? fmtTc(link.tc) : "") + " \u00b7 hold Stop 2 s for an emergency"; }
+      else if (ptLocked()) { lcls = "live"; ltxt = "\ud83d\udd12 Locked while ProTools plays \u00b7 " + (link.tc ? fmtTc(link.tc) : "") + " \u00b7 hold Stop 1 s for an emergency"; }
       else if (link.inp && ptMoving()) { lcls = "live"; ltxt = "ProTools link: hearing ProTools \u00b7 Playing " + (link.tc ? fmtTc(link.tc) : "") + " \u00b7 rehearsal, not locked"; }
       else if (link.inp && link.tc) { lcls = "ok"; ltxt = "ProTools link: connected \u00b7 Stopped at " + fmtTc(link.tc); }
       else { lcls = "warn"; ltxt = "ProTools link: connected \u00b7 press Play in ProTools to check timecode"; }
@@ -3181,8 +3181,11 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var mo = $("ptLinkTog"); if (mo) { mo.hidden = !on; var mt = linkOff() ? "Turn link back on" : "Turn link off"; if (mo.textContent !== mt) mo.textContent = mt; }
     if (!on) { $("bStop").hidden = true; return; }
     var off = linkOff(), moving = ptMoving(), pos = link.tc ? tcElapsed() : null;
-    var tc = link.tc ? fmtTc(link.tc).slice(0, 8) : "--:--:--";
-    if ($("bPtTc").textContent !== tc) $("bPtTc").textContent = tc;
+    if (!booth.ptRaf) { booth.ptRaf = true; requestAnimationFrame(function readout() {
+      var p = link.tc ? ptPosNow() : null, tx = p === null ? "--:--.---" : fmtPT(p), el = $("bPtTc");
+      if (el && el.textContent !== tx) el.textContent = tx;
+      if (booth.open) requestAnimationFrame(readout); else booth.ptRaf = false;
+    }); }
     var pill = $("bPtPill"), pt = !link.inp ? "Not listening" : !link.tc ? "No timecode" : moving ? "Playing" : "Stopped", pc = "pill-s" + (moving ? " play" : link.tc ? " stopped" : "");
     if (pill.textContent !== pt) pill.textContent = pt;
     if (pill.className !== pc) pill.className = pc;
@@ -3571,14 +3574,13 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     $("bGo").focus();
   }
   // ---------- ProTools Big Counter (minutes:seconds.milliseconds) ----------
-  function fmtCounter(sec) {
-    var ms = Math.floor(Math.max(0, sec) * 1000), m = Math.floor(ms / 60000), s = Math.floor(ms / 1000) % 60, f = ms % 1000;
-    return pad(m) + ":" + pad(s) + ":" + ("00" + f).slice(-3);
-  }
+  function fmtCounter(sec) { return fmtPT(sec); }
   function counterFrame() {
     var cb = $("bCountBox");
     if (!booth.open || !booth.cOn) { cb.classList.remove("cnt-yellow", "cnt-red"); return; }
-    var el = (nowMs() - booth.cStart) / 1000, big = $("bBig"), html = monoHtml(fmtCounter(el));
+    var el = (nowMs() - booth.cStart) / 1000;
+    if (link.inp && ptMoving()) { var lp = ptPosNow(); if (lp !== null) el = lp; }
+    var big = $("bBig"), html = monoHtml(fmtCounter(el));
     if (big._h !== html) { big.innerHTML = html; big._h = html; }
     // green while running, yellow 30 seconds before the screen drop, red from the drop on
     var toDrop = booth.cDrop - el, red = toDrop <= 0, yellow = !red && toDrop <= 30;
@@ -3684,7 +3686,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     else if (e.key === "f" || e.key === "F") { e.preventDefault(); toggleFull(); }
     else if ((e.key === "s" || e.key === "S") && !e.repeat && link.out) {
       e.preventDefault(); $("bStop").classList.add("holding");
-      booth.sKey = setTimeout(function () { $("bStop").classList.remove("holding"); booth.sKey = null; fireStop(); }, 2000);
+      $("bStop").style.setProperty("--hold", "1000ms");
+      booth.sKey = setTimeout(function () { $("bStop").classList.remove("holding"); booth.sKey = null; fireStop(); }, 1000);
     }
   });
   document.addEventListener("keyup", function (e) {
@@ -3855,12 +3858,13 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         var q = link.qf;
         link.fps = [24, 25, 29.97, 30][(q[7] >> 1) & 3];
         link.tc = { h: q[6] | ((q[7] & 1) << 4), m: q[4] | (q[5] << 4), s: q[2] | (q[3] << 4), f: q[0] | (q[1] << 4) };
+        link.tcAt = t; link.tcLead = 2 / Math.round(link.fps || 30);
         if (link.pending && link.qfSince >= 8) resolveStart();
       }
       if (gap > 500) onPtStarted();
     } else if (d[0] === 0xF0 && d[1] === 0x7F && d[3] === 0x01 && d[4] === 0x01) {
       link.fps = [24, 25, 29.97, 30][(d[5] >> 5) & 3];
-      link.tc = { h: d[5] & 0x1F, m: d[6], s: d[7], f: d[8] }; link.lastHeard = nowMs();
+      link.tc = { h: d[5] & 0x1F, m: d[6], s: d[7], f: d[8] }; link.lastHeard = nowMs(); link.tcAt = performance.now(); link.tcLead = 0;
       ptLog("ProTools moved to " + fmtTc(link.tc));
     }
   }
@@ -3884,6 +3888,19 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   function tcElapsed() { var st = parseTc(state.ptStart); return link.tc && st ? tcSecs(link.tc) - tcSecs(st) : null; }
   function linkElapsed() { return link.inp && ptMoving() ? tcElapsed() : null; }
+  // where ProTools is right now, matching its own counter: corrected for the 2-frame timecode delay and
+  // carried forward between timecode blocks while it plays; the last heard place when it's stopped
+  function ptPosNow() {
+    var e = tcElapsed(); if (e === null) return null;
+    // stopped: the last block plus the time ProTools kept rolling after it (up to the last quarter-frame)
+    if (!(link.inp && ptMoving())) return link.tcAt && link.lastQF >= link.tcAt ? e + (link.tcLead || 0) + Math.min(0.1, (link.lastQF - link.tcAt) / 1000) : e;
+    return e + (link.tcLead || 0) + Math.min(0.25, Math.max(0, (performance.now() - (link.tcAt || performance.now())) / 1000));
+  }
+  // ProTools' own Min:Sec style, e.g. 11:54.072
+  function fmtPT(sec) {
+    var ms = Math.floor(Math.max(0, sec) * 1000 + 0.5), m = Math.floor(ms / 60000), s = Math.floor(ms / 1000) % 60;
+    return m + ":" + pad(s) + "." + ("00" + (ms % 1000)).slice(-3);
+  }
   function fromTop() { var e = linkElapsed(); return e !== null && e >= 0 && e < 180; }
   // which service a start belongs to: the auto-start being watched, or the closest planned start
   function nearestKey(now) {
@@ -4369,7 +4386,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     function end() { clearTimeout(t); el.classList.remove("holding"); }
     el.addEventListener("pointerdown", function (e) {
       if (e.button !== undefined && e.button !== 0) return;
-      e.preventDefault(); el.classList.add("holding");
+      e.preventDefault(); el.style.setProperty("--hold", ms + "ms"); el.classList.add("holding");
       t = setTimeout(function () { el.classList.remove("holding"); fire(); }, ms);
     });
     ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { el.addEventListener(ev, end); });
@@ -4393,7 +4410,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if (linkOff()) { el.textContent = "Link is off"; el._lock = Date.now() + 2000; return; }
     if (ptSend(MMC_STOP, "Stop (emergency hold)", null, true)) { el.textContent = "Stopped"; el._lock = Date.now() + 1500; }
   }
-  holdToFire($("bStop"), fireStop, 2000);
+  holdToFire($("bStop"), fireStop, 1000);
   // emergency unlock: hold 2 seconds; controls reach ProTools for 3 minutes, then it relocks (hold again to relock now)
   holdToFire($("bUnlock"), function () {
     if (unlockedNow()) { link.unlockUntil = 0; ptLog("Relocked"); }
