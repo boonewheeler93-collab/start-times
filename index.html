@@ -2020,9 +2020,9 @@ body.pt-held #vNextCd { opacity: 0.75; }
 
   // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
   // Resi cues for 11/21-22, measured from MSG START (1:22:19.23); no HANDS cue this week, Transition to CP is last
-  var WEEK_RESI = { id: "2026-11-21-resi4", msgParts: [
+  var WEEK_RESI = { id: "2026-11-21-resi5", msgParts: [
     { name: "Message Start", at: "0:00" },
-    { name: "Keys", at: "26:58" },
+    { name: "Keys Start", at: "26:58" },
     { name: "Prayer Start", at: "31:05" },
     { name: "NKC-30", at: "32:16" },
     { name: "Transition to CP", at: "32:46" },
@@ -2033,18 +2033,18 @@ body.pt-held #vNextCd { opacity: 0.75; }
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-22a";
+  var DATA_VER = "2026-11-22b";
   // how long Keys lasts (Keys to Keys End), from the message cues, or null
   function keysLasts() {
     var k = null, e = null;
     (state.msgParts || []).forEach(function (pt) {
       var n = parseDur(String(pt.at || "").trim()), nm = String(pt.name || "").trim();
       if (n === null) return;
-      if (/^keys$/i.test(nm)) k = n; else if (/^keys\s*end$/i.test(nm)) e = n;
+      if (/^keys(\s*start)?$/i.test(nm)) k = n; else if (/^keys\s*end$/i.test(nm)) e = n;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v149";
+  var APP_BUILD = "v150";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -3351,7 +3351,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
         // the screen drop is only ever shown as the ProTools time to press the button
         var isDrop = k.indexOf("drop") > -1;
         var isPart = k.indexOf("part") > -1;
-        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : c.rel - lastCalc.msg < 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " early" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message" + (/^keys$/i.test(String(c.label || "").trim()) && keysLasts() !== null ? ", lasts " + fmtDur(keysLasts()) : "")) : isDrop ? "" : lastCalc.program === "switch" ? (k.indexOf("swstart") > -1 ? "Starts when you press play" + (c.pt !== null ? ", ProTools " + fmtDur(Math.floor(c.pt)) : "") : c.pt !== null ? "ProTools " + fmtDur(Math.floor(c.pt)) : (swPress(sr.key, c.seg) || c.seg === 0 ? "" : "About ") + fmtSigned(Math.round((r.t - occ.t) / 1000))) : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
+        var meta = isPart ? (k.indexOf("mstart") > -1 ? (c.rel - lastCalc.msg > 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " late" : c.rel - lastCalc.msg < 0 ? "Started " + fmtDur(c.rel - lastCalc.msg) + " early" : "On time at +23:00") : fmtDur(c.rel - lastCalc.mStartRel) + " into the message" + (/^keys(\s*start)?$/i.test(String(c.label || "").trim()) && keysLasts() !== null ? ", lasts " + fmtDur(keysLasts()) : "")) : isDrop ? "" : lastCalc.program === "switch" ? (k.indexOf("swstart") > -1 ? "Starts when you press play" + (c.pt !== null ? ", ProTools " + fmtDur(Math.floor(c.pt)) : "") : c.pt !== null ? "ProTools " + fmtDur(Math.floor(c.pt)) : (swPress(sr.key, c.seg) || c.seg === 0 ? "" : "About ") + fmtSigned(Math.round((r.t - occ.t) / 1000))) : r.pt !== null && r.pt >= 0 && k.indexOf("hit") < 0 ? "ProTools " + fmtDur(r.pt) + ", " + fmtSigned(c.rel) : fmtSigned(c.rel);
         if (c.extra) meta += ", " + (lastCalc.program === "switch" ? c.extra.replace(/^Lasts/, "lasts") : c.extra.toLowerCase());
         var tm = msClock(r.t), sp = tm.lastIndexOf(" ");
         var right = isDrop ? '<small class="drop-k">ProTools</small><span class="drop-t">' + monoHtml(fmtDur(r.pt)) + "</span>" : monoHtml(tm.slice(0, sp)) + "<small>" + tm.slice(sp + 1) + "</small>";
@@ -3816,8 +3816,8 @@ body.pt-held #vNextCd { opacity: 0.75; }
     booth.swAdj = null; setAdjLabel("Message start", null);
     var aOcc = booth.manual ? cur : (sheetFocus(now, cur) || cur), showAdj = false;
     if (aOcc && lastCalc.msg) {
-      var stgT = aOcc.t + (lastCalc.msg - (lastCalc.stage || 300)) * 1000;
-      var endT = aOcc.t + ((lastCalc.handsRel !== null && lastCalc.handsRel !== undefined ? lastCalc.handsRel : lastCalc.msg) + 60) * 1000;
+      var stgT = svcT(aOcc) + (lastCalc.msg - (lastCalc.stage || 300)) * 1000;
+      var endT = svcT(aOcc) + ((lastCalc.handsRel !== null && lastCalc.handsRel !== undefined ? lastCalc.handsRel : lastCalc.msg) + 60) * 1000;
       showAdj = now >= stgT && now <= endT;
       booth.msgOcc = aOcc;
       var late = Math.round(lastCalc.mStartRel - lastCalc.msg), lt = late > 0 ? "+" + fmtDur(late) + " late" : late < 0 ? "\u2212" + fmtDur(late) + " early" : "on time";
