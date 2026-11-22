@@ -2044,7 +2044,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v148";
+  var APP_BUILD = "v149";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -3144,6 +3144,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     if (!lastCalc || lastCalc.program === "switch" || !link.inp || !(link.tc || link.restoredPos != null)) return null;
     var pos = link.tc ? ptPosNow() : link.restoredPos;
     if (pos === null || pos < 0) return null;
+    if (state.live && !state.rehearsal && now > sr.startAt + (lastCalc.len + 60) * 1000) return null;   // after the set: the clock leads
     if (ptMoving()) return pos;
     return now < sr.startAt + (lastCalc.len + 60) * 1000 ? pos : null;
   }
@@ -4578,7 +4579,12 @@ body.pt-held #vNextCd { opacity: 0.75; }
     var key = ps.key || nearestKey(ps.at);
     if (!key && !state.rehearsal && !inServiceWindow(nowMs())) { if (startRehearsal(e)) { renderBooth(); } return; }
     if (key) {
-      state.live = { key: key, at: nowMs() - e * 1000 };
+      var newAt = nowMs() - e * 1000;
+      if (state.live && state.live.key === key && Math.abs(newAt - state.live.at) > 5 * 60000) {
+        ptLog("ProTools played from the top, but this service already started at " + msClock(state.live.at) + ", so its start wasn\u2019t changed");
+        return;
+      }
+      state.live = { key: key, at: newAt };
       var ls = svcLogFor(key); if (ls && !ls.startAt) { ls.startAt = state.live.at; ls.startHow = ps.key ? "auto-start" : "ProTools started by hand"; }
       persist();
     }
@@ -5584,7 +5590,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
       var bp = boothPT(), s0 = state.live.at;
       if (bp) {
         var ppos = bp.sec + (bp.playing ? (Date.now() - bp.at) / 1000 : 0);
-        if (bp.playing && ppos >= 0 && ppos <= lastCalc.len + 30) now = s0 + ppos * 1000;
+        if (bp.playing && ppos >= 0 && ppos <= lastCalc.len + 30 && now < s0 + (lastCalc.len + 60) * 1000) now = s0 + ppos * 1000;
         else if (!bp.playing && ppos >= 0 && ppos <= lastCalc.len && now < s0 + (lastCalc.len + 1) * 1000) { now = s0 + ppos * 1000; viewHeld = true; }
       }
     }
