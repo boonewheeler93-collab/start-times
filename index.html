@@ -2043,7 +2043,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v152";
+  var APP_BUILD = "v153";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -3469,7 +3469,16 @@ body.pt-held #vNextCd { opacity: 0.75; }
   // ---------- booth mode ----------
   var lastCalc = null;
   // the app's clock: this device's clock (kept accurate by the Mac's automatic time) plus any wall-clock adjustment
-  function nowMs() { return Date.now() + (+state.clockOff || 0); }
+  function nowMs() { return Date.now() + boothSkew() + (+state.clockOff || 0); }
+  // on a view screen: how far this computer's clock is from the booth Mac's (via the sync server), so countdowns match the booth exactly
+  function boothSkew() {
+    if (typeof sync === "undefined" || !sync || sync.srvOff == null || !document.body || !document.body.classList.contains("view-mode")) return 0;
+    if (typeof link !== "undefined" && link && link.out) return 0;
+    var t = sync.booth || sync.pubBooth;
+    if (!t || t.off == null) return 0;
+    var k = sync.srvOff - t.off;
+    return Math.abs(k) > 6 * 3600000 ? 0 : k;
+  }
   var centralFmt = null;
   try { centralFmt = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }); } catch (e) {}
   function centralParts(ms) {
@@ -4829,6 +4838,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
       if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
       firebase.auth().onAuthStateChanged(onAuth);
       firebase.database().ref("startTimes/booth").on("value", function (x) { sync.pubBooth = x.val(); sync.pubBoothRx = Date.now(); }, function () {});
+      firebase.database().ref(".info/serverTimeOffset").on("value", function (x) { sync.srvOff = +x.val() || 0; }, function () {});
       firebase.database().ref("startTimes/state").on("value", function (x) {
         if (sync.user) return;                      // signed-in devices handle this themselves
         var v = x.val(); if (v) { applyShared(v); sync.follow = true; renderSync(); }
@@ -4967,7 +4977,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     if (role !== "booth") return;
     var n = nextAuto(nowMs()), st = autoStatus(n ? n.key : null);
     var pp = link.tc ? ptPosNow() : null;
-    var t = { level: st.level, text: st.text, sub: st.sub, fires: !!st.fires, tc: link.tc ? fmtTc(link.tc) : "", pos: pp == null ? null : Math.round(pp * 100) / 100, playing: ptMoving(), result: link.result || "", focus: booth.open && booth.key ? booth.key : null };
+    var t = { level: st.level, text: st.text, sub: st.sub, fires: !!st.fires, tc: link.tc ? fmtTc(link.tc) : "", pos: pp == null ? null : Math.round(pp * 100) / 100, playing: ptMoving(), result: link.result || "", focus: booth.open && booth.key ? booth.key : null, off: sync.srvOff != null ? Math.round(sync.srvOff) : null };
     var js = JSON.stringify(t), now = Date.now();
     if (js !== sync.lastTele || now - sync.teleAt > 5000) { sync.lastTele = js; sync.teleAt = now; t.at = now; sync.db.ref("startTimes/booth").set(t); }
   }
