@@ -2044,7 +2044,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v150";
+  var APP_BUILD = "v151";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -4493,7 +4493,11 @@ body.pt-held #vNextCd { opacity: 0.75; }
     occurrences(now).concat(occurrences(now - 4 * 3600000)).forEach(function (x) { if (!o && keyOf(x) === state.live.key) o = x; });
     if (!o) return;
     var planned = o.t + lastCalc.startRel * 1000;
-    if (Math.abs(state.live.at - planned) > 90 * 60000) { state.live = null; persist(); }
+    // more than 90 minutes off, or more than 20 minutes after the planned hit play (the set couldn't finish before the message): a stray mark
+    if (Math.abs(state.live.at - planned) > 90 * 60000 || state.live.at - planned > 20 * 60000) {
+      ptLog("Cleared a stray start mark (" + msClock(state.live.at) + ") for " + o.sv.day + " " + svcClock(o.sv.sec));
+      state.live = null; persist(); if (booth.open) renderBooth();
+    }
   }
   setInterval(cleanStrayStart, 30000); setTimeout(cleanStrayStart, 2500);
   // is this service close enough that starting ProTools means the service is starting?
