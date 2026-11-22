@@ -2020,19 +2020,20 @@ body.pt-held #vNextCd { opacity: 0.75; }
 
   // this weekend's Resi cues (from MSG START), with the message starting right at +23:00
   // Resi cues for 11/21-22, measured from MSG START (1:22:19.23); no HANDS cue this week, Transition to CP is last
-  var WEEK_RESI = { id: "2026-11-21-resi3", msgParts: [
+  var WEEK_RESI = { id: "2026-11-21-resi4", msgParts: [
     { name: "Message Start", at: "0:00" },
     { name: "Keys", at: "26:58" },
     { name: "Prayer Start", at: "31:05" },
+    { name: "NKC-30", at: "32:16" },
     { name: "Transition to CP", at: "32:46" },
     { name: "Keys End", at: "42:09" }
   ] };
   if (state.weekResi !== WEEK_RESI.id) {
-    state.msgParts = JSON.parse(JSON.stringify(WEEK_RESI.msgParts)); state.msgLateKey = null; state.weekResi = WEEK_RESI.id;
+    state.msgParts = JSON.parse(JSON.stringify(WEEK_RESI.msgParts)); state.weekResi = WEEK_RESI.id;   // keeps any Message Start adjustment
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
   // the weekly data this version of the app carries; older data in sync never overwrites it
-  var DATA_VER = "2026-11-21d";
+  var DATA_VER = "2026-11-22a";
   // how long Keys lasts (Keys to Keys End), from the message cues, or null
   function keysLasts() {
     var k = null, e = null;
@@ -2043,7 +2044,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v147";
+  var APP_BUILD = "v148";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
