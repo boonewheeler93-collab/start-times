@@ -1427,6 +1427,11 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 h1, h2, .sheet-head .nm, .b-svc, .hero-label, .sum b, .dropcall b, details > summary, .card-head h2 { font-weight: 800; letter-spacing: -0.015em; }
 h2, .card-head h2 { font-size: 1.35rem; }
 .b-big, .b-clock, .pt-tc, .b-next .nt, .b-checks .cv, .tin.big, .tin.big .colon, .step.hit .sc { font-weight: 700; }
+
+.link-test { font: inherit; font-weight: 800; font-size: 0.85rem; padding: 6px 14px; min-height: 34px; border-radius: 999px; cursor: pointer;
+  color: var(--ink-2, #b8c0dc); background: rgba(255,255,255,0.05); border: 1px solid var(--glass-line, rgba(255,255,255,0.14)); }
+.link-test.ok { color: #b8f5c8; border-color: #4ade80; } .link-test.bad { color: #ffd2cf; border-color: #ff6b62; }
+.link-test:disabled { opacity: 0.7; cursor: default; }
 </style>
 </head>
 <body>
@@ -1600,7 +1605,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
 
     <section class="card glass" aria-labelledby="cue-h" style="order:7">
       <div class="card-head">
-        <h2 id="cue-h">Cue sheet</h2>
+        <h2 id="cue-h">Cue Sheet</h2>
         <div class="card-meta"><span class="live-badge" id="sheetLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="sheetSvc"></span></div>
       </div>
       <div id="sheet"></div>
@@ -1682,7 +1687,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
         </div>
       </div>
     </div>
-    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><div class="linkchip" id="bLinkChip" role="status"></div><div class="reh-chip" id="bReh" hidden><span>● Rehearsal run</span><button type="button" id="bRehEnd">End rehearsal</button></div><div class="reh-chip test-chip" id="bTest" hidden><span id="bTestT">● Test run</span><button type="button" id="bTestEnd">End test</button></div><button type="button" class="unlock-btn" id="bUnlock" hidden>Hold to unlock</button></div>
+    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><button type="button" class="link-test" id="bLinkTest" title="Play 1 second in silence past the end of the session, then put ProTools back">Test</button><div class="linkchip" id="bLinkChip" role="status"></div><div class="reh-chip" id="bReh" hidden><span>● Rehearsal run</span><button type="button" id="bRehEnd">End rehearsal</button></div><div class="reh-chip test-chip" id="bTest" hidden><span id="bTestT">● Test run</span><button type="button" id="bTestEnd">End test</button></div><button type="button" class="unlock-btn" id="bUnlock" hidden>Hold to unlock</button></div>
     <div class="ready" id="bReady" hidden></div>
     <div class="b-count" id="bCountBox">
       <div class="b-lab" id="bLab"></div>
@@ -1741,7 +1746,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     <p class="b-keys">Space: Started. Hold S: stop ProTools. Up and down arrows: adjust the clock. F: full screen. Esc: close.</p>
     </div>
     <div class="b-right">
-      <div class="card-head"><h2>Cue sheet</h2><div class="card-meta"><span class="live-badge" id="bLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="bSheetSvc"></span></div></div>
+      <div class="card-head"><h2>Cue Sheet</h2><div class="card-meta"><span class="live-badge" id="bLive" hidden><span class="ld"></span>Live</span><span class="daychip" id="bSheetSvc"></span></div></div>
       <div id="bSheet"></div>
     </div>
     </div>
@@ -1951,7 +1956,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v126";
+  var APP_BUILD = "v129";
   try { if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(function () {}); } catch (e) {}
   state.weekVer = DATA_VER;
 
@@ -2794,7 +2799,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     tb += "</table></div>";
     $("tiles").innerHTML = svcs.length ? tb : '<p class="note" style="margin-top:0">Add a service time under Service times to see results.</p>';
     var dropPT = downAt - v.lower;
-    lastCalc = { program: "weekend", dropPT: dropPT, mStartRel: v.msg + (mStart || 0), handsRel: handsRel, parts: msgList, tail: tail, startRel: startRel, finalRel: finalRel, len: v.len, lower: v.lower, sat: v.sat, stage: v.stage, msg: v.msg, cues: cues, svcs: svcs };
+    lastCalc = { program: "weekend", stageRel: v.msg - v.stage, dropPT: dropPT, mStartRel: v.msg + (mStart || 0), handsRel: handsRel, parts: msgList, tail: tail, startRel: startRel, finalRel: finalRel, len: v.len, lower: v.lower, sat: v.sat, stage: v.stage, msg: v.msg, cues: cues, svcs: svcs };
     $("dropCall").innerHTML = '<span class="dl">Drop screen</span><b>' + (dropPT >= 0 ? fmtDur(dropPT) : "\u2014") + '</b><span class="dn">on ProTools</span>';
 
     // the cue sheet itself is drawn live by renderTop()
@@ -2991,7 +2996,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     var startAt = live !== null ? live : occ.t + lastCalc.startRel * 1000;
     var rows = lastCalc.cues.map(function (c) {
       var svcAnchored = c.cls.indexOf("svc") > -1;
-      return { c: c, t: svcAnchored ? occ.t + c.rel * 1000 : startAt + (c.rel - lastCalc.startRel) * 1000, pt: svcAnchored ? null : c.rel - lastCalc.startRel };
+      return { c: c, t: svcAnchored ? svcT(occ) + c.rel * 1000 : startAt + (c.rel - lastCalc.startRel) * 1000, pt: svcAnchored ? null : c.rel - lastCalc.startRel };
     }).sort(function (a, b) { return a.t - b.t || a.c.o - b.c.o; });
     return { rows: rows, key: key, startAt: startAt };
   }
@@ -3051,7 +3056,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
   function svcLogFor(key) { if (!key || state.rehearsal) return null; state.svcLog = state.svcLog || {}; return state.svcLog[key] || (state.svcLog[key] = {}); }
   var wasMoving = false, lastMovePos = null;
   setInterval(function () {
-    if (!lastCalc || state.rehearsal) { wasMoving = ptMoving(); return; }
+    if (!lastCalc || state.rehearsal || link.checking) { wasMoving = ptMoving(); return; }
     var now = nowMs(), mv = ptMoving(), key = lastCalc.program === "switch" ? (state.swLive && state.swLive.key) : (state.live && state.live.key);
     var lg = key ? svcLogFor(key) : null;
     if (lg && link.inp) {
@@ -3069,7 +3074,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
       var o = null; occurrences(now - 8 * 3600000).forEach(function (x) { if (!o && keyOf(x) === k) o = x; }); if (!o) return;
       // the end of the whole service: the later of HANDS and the last message cue (like Keys End), or the set's end
       var endRel = Math.max(lastCalc.finalRel || 0, lastCalc.handsRel != null ? lastCalc.handsRel : 0, lastCalc.tail || 0);
-      if (now < o.t + (endRel + 120) * 1000) return;
+      if (now < svcT(o) + (endRel + 120) * 1000) return;
       L.reported = true; writeReport(k, o, L); persist();
     });
   }, 250);
@@ -3135,6 +3140,17 @@ h2, .card-head h2 { font-size: 1.35rem; }
     if (soon) endRehearsal("a real service is 15 minutes away");
     else if (Date.now() - (state.rehearsal.at || 0) > 2 * 3600000) endRehearsal("2 hours");
   }, 5000);
+  // where Stagetime and the message are measured from: the service time; in a rehearsal or test run,
+  // shifted so Stagetime starts 15 seconds after that run's actual final downbeat (everything after follows)
+  function isTestOcc(o) { return !!(state.testRun && o && o.sv && o.sv.day === state.testRun.day && o.sv.sec === state.testRun.sec); }
+  function svcT(o) {
+    if (!o) return 0;
+    if (!lastCalc || lastCalc.program === "switch" || lastCalc.stageRel == null || !(state.rehearsal || isTestOcc(o))) return o.t;
+    var lv = state.live && state.live.key === keyOf(o) ? state.live.at : null;
+    if (lv === null) return o.t;
+    var actualFinal = lv + (lastCalc.finalRel - lastCalc.startRel) * 1000;
+    return actualFinal + 15000 - lastCalc.stageRel * 1000;
+  }
   function scrollSheetTo(host, li) {
     var box = host.closest ? host.closest(".b-right") : null;
     if (!box || !li) return;
@@ -3520,7 +3536,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     if (linked === null && ptMac && (link.tc || link.restoredPos != null)) {
       var sp = ptStoppedAt();
       if (sp !== null && sp >= 0 && sp <= lastCalc.len + 60) {
-        if (live !== null) stopped = sp;                                        // the service started; ProTools is stopped now
+        if (live !== null) { if ((now - startAt) / 1000 <= lastCalc.len + 1) stopped = sp; }   // stopped mid-set; once the set's time has passed, move on to Stagetime
         else if (now >= planned) { stopped = sp; notStarted = true; }           // past hit play, no start heard
         else if (planned - now > 600000 && nowMs() - (link.lastHeard || 0) < 1800000) { stopped = sp; rehStop = true; }   // rehearsal
       }
@@ -3568,13 +3584,13 @@ h2, .card-head h2 { font-size: 1.35rem; }
       } else {
         booth.cOn = false;
         var after = null;
-        lastCalc.cues.forEach(function (c) { var isSw = /\bsw\b/.test(c.cls), ct2 = isSw ? startAt + (c.rel - lastCalc.startRel) * 1000 : cur.t + c.rel * 1000; if (!after && (isSw || c.cls.indexOf("svc") > -1) && ct2 > now) after = { n: c.label, t: ct2 }; });
+        lastCalc.cues.forEach(function (c) { var isSw = /\bsw\b/.test(c.cls), ct2 = isSw ? startAt + (c.rel - lastCalc.startRel) * 1000 : svcT(cur) + c.rel * 1000; if (!after && (isSw || c.cls.indexOf("svc") > -1) && ct2 > now) after = { n: c.label, t: ct2 }; });
       }
       if (el > L && after) {
         $("bLab").textContent = after.n + " in";
         var aHtml = monoHtml(fmtHMS(Math.ceil((after.t - now) / 1000)));
         if ($("bBig")._h !== aHtml) { $("bBig").innerHTML = aHtml; $("bBig")._h = aHtml; }
-        var hSub = lastCalcHands !== null && Math.abs(cur.t + lastCalcHands * 1000 - after.t) > 500 && cur.t + lastCalcHands * 1000 > now ? ". Hands at " + msClock(cur.t + lastCalcHands * 1000) : "";
+        var hSub = lastCalcHands !== null && Math.abs(svcT(cur) + lastCalcHands * 1000 - after.t) > 500 && svcT(cur) + lastCalcHands * 1000 > now ? ". Hands at " + msClock(svcT(cur) + lastCalcHands * 1000) : "";
         $("bSub").textContent = "at " + msClock(after.t) + hSub; $("bSub")._h = "";
       } else if (el > L) {
         $("bLab").textContent = "Past the final downbeat";
@@ -3589,9 +3605,9 @@ h2, .card-head h2 { font-size: 1.35rem; }
     var msgMode = false, msgLeft = null, mOcc = booth.manual ? null : sheetFocus(now, cur);
     // on the ProTools Mac, ProTools playing inside the set keeps the set view up, whatever the clock says
     var ptInSet = !!(link.inp && ptMoving() && linkElapsed() !== null && linkElapsed() >= 0 && linkElapsed() <= lastCalc.len + 30);
-    if (mOcc && !ptInSet && lastCalc.handsRel !== null && lastCalc.handsRel !== undefined && now >= mOcc.t + lastCalc.mStartRel * 1000) {
+    if (mOcc && !ptInSet && lastCalc.handsRel !== null && lastCalc.handsRel !== undefined && now >= svcT(mOcc) + lastCalc.mStartRel * 1000) {
       msgMode = true; booth.cOn = false;
-      var handsT = mOcc.t + lastCalc.handsRel * 1000;
+      var handsT = svcT(mOcc) + lastCalc.handsRel * 1000;
       msgLeft = Math.max(0, Math.ceil((handsT - now) / 1000));
       $("bLab").textContent = "Message";
       var mh = monoHtml(fmtMMSS(msgLeft));
@@ -3601,10 +3617,10 @@ h2, .card-head h2 { font-size: 1.35rem; }
       $("bSub").textContent = "Hands at " + msClock(handsT) + (sameSvc ? "" : ". Next: " + cur.sv.day + " " + svcClock(cur.sv.sec) + ", ProTools start at " + msClock(startAt)); $("bSub")._h = "";
       var ph = "", seenNext = false;
       lastCalc.parts.forEach(function (pt) {
-        var left = Math.max(0, Math.ceil((mOcc.t + pt.rel * 1000 - now) / 1000));
+        var left = Math.max(0, Math.ceil((svcT(mOcc) + pt.rel * 1000 - now) / 1000));
         var st = left === 0 ? " done" : left <= 30 ? " red" : left <= 120 ? " yellow" : "";
         var isNext = left > 0 && !seenNext; if (isNext) seenNext = true;
-        var ptT = msClock(mOcc.t + pt.rel * 1000), ptS = ptT.lastIndexOf(" ");
+        var ptT = msClock(svcT(mOcc) + pt.rel * 1000), ptS = ptT.lastIndexOf(" ");
         ph += '<div class="bp' + st + (isNext ? " next" : "") + (pt.hands ? " hands" : "") + '"><div class="bpn">' + esc(pt.hands ? "HANDS" : pt.name) + '</div><div class="bpt">' + monoHtml(fmtMMSS(left)) + '</div><div class="bpa">' + ptT.slice(0, ptS) + "<small>" + ptT.slice(ptS + 1) + "</small></div></div>";
       });
       if ($("bParts")._h !== ph) { $("bParts").innerHTML = ph; $("bParts")._h = ph; }
@@ -3977,6 +3993,35 @@ h2, .card-head h2 { font-size: 1.35rem; }
     persist(); renderBooth();
   });
   $("bRehEnd").addEventListener("click", function () { endRehearsal("ended in the booth"); });
+  // TEST: prove both directions without sound: jump to silence past the end, play ~1 s, stop, put ProTools back
+  function linkTestBlocked() {
+    if (!link.out || !link.inp) return "Connect first";
+    if (linkOff()) return "Link is off";
+    if (ptMoving()) return "ProTools is playing";
+    if (inServiceWindow(nowMs())) return "Not during a service";
+    var n = nextAuto(nowMs()); if (n && n.pt - nowMs() < 120000 && n.pt - nowMs() > -60000) return "Too close to hit play";
+    if (sessionEndPT() === null) return "No session loaded";
+    return null;
+  }
+  $("bLinkTest").addEventListener("click", function () {
+    var b = this, why = linkTestBlocked(); if (why) { flashBtn(b, why); return; }
+    var back = ptPosNow(); if (back === null && link.restoredPos != null) back = link.restoredPos;
+    var silent = sessionEndPT() + 60, before = link.lastHeard || 0;
+    link.checkBack = back;
+    link.checking = true; b.disabled = true; b.textContent = "Testing\u2026";
+    locateTo(silent, "link test (silence past the end)");
+    setTimeout(function () { ptSend(MMC_PLAY, "Play (link test)"); }, 500);
+    setTimeout(function () { ptSend(MMC_STOP, "Stop (link test)", null, true); }, 1700);
+    setTimeout(function () {
+      if (back !== null) locateTo(back, "back where it was");
+      var ok = (link.lastHeard || 0) > before;
+      setTimeout(function () { link.checking = false; link.checkBack = null; if (back !== null) { link.playStart = back; } b.disabled = false; }, 800);
+      b.textContent = ok ? "Link OK \u2713" : "No timecode came back";
+      b.classList.toggle("ok", ok); b.classList.toggle("bad", !ok);
+      ptLog(ok ? "Link test: ProTools played and sent timecode back" : "Link test: Play sent, but no timecode came back (check ProTools' MTC Generator port)");
+      setTimeout(function () { b.textContent = "Test"; b.classList.remove("ok", "bad"); }, 4000);
+    }, 2500);
+  });
   $("bTestEnd").addEventListener("click", function () { endTestRun(); });
   Array.prototype.forEach.call(document.querySelectorAll("[data-test]"), function (b) {
     b.addEventListener("click", function () { startTestRun(+b.getAttribute("data-test")); });
@@ -4017,7 +4062,12 @@ h2, .card-head h2 { font-size: 1.35rem; }
     if (key && state.skips[key]) return { fires: false, level: "manual", text: "Manual start", sub: "Auto-start skipped for this service" };
     if (link.inp && link.lastHeard) return { fires: true, level: "ok", text: "Auto-start ready", sub: "ProTools answered at " + msClock(link.lastHeard) };
     if (link.inp && link.heardBefore && nowMs() - link.heardBefore < 12 * 3600000) return { fires: true, level: "ok", text: "Auto-start ready", sub: "ProTools answered today at " + msClock(link.heardBefore) };
-    return { fires: true, level: "warn", text: "Auto-start armed", sub: link.inp ? "Not confirmed yet. Use Check link." : "Not listening to ProTools, so it can\u2019t confirm" };
+    // pressing Play only needs the connection to ProTools; hearing its timecode just confirms afterwards
+    if (link.inp && link.inp.state !== "disconnected") {
+      var nx = nextAuto(nowMs());
+      return { fires: true, level: "ok", text: "Auto-start ready", sub: "Connected to ProTools" + (nx ? " \u00b7 plays itself at " + msClock(nx.pt) : "") };
+    }
+    return { fires: true, level: "warn", text: "Auto-start armed", sub: "Not listening to ProTools, so it can\u2019t confirm the start" };
   }
   function paintChip(el, st) {
     var h = '<span class="dot" aria-hidden="true"></span><span class="mt">' + esc(st.text) + '</span><span class="ms">' + esc(st.sub) + "</span>";
@@ -4208,6 +4258,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
   // where ProTools is right now, matching its own counter: corrected for the 2-frame timecode delay and
   // carried forward between timecode blocks while it plays; the last heard place when it's stopped
   function ptPosNow() {
+    if (link.checking && link.checkBack != null) return link.checkBack;
     var e = tcElapsed(); if (e === null) return null;
     // stopped: the last block plus the time ProTools kept rolling after it (up to the last quarter-frame)
     if (!(link.inp && ptMoving())) {
@@ -4256,6 +4307,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
   }
   function resolveStart() {
     var ps = link.pending; link.pending = null;
+    if (link.checking) return;
     var e = tcElapsed();
     if (lastCalc && lastCalc.program === "switch") {
       // ProTools started near the top of a part: mark that part as started
@@ -4316,7 +4368,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
   }
   // 30 seconds past the end of the session with ProTools still rolling: stop it and go back to the top (once per playback)
   function endStopCheck() {
-    if (state.ptEndStop === false || linkOff() || !link.out || !link.inp || !ptMoving()) return;
+    if (link.checking || state.ptEndStop === false || linkOff() || !link.out || !link.inp || !ptMoving()) return;
     if (link.endStopped && link.endStopped === link.firstQF) return;
     var end = sessionEndPT(), pos = ptPosNow();
     if (end === null || pos === null || pos < end + 30) return;
@@ -5031,7 +5083,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
           cls += " is-run";
           // after the session ends, count down to Stagetime and Go to Message instead
           var after = null;
-          if (-left > lastCalc.len) lastCalc.cues.forEach(function (c) { var isSw = /\bsw\b/.test(c.cls), ct = isSw ? startAt + (c.rel - lastCalc.startRel) * 1000 : pick.o.t + c.rel * 1000; if (!after && (isSw || c.cls.indexOf("svc") > -1) && ct > now) after = { n: c.label, t: ct }; });
+          if (-left > lastCalc.len) lastCalc.cues.forEach(function (c) { var isSw = /\bsw\b/.test(c.cls), ct = isSw ? startAt + (c.rel - lastCalc.startRel) * 1000 : svcT(pick.o) + c.rel * 1000; if (!after && (isSw || c.cls.indexOf("svc") > -1) && ct > now) after = { n: c.label, t: ct }; });
           html = after
             ? '<span class="nv">' + esc(name) + '</span><span class="nv">' + esc(after.n) + ' in <b>' + monoHtml(fmtDur(Math.ceil((after.t - now) / 1000))) + "</b></span>"
             : '<span class="nv">' + esc(name) + '</span><span class="nv">ProTools <b>' + monoHtml(fmtDur(Math.floor(-left))) + "</b></span>";
@@ -5047,8 +5099,8 @@ h2, .card-head h2 { font-size: 1.35rem; }
     if (nb._h !== html || nb.className !== cls) { nb.innerHTML = html; nb._h = html; nb.className = cls; }
     if (pick && lastCalc && lastCalc.handsRel !== null && lastCalc.handsRel !== undefined) {
       var fo = sheetFocus(now, pick.o);
-      if (fo && now >= fo.t + lastCalc.mStartRel * 1000 && now < fo.t + lastCalc.handsRel * 1000 + 1000) {
-        var hl = Math.max(0, Math.ceil((fo.t + lastCalc.handsRel * 1000 - now) / 1000));
+      if (fo && now >= svcT(fo) + lastCalc.mStartRel * 1000 && now < svcT(fo) + lastCalc.handsRel * 1000 + 1000) {
+        var hl = Math.max(0, Math.ceil((svcT(fo) + lastCalc.handsRel * 1000 - now) / 1000));
         cls = "nextline" + (hl <= 30 ? " cd-red" : hl <= 120 ? " soon" : "");
         html = '<span class="nv">' + esc(fo.sv.day + " " + svcClock(fo.sv.sec)) + '</span><span class="nv"><span class="vb">Message</span> <b>' + monoHtml(fmtMMSS(hl)) + "</b> to Hands</span>";
         if (nb._h !== html || nb.className !== cls) { nb.innerHTML = html; nb._h = html; nb.className = cls; }
