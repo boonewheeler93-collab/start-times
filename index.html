@@ -1904,7 +1904,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v112";
+  var APP_BUILD = "v113";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2713,10 +2713,10 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var svcs = state.services.map(function (s) { return { day: s.day, sec: parseClock(s.time) }; })
       .filter(function (s) { return s.sec !== null; })
       .sort(function (a, b) { return dayRank(a.day) - dayRank(b.day) || a.sec - b.sec; });
-    // TEST (Saturday 11/21 evening only): a 9:01 PM service, hit play 8:52:11 PM; gone at 9:45 PM
+    // TEST (Saturday 11/21 evening only): a 9:07 PM service, hit play 8:58:11 PM; gone at 9:45 PM
     var tNow = nowMs();
     if (tNow > Date.parse("2026-11-21T20:00:00-06:00") && tNow < Date.parse("2026-11-21T21:45:00-06:00"))
-      svcs.unshift({ day: "Saturday", sec: 21 * 3600 + 1 * 60, test: true });
+      svcs.unshift({ day: "Saturday", sec: 21 * 3600 + 7 * 60, test: true });
     if (state.sel >= svcs.length || state.sel < 0) state.sel = 0;
 
     var copy = ["Start times (final downbeat " + fmtSigned(finalRel) + ")", ""];
