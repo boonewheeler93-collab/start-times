@@ -1474,9 +1474,33 @@ body.tv-mode.drop-now .drop-take-box { background: #ff3b30; animation: none; }
 /* the ready check stands in for the status pills while it's up */
 body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.ready-on #bSvcView { display: none !important; }
 
-/* line the Cue Sheet heading up with the cue names below it */
-.cue-h { padding-left: 42px; }
-@media (max-width: 440px) { .cue-h { padding-left: 38px; } }
+/* Cue Sheet heading: a size up; its C sits over the progress line (set from the page) */
+.cue-h { font-size: 1.6rem !important; letter-spacing: -0.015em; }
+
+/* 1) one meaning per color: the pre-start countdown is calm accent blue, amber stays for real attention */
+.b-count.is-soon { background: rgba(103,232,249,0.08); border-color: rgba(103,232,249,0.5); }
+.b-count.is-soon .b-lab, .b-count.is-soon .b-big { color: #8be9fb; }
+/* 2) fewer boxes inside boxes */
+.b-pt { background: rgba(255,255,255,0.025); border-color: rgba(255,255,255,0.07); }
+.b-pt .ghost, .b-pt .nudge-btn, .b-pt-sync, #bLinkTog { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.10); }
+.b-pt .pill-s { border-color: rgba(255,255,255,0.12); }
+.b-times, .b-reports { background: transparent; border-color: rgba(255,255,255,0.06); }
+/* 3) two button sizes: the main actions, and everything secondary */
+#bHoldPlay, #bGo, #bStop { min-height: 76px; }
+#bSkip { min-height: 76px; }
+.b-pt-sync, #bLinkTog, .link-test, .test-run button, .rep-h button { min-height: 38px; padding-top: 6px; padding-bottom: 6px; font-size: 0.9rem; }
+.b-pt .nudge-btn, #bPtPlay, #bPtStop, .cued-play, .cued-bar .nudge-btn { min-height: 50px; }
+/* 4) cue sheet: bigger times, quieter details */
+.lcs-time { font-size: 1.35rem; font-weight: 600; }
+.lcs-meta { font-size: 0.78rem; opacity: 0.8; }
+.lcs-lead { font-size: 0.85rem; }
+
+/* pre-start countdown: accent blue in the last 2 minutes, green ("go") in the last 30 seconds; red stays for the drop and Stop */
+#bCountBox.cd-yellow { background: rgba(103,232,249,0.08); border-color: rgba(103,232,249,0.5); }
+#bCountBox.cd-yellow .b-big, #bCountBox.cd-yellow .b-lab { color: #8be9fb; text-shadow: 0 0 22px rgba(103,232,249,0.3); }
+#bCountBox.cd-red { background: rgba(74,222,128,0.10); border-color: rgba(74,222,128,0.6); }
+#bCountBox.cd-red .b-big, #bCountBox.cd-red .b-lab { color: #4ade80; text-shadow: 0 0 22px rgba(74,222,128,0.35); }
+#bPtSync.b-pt-sync { min-height: 38px; height: 38px; padding-top: 0; padding-bottom: 0; }
 </style>
 </head>
 <body>
@@ -2003,7 +2027,20 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v138";
+  var APP_BUILD = "v139";
+  function alignCueHeads() {
+    Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
+      var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
+      if (!rail || !h.firstChild || !rail.getBoundingClientRect().height) return;
+      h.style.paddingLeft = "0px";
+      var rg = document.createRange(); rg.setStart(h.firstChild, 0); rg.setEnd(h.firstChild, 1);
+      var c = rg.getBoundingClientRect(), r = rail.getBoundingClientRect();
+      var pad = (r.left + r.width / 2) - (c.left + c.width / 2);
+      h.style.paddingLeft = Math.max(0, Math.round(pad * 10) / 10) + "px";
+    });
+  }
+  window.addEventListener("resize", alignCueHeads);
+  setInterval(alignCueHeads, 2000); setTimeout(alignCueHeads, 300);
   (function titleCaseLabels() {
     var SEL = "h1, h2, h3, button, .b-lab, .modechip .mt, .ready-h, .ready-pill, .svc-chip, .reh-chip > span, .cued-t small, .b-times-h, .vx-next-k, .pill-s, .live-badge, summary, label.field-l, .field > label";
     var MINOR = { a: 1, an: 1, the: 1, and: 1, but: 1, or: 1, nor: 1, for: 1, on: 1, at: 1, to: 1, from: 1, by: 1, of: 1, "in": 1, with: 1, as: 1, vs: 1, per: 1 };
@@ -3134,7 +3171,7 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
     var fold = !checking && bads === 0 && age > doneAt + 1200 && !box._open;
     var h;
     if (fold) h = '<button type="button" class="ready-pill"><span class="rc-dot"></span><span>Ready check \u00b7 all set</span><span class="rp-open">Show list</span></button>';
-    else h = '<div class="ready-h">' + (checking ? "Ready check \u00b7 checking\u2026" : bads ? "Ready check \u00b7 " + bads + " to look at" : "Ready check \u00b7 all set") + "</div><ul>" +
+    else h = '<div class="ready-h">' + (checking ? "Ready check \u00b7 checking\u2026" : bads ? "Ready check \u00b7 " + bads + (bads === 1 ? " needs attention" : " need attention") : "Ready check \u00b7 all set") + "</div><ul>" +
       items.map(function (i, k) {
         var pending = age < 500 + k * 350;
         return '<li class="' + (pending ? "checking" : i[0]) + '"><span>' + (pending ? '<i class="rc-spin"></i>' : i[0] === "ok" ? "\u2713" : "\u26a0") + "</span>" + esc(i[1]) + "</li>";
