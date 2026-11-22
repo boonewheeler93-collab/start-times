@@ -1437,6 +1437,28 @@ h2, .card-head h2 { font-size: 1.35rem; }
 .modechip.spin .dot { background: transparent !important; border: 2px solid currentColor; border-right-color: transparent; box-sizing: border-box; animation: chipSpin 0.8s linear infinite; box-shadow: none !important; }
 @keyframes chipSpin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .modechip.spin .dot { animation-duration: 2.4s; } }
+
+/* service view */
+.svc-chip { display: none; padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 0.85rem; color: var(--ink-2, #b8c0dc); border: 1px dashed var(--glass-line, rgba(255,255,255,0.2)); }
+body.svc-view .svc-chip { display: inline-flex; align-items: center; }
+body.svc-view #bLinkTest, body.svc-view #bPtSync, body.svc-view .b-pt-nudge, body.svc-view #bCued, body.svc-view .test-run, body.svc-view .b-reports, body.svc-view .b-mem-h { display: none !important; }
+/* undo */
+.undo-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 10px; padding: 10px 12px 10px 18px; border-radius: 16px;
+  background: rgba(255,255,255,0.08); border: 1px solid var(--glass-line, rgba(255,255,255,0.16)); font-weight: 700; }
+.undo-bar[hidden] { display: none; }
+.undo-bar button { font: inherit; font-weight: 800; padding: 8px 18px; min-height: 40px; border-radius: 999px; border: 0; background: var(--ink, #eef1ff); color: #0b1020; cursor: pointer; }
+/* TV: drop takeover */
+.drop-take-box { display: none; }
+body.tv-mode.drop-take .drop-take-box, body.tv-mode.drop-now .drop-take-box { display: flex; position: fixed; inset: 0; z-index: 90; flex-direction: column; align-items: center; justify-content: center;
+  background: #8f0f0b; color: #fff; text-align: center; padding-bottom: 12vh; }
+body.tv-mode.drop-take .drop-take-box { animation: dropBreath 1s ease-in-out infinite; }
+body.tv-mode.drop-now .drop-take-box { background: #ff3b30; animation: none; }
+.dt-k { font-weight: 800; font-size: min(7vw, 10vh); letter-spacing: 0.02em; }
+.dt-n { font-family: var(--clockfont); font-weight: 800; font-size: min(42vw, 62vh); line-height: 0.95; font-variant-numeric: tabular-nums; }
+.dt-s { font-weight: 800; font-size: min(4vw, 6vh); opacity: 0.85; }
+.dt-drop { font-weight: 900; font-size: min(30vw, 50vh); letter-spacing: 0.04em; }
+@keyframes dropBreath { 50% { background: #b3140f; } }
+@media (prefers-reduced-motion: reduce) { body.tv-mode.drop-take .drop-take-box { animation: none; } }
 </style>
 </head>
 <body>
@@ -1656,6 +1678,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     <div class="vx-cd" id="vNextCd"></div>
     <div class="vx-at" id="vNextSub"></div>
     <div class="vx-then" id="vThen"></div>
+    <div class="drop-take-box" id="vDropTake" aria-live="assertive"></div>
   </section>
   <section class="vx-card vx-ptcard" id="vPtCard" hidden aria-label="ProTools position">
     <div class="vx-ptc" id="vPtc"><span class="vx-ptc-k">ProTools</span><span class="vx-ptc-n" id="vPtcN"></span><span class="vx-ptc-s" id="vPtcS"></span></div>
@@ -1692,8 +1715,9 @@ h2, .card-head h2 { font-size: 1.35rem; }
         </div>
       </div>
     </div>
-    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><button type="button" class="link-test" id="bLinkTest" title="Play 1 second in silence past the end of the session, then put ProTools back">Test</button><div class="linkchip" id="bLinkChip" role="status"></div><div class="reh-chip" id="bReh" hidden><span>● Rehearsal run</span><button type="button" id="bRehEnd">End rehearsal</button></div><div class="reh-chip test-chip" id="bTest" hidden><span id="bTestT">● Test run</span><button type="button" id="bTestEnd">End test</button></div><button type="button" class="unlock-btn" id="bUnlock" hidden>Hold to unlock</button></div>
+    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><button type="button" class="link-test" id="bLinkTest" title="Play 1 second in silence past the end of the session, then put ProTools back">Test</button><div class="linkchip" id="bLinkChip" role="status"></div><div class="svc-chip" id="bSvcView">Service view \u00b7 hold Unlock for rehearsal tools</div><div class="reh-chip" id="bReh" hidden><span>● Rehearsal run</span><button type="button" id="bRehEnd">End rehearsal</button></div><div class="reh-chip test-chip" id="bTest" hidden><span id="bTestT">● Test run</span><button type="button" id="bTestEnd">End test</button></div><button type="button" class="unlock-btn" id="bUnlock" hidden>Hold to unlock</button></div>
     <div class="ready" id="bReady" hidden></div>
+    <div class="undo-bar" id="bUndo" hidden><span id="bUndoT"></span><button type="button" id="bUndoBtn">Undo</button></div>
     <div class="b-count" id="bCountBox">
       <div class="b-lab" id="bLab"></div>
       <div class="b-big" id="bBig"></div>
@@ -1961,7 +1985,7 @@ h2, .card-head h2 { font-size: 1.35rem; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v133";
+  var APP_BUILD = "v134";
   try { if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(function () {}); } catch (e) {}
   state.weekVer = DATA_VER;
 
@@ -3388,6 +3412,9 @@ h2, .card-head h2 { font-size: 1.35rem; }
   }
   function renderTransport() {
     var rc = $("bReh"); if (rc && rc.hidden === !!state.rehearsal) rc.hidden = !state.rehearsal;
+    // service view: during a service, rehearsal tools step aside (holding Unlock brings them back)
+    var svcView = inServiceWindow(nowMs()) && !unlockedNow();
+    if (document.body.classList.contains("svc-view") !== svcView) document.body.classList.toggle("svc-view", svcView);
     var lt = $("bLinkTest");
     if (lt) { var showT = !!link.out && (!linkConfirmed() || link.checking || lt.classList.contains("ok") || lt.classList.contains("bad")); if (lt.hidden === showT) lt.hidden = !showT; }
     var tc0 = $("bTest"), tOn = !!(state.testRun && nowMs() < state.testRun.until);
@@ -3998,6 +4025,26 @@ h2, .card-head h2 { font-size: 1.35rem; }
     if (!booth.key) return;
     state.live = { key: booth.key, at: nowMs() };
     persist(); renderBooth();
+  });
+  // UNDO: Started, Reset, End rehearsal and End test can be taken back for 10 seconds
+  var undo = { snap: null, timer: null };
+  function takeSnap() { var o = {}; SHARED.forEach(function (k) { o[k] = state[k] === undefined ? null : JSON.parse(JSON.stringify(state[k])); }); return o; }
+  function offerUndo(label, snap) {
+    undo.snap = snap; $("bUndoT").textContent = label; $("bUndo").hidden = false;
+    clearTimeout(undo.timer); undo.timer = setTimeout(function () { $("bUndo").hidden = true; undo.snap = null; }, 10000);
+  }
+  ["bGo", "bReset", "bRehEnd", "bTestEnd"].forEach(function (id) {
+    var el = $(id); if (!el) return;
+    el.addEventListener("click", function () {
+      var snap = takeSnap(), before = JSON.stringify(snap), label = el.textContent.trim();
+      setTimeout(function () { if (JSON.stringify(takeSnap()) !== before) offerUndo("Done: " + label, snap); }, 0);
+    }, true);   // runs first, before the button does its job
+  });
+  $("bUndoBtn").addEventListener("click", function () {
+    if (!undo.snap) return;
+    Object.keys(undo.snap).forEach(function (k) { if (undo.snap[k] === null) delete state[k]; else state[k] = undo.snap[k]; });
+    undo.snap = null; $("bUndo").hidden = true; clearTimeout(undo.timer);
+    ptLog("Undone"); persist(); compute(); renderBooth();
   });
   $("bRehEnd").addEventListener("click", function () { endRehearsal("ended in the booth"); });
   // TEST: prove both directions without sound: jump to silence past the end, play ~1 s, stop, put ProTools back
@@ -5384,6 +5431,17 @@ h2, .card-head h2 { font-size: 1.35rem; }
       fitCountdown();
       setHtml($("vNextSub"), "at " + vTime(r.t) + (r.g === "drop" && r.pt != null ? ' <span class="vx-pt">ProTools ' + fmtDur(Math.round(r.pt)) + "</span>" : ""));
       nx.classList.toggle("is-drop", r.g === "drop");
+      // TV view: the last 10 seconds before the screen drop take over the screen, then DROP for 3 seconds
+      var dropR = null; rows.forEach(function (x) { if (!dropR && x.g === "drop") dropR = x; });
+      var dLeft = dropR ? (dropR.t - now) / 1000 : null;
+      var takeover = !!(dropR && dLeft <= 10 && dLeft > 0), dropNow = !!(dropR && dLeft <= 0 && dLeft > -3);
+      document.body.classList.toggle("drop-take", takeover);
+      document.body.classList.toggle("drop-now", dropNow);
+      var dt = $("vDropTake");
+      if (dt) {
+        var dh = takeover ? '<div class="dt-k">Drop Screen in</div><div class="dt-n">' + Math.ceil(dLeft) + '</div>' + (dropR.pt != null ? '<div class="dt-s">ProTools ' + fmtDur(Math.round(dropR.pt)) + "</div>" : "") : dropNow ? '<div class="dt-drop">DROP</div>' : "";
+        if (dt._h !== dh) { dt.innerHTML = dh; dt._h = dh; }
+      }
       // TV view: one line with the item after this one
       var th = rows[nextI + 1], thH = "";
       if (th) thH = '<span class="vx-then-k">Then</span> ' + (th.song ? '<span class="vx-then-song">' + esc(th.n) + "</span>" : esc(th.n)) + (th.ld ? ' <span class="vx-then-ld">' + esc(th.ld) + "</span>" : "") + ' <span class="vx-then-t">' + (th.g === "drop" && th.pt != null ? "ProTools " + fmtDur(Math.round(th.pt)) : vTime(th.t)) + "</span>";
