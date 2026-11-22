@@ -1405,6 +1405,23 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
 .cued-play { order: 2; } .cued-bar .nudge-btn { order: 3; }
 .cued-play.is-stop { border-color: #ff6b62; background: color-mix(in srgb, #ff5a4f 24%, transparent); color: #ffd2cf; }
 .cued-play.is-stop::after { background: #ff6b62; }
+
+.ready { margin: 0 0 10px; padding: 12px 16px; border-radius: 18px; border: 1px solid rgba(74,222,128,0.5); background: rgba(74,222,128,0.07); }
+.ready.has-bad { border-color: rgba(255,194,114,0.7); background: rgba(255,194,114,0.08); }
+.ready[hidden] { display: none; }
+.ready-h { font-weight: 800; margin-bottom: 6px; }
+.ready ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ready li { display: flex; gap: 10px; font-size: 0.95rem; line-height: 1.3; }
+.ready li span { width: 1.2em; flex: none; font-weight: 800; }
+.ready li.ok span { color: #4ade80; } .ready li.warn span { color: #ffc272; } .ready li.bad span { color: #ff6b62; } .ready li.bad { color: #ffd2cf; }
+.test-chip { border-color: #fbbf24; background: color-mix(in srgb, #fbbf24 14%, transparent); color: #fde68a; }
+.test-chip button { background: #fbbf24; color: #1f1400; }
+.test-run { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; color: var(--ink-2); font-weight: 700; font-size: 0.92rem; }
+.test-run button { font: inherit; padding: 6px 14px; min-height: 36px; border-radius: 999px; }
+.b-reports { margin-top: 14px; }
+.rep { padding: 12px 14px; border-radius: 16px; border: 1px solid var(--glass-line, rgba(255,255,255,0.12)); background: rgba(255,255,255,0.04); margin-top: 8px; }
+.rep-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; } .rep-h button { font: inherit; font-size: 0.85rem; padding: 4px 12px; min-height: 32px; border-radius: 999px; }
+.rep ul { margin: 6px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 0.92rem; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -1660,7 +1677,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
         </div>
       </div>
     </div>
-    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><div class="linkchip" id="bLinkChip" role="status"></div><div class="reh-chip" id="bReh" hidden><span>● Rehearsal run</span><button type="button" id="bRehEnd">End rehearsal</button></div><button type="button" class="unlock-btn" id="bUnlock" hidden>Hold to unlock</button></div>
+    <div class="b-mode"><div class="modechip" id="bMode" role="status"></div><div class="linkchip" id="bLinkChip" role="status"></div><div class="reh-chip" id="bReh" hidden><span>● Rehearsal run</span><button type="button" id="bRehEnd">End rehearsal</button></div><div class="reh-chip test-chip" id="bTest" hidden><span id="bTestT">● Test run</span><button type="button" id="bTestEnd">End test</button></div><button type="button" class="unlock-btn" id="bUnlock" hidden>Hold to unlock</button></div>
+    <div class="ready" id="bReady" hidden></div>
     <div class="b-count" id="bCountBox">
       <div class="b-lab" id="bLab"></div>
       <div class="b-big" id="bBig"></div>
@@ -1709,6 +1727,11 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     <section class="b-times" aria-labelledby="bTimesH">
       <h3 class="b-times-h" id="bTimesH">Start times</h3>
       <ul class="b-times-list" id="bTimesList"></ul>
+      <div class="test-run"><span>Test run, hit play in</span><button type="button" class="ghost" data-test="2">2 min</button><button type="button" class="ghost" data-test="3">3 min</button><button type="button" class="ghost" data-test="5">5 min</button></div>
+    </section>
+    <section class="b-reports" aria-labelledby="bRepH">
+      <h3 class="b-times-h" id="bRepH">Service reports</h3>
+      <div id="bReports"><p class="b-mem-h">A short report appears here about 2 minutes after each service ends (after HANDS and the last message cue).</p></div>
     </section>
     <p class="b-keys">Space: Started. Hold S: stop ProTools. Up and down arrows: adjust the clock. F: full screen. Esc: close.</p>
     </div>
@@ -1923,7 +1946,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v124";
+  var APP_BUILD = "v125";
+  try { if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js").catch(function () {}); } catch (e) {}
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -2732,10 +2756,8 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var svcs = state.services.map(function (s) { return { day: s.day, sec: parseClock(s.time) }; })
       .filter(function (s) { return s.sec !== null; })
       .sort(function (a, b) { return dayRank(a.day) - dayRank(b.day) || a.sec - b.sec; });
-    // TEST (Saturday 11/21 evening only): a 10:10 PM service, hit play 10:01:11 PM; gone at 11:15 PM
-    var tNow = nowMs();
-    if (tNow > Date.parse("2026-11-21T20:00:00-06:00") && tNow < Date.parse("2026-11-21T23:15:00-06:00"))
-      svcs.unshift({ day: "Saturday", sec: 22 * 3600 + 10 * 60, test: true });
+    // a test run from the booth: a temporary service whose hit play is a few minutes away
+    if (state.testRun && nowMs() < state.testRun.until) svcs.unshift({ day: state.testRun.day, sec: state.testRun.sec, test: true });
     if (state.sel >= svcs.length || state.sel < 0) state.sel = 0;
 
     var copy = ["Start times (final downbeat " + fmtSigned(finalRel) + ")", ""];
@@ -2990,12 +3012,110 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     ptLog("Rehearsal run started: the booth runs as if " + o.sv.day + " " + svcClock(o.sv.sec) + " started now");
     persist(); return true;
   }
+  // READY CHECK: 10 minutes before hit play until it plays
+  function renderReady() {
+    var box = $("bReady"); if (!box) return;
+    var show = false, items = [], now = nowMs();
+    if (lastCalc && !state.rehearsal && booth.key) {
+      var o = null; occurrences(now).forEach(function (x) { if (!o && keyOf(x) === booth.key) o = x; });
+      var started = lastCalc.program === "switch" ? !!(state.swLive && state.swLive.key === booth.key) : !!(state.live && state.live.key === booth.key);
+      if (o) {
+        var hp = o.t + lastCalc.startRel * 1000, left = hp - now;
+        if (left > 0 && left <= 600000 && !started) {
+          show = true;
+          var ok = function (t) { items.push(["ok", t]); }, warn = function (t) { items.push(["warn", t]); }, bad = function (t) { items.push(["bad", t]); };
+          if (link.out && link.inp) ok("ProTools link connected"); else bad("ProTools link not connected: main page \u203a ProTools link \u203a Connect");
+          if (link.out && linkOff()) bad("Link is off: tap Link on"); else if (link.out) ok("Link on");
+          if (link.tc && nowMs() - (link.lastHeard || 0) < 12 * 3600000) ok("Timecode heard from ProTools"); else warn("No timecode yet: press Play in ProTools once, away from the top, then stop");
+          if (state.auto) ok("Auto-start on: ProTools plays itself at " + msClock(hp)); else warn("Auto-start off: press Play yourself at " + msClock(hp));
+          if (state.ptLag != null) ok("Start delay learned: " + (+state.ptLag).toFixed(2) + " s"); else warn("Start delay not learned yet: the first auto-start may be a fraction late");
+          if (typeof sync !== "undefined" && sync && sync.ready) ok("Sync on: other screens follow this booth"); else warn("Sync not signed in: other screens won\u2019t follow");
+        }
+      }
+    }
+    if (box.hidden === show) box.hidden = !show;
+    if (!show) return;
+    var bads = items.filter(function (i) { return i[0] !== "ok"; }).length;
+    var h = '<div class="ready-h">' + (bads ? "Ready check \u00b7 " + bads + " to look at" : "Ready check \u00b7 all set") + "</div><ul>" +
+      items.map(function (i) { return '<li class="' + i[0] + '"><span>' + (i[0] === "ok" ? "\u2713" : "\u26a0") + "</span>" + esc(i[1]) + "</li>"; }).join("") + "</ul>";
+    if (box._h !== h) { box.innerHTML = h; box._h = h; box.classList.toggle("has-bad", bads > 0); }
+  }
+  // SERVICE LOG and REPORTS: what actually happened, written up ~2 minutes after the hand-off
+  function svcLogFor(key) { if (!key || state.rehearsal) return null; state.svcLog = state.svcLog || {}; return state.svcLog[key] || (state.svcLog[key] = {}); }
+  var wasMoving = false, lastMovePos = null;
+  setInterval(function () {
+    if (!lastCalc || state.rehearsal) { wasMoving = ptMoving(); return; }
+    var now = nowMs(), mv = ptMoving(), key = lastCalc.program === "switch" ? (state.swLive && state.swLive.key) : (state.live && state.live.key);
+    var lg = key ? svcLogFor(key) : null;
+    if (lg && link.inp) {
+      var pos = ptPosNow(), end = sessionEndPT();
+      if (mv && pos !== null && end !== null && pos >= end - 0.2 && !lg.finalAt) { lg.finalAt = now; persist(); }
+      // where it actually stopped (before ProTools jumps back to where playback started)
+      if (wasMoving && !mv && inServiceWindow(now) && lastMovePos !== null && end !== null && lastMovePos < end - 1) { (lg.stops = lg.stops || []).push({ at: now, pos: lastMovePos }); persist(); }
+    }
+    if (mv) { var e0 = tcElapsed(); if (e0 !== null) lastMovePos = e0 + (link.tcLead || 0) + Math.max(0, ((link.lastQF || 0) - (link.tcAt || 0)) / 1000); }
+    wasMoving = mv;
+    // write reports for finished services
+    if (!state.svcLog) return;
+    Object.keys(state.svcLog).forEach(function (k) {
+      var L = state.svcLog[k]; if (L.reported) return;
+      var o = null; occurrences(now - 8 * 3600000).forEach(function (x) { if (!o && keyOf(x) === k) o = x; }); if (!o) return;
+      // the end of the whole service: the later of HANDS and the last message cue (like Keys End), or the set's end
+      var endRel = Math.max(lastCalc.finalRel || 0, lastCalc.handsRel != null ? lastCalc.handsRel : 0, lastCalc.tail || 0);
+      if (now < o.t + (endRel + 120) * 1000) return;
+      L.reported = true; writeReport(k, o, L); persist();
+    });
+  }, 250);
+  function writeReport(k, o, L) {
+    var lines = [], d = new Date(o.t);
+    var title = o.sv.day + " " + svcClock(o.sv.sec) + " \u00b7 " + d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + (state.testRun && o.sv.day === state.testRun.day && o.sv.sec === state.testRun.sec ? " (test run)" : "");
+    var planned = o.t + lastCalc.startRel * 1000;
+    if (L.startDelta != null) lines.push("Start: auto-start; ProTools rolled " + Math.abs(L.startDelta).toFixed(2) + " s " + (L.startDelta >= 0 ? "after" : "before") + " hit play (" + msClock(planned) + ")");
+    else if (L.startAt) { var sd = (L.startAt - planned) / 1000; lines.push("Start: " + (L.startHow || "by hand") + ", " + (Math.abs(sd) < 0.5 ? "on time" : fmtDur(Math.abs(sd)) + (sd > 0 ? " late" : " early")) + " (hit play " + msClock(planned) + ")"); }
+    else lines.push("Start: not heard from ProTools");
+    if (L.stops && L.stops.length) L.stops.forEach(function (st) { lines.push("ProTools stopped mid-set at " + fmtPT(st.pos) + " (" + msClock(st.at) + ")"); });
+    else lines.push("No stops during the set");
+    if (L.finalAt) { var fp = o.t + lastCalc.finalRel * 1000, fd = (L.finalAt - fp) / 1000; lines.push("Final downbeat " + msClock(L.finalAt) + (Math.abs(fd) < 1 ? ", on time" : ", " + fmtDur(Math.abs(fd)) + (fd > 0 ? " late" : " early"))); }
+    if (lastCalc.program !== "switch" && lastCalc.mStartRel != null && lastCalc.msg != null) { var md = lastCalc.mStartRel - lastCalc.msg; lines.push("Message started " + (Math.abs(md) < 1 ? "on time" : fmtDur(Math.abs(md)) + (md > 0 ? " late" : " early"))); }
+    if (L.endPause) lines.push("End-of-session pause used at " + fmtPT(L.endPause));
+    if (state.ptLag != null) lines.push("ProTools start delay (learned): " + (+state.ptLag).toFixed(2) + " s");
+    state.reports = [{ key: k, title: title, lines: lines, at: Date.now() }].concat((state.reports || []).filter(function (r) { return r.key !== k; })).slice(0, 12);
+    ptLog("Service report written: " + title);
+  }
+  function renderReports() {
+    var host = $("bReports"); if (!host) return;
+    var rs = state.reports || [];
+    var h = rs.length ? rs.slice(0, 4).map(function (r, i) {
+      return '<div class="rep"><div class="rep-h"><b>' + esc(r.title) + '</b><button type="button" class="ghost" data-copy="' + i + '">Copy</button></div><ul>' + r.lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul></div>";
+    }).join("") : '<p class="b-mem-h">A short report appears here about 2 minutes after each service ends (after HANDS and the last message cue).</p>';
+    if (host._h !== h) { host.innerHTML = h; host._h = h; }
+  }
+  function startTestRun(min) {
+    if (!lastCalc) return;
+    var now = nowMs(), sr = lastCalc.startRel * 1000;
+    var svcAt = Math.ceil((now + min * 60000 - sr) / 60000) * 60000, d = new Date(svcAt);
+    var hp = svcAt + sr;
+    state.testRun = { day: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][d.getDay()], sec: d.getHours() * 3600 + d.getMinutes() * 60, hp: hp, until: hp + 3600000 };
+    booth.manual = false; booth.key = null;
+    ptLog("Test run: hit play at " + msClock(hp));
+    persist(); compute(); if (booth.open) renderBooth();
+  }
+  function endTestRun() {
+    if (!state.testRun) return;
+    var d = new Date(state.testRun.hp - lastCalc.startRel * 1000), k = null;
+    occurrences(nowMs() - 3 * 3600000).forEach(function (o) { if (o.sv.day === state.testRun.day && o.sv.sec === state.testRun.sec) k = keyOf(o); });
+    if (k && state.live && state.live.key === k) state.live = null;
+    if (k && state.svcLog) delete state.svcLog[k];
+    state.testRun = null; booth.key = null;
+    ptLog("Test run ended"); persist(); compute(); if (booth.open) renderBooth();
+  }
   function endRehearsal(why) {
     if (!state.rehearsal) return;
     var k = state.rehearsal.key;
     state.clockOff = state.rehearsal.base || 0;
     if (state.live && state.live.key === k) state.live = null;
     delete link.done[k];
+    if (state.svcLog) delete state.svcLog[k];
     state.rehearsal = null;
     ptLog("Rehearsal run ended" + (why ? " (" + why + ")" : ""));
     persist(); if (booth.open) renderBooth();
@@ -3240,6 +3360,10 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   function renderTransport() {
     var rc = $("bReh"); if (rc && rc.hidden === !!state.rehearsal) rc.hidden = !state.rehearsal;
+    var tc0 = $("bTest"), tOn = !!(state.testRun && nowMs() < state.testRun.until);
+    if (tc0 && tc0.hidden === tOn) tc0.hidden = !tOn;
+    if (tOn) { var tt = "\u25cf Test run \u00b7 hit play " + msClock(state.testRun.hp); if ($("bTestT").textContent !== tt) $("bTestT").textContent = tt; }
+    renderReady(); renderReports();
     var lc = $("bLinkChip");
     if (lc) {
       var lcls, ltxt;
@@ -3845,6 +3969,15 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     persist(); renderBooth();
   });
   $("bRehEnd").addEventListener("click", function () { endRehearsal("ended in the booth"); });
+  $("bTestEnd").addEventListener("click", function () { endTestRun(); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-test]"), function (b) {
+    b.addEventListener("click", function () { startTestRun(+b.getAttribute("data-test")); });
+  });
+  $("bReports").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("[data-copy]") : null; if (!b) return;
+    var r = (state.reports || [])[+b.getAttribute("data-copy")]; if (!r) return;
+    try { navigator.clipboard.writeText(r.title + "\n" + r.lines.map(function (l) { return "\u2022 " + l; }).join("\n")); b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy"; }, 1500); } catch (er) {}
+  });
   $("bReset").addEventListener("click", function () {
     if (state.rehearsal) { endRehearsal("Reset in the booth"); return; }
     if (lastCalc && lastCalc.program === "switch") state.swLive = null; else state.live = null;
@@ -4097,6 +4230,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     ptLog("ProTools started playing");
     if (link.watch) {
       var delta = (now - link.watch.target) / 1000, lead = +state.ptLag || 0;
+      var lw = svcLogFor(link.watch.key); if (lw) { lw.startDelta = Math.round(delta * 100) / 100; lw.startAt = now; lw.startHow = "auto-start"; }
       link.result = "Auto-start: ProTools started " + Math.abs(delta).toFixed(2) + " s " + (delta >= 0 ? "after" : "before") + " the target.";
       link.resultBad = Math.abs(delta) > 0.5;
       // ProTools' own start-up time = how late it was + how early Play went out; keep a smoothed figure for next time
@@ -4130,7 +4264,11 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     if (e === null || e < 0 || e >= 20) return;
     var key = ps.key || nearestKey(ps.at);
     if (!key && !state.rehearsal && !inServiceWindow(nowMs())) { if (startRehearsal(e)) { renderBooth(); } return; }
-    if (key) { state.live = { key: key, at: nowMs() - e * 1000 }; persist(); }
+    if (key) {
+      state.live = { key: key, at: nowMs() - e * 1000 };
+      var ls = svcLogFor(key); if (ls && !ls.startAt) { ls.startAt = state.live.at; ls.startHow = ps.key ? "auto-start" : "ProTools started by hand"; }
+      persist();
+    }
   }
   function nextAuto(now) {
     if (!lastCalc) return null;
@@ -4176,6 +4314,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     link.endStopped = link.firstQF;
     ptLog("ProTools ran 30 s past the end of the session, so it was paused there");
     var here = pos;
+    var lk = state.live && state.live.key, le = lk ? svcLogFor(lk) : null; if (le) le.endPause = here;
     ptSend(MMC_STOP, "Stop (end of session)", null, true);
     // ProTools jumps back to where playback started when it stops; put it back where it stopped (a pause)
     setTimeout(function () { locateTo(here, "where it stopped"); }, 700);
@@ -4342,7 +4481,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   var FB_VERSION = "10.12.2";
   // every device unlocks with one shared password for this sign-in
   var SYNC_LOGIN = window.START_TIMES_LOGIN || "booth@northland-start-times.app";
-  var SHARED = ["rehearsal", "msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems", "swLive", "dropBy", "ptCues", "walkSong", "stageAt", "weekVer"];
+  var SHARED = ["rehearsal", "testRun", "reports", "msgParts", "msgLateKey", "mode", "len", "target", "walkin", "set", "items", "countdown", "b2f", "walkBackup", "cutoff", "sat", "stage", "msg", "lower", "services", "clockOff", "auto", "cueLead", "live", "skips", "swStart", "swServices", "swItems", "swLive", "dropBy", "ptCues", "walkSong", "stageAt", "weekVer"];
   var sync = { ready: false, applying: false, user: null, db: null, timer: null, device: "", role: "", peers: {}, booth: null, lastTele: "", teleAt: 0, err: "", offs: [] };
   try { sync.device = localStorage.getItem("st-device") || ""; } catch (e) {}
   if (!sync.device) { sync.device = "d" + Math.random().toString(36).slice(2, 10); try { localStorage.setItem("st-device", sync.device); } catch (e) {} }
