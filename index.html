@@ -1893,7 +1893,7 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v108";
+  var APP_BUILD = "v109";
   state.weekVer = DATA_VER;
 
   // ---------- helpers ----------
@@ -3287,8 +3287,10 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     var rehearsal = live === null && rawLinked !== null && rawLinked >= 0 && rawLinked <= lastCalc.len + 60;
     var linked = live !== null || rehearsal ? rawLinked : null;
     // with the ProTools link hearing ProTools, a stopped ProTools is shown where it really is, never a counter running on the plan
-    var stopped = null, rehStop = false, notStarted = false;
-    if (linked === null && link.inp && link.tc) {
+    var stopped = null, rehStop = false, notStarted = false, unknownStop = false;
+    var ptMac = !!(link.inp || state.ptIn) && !link.midiFail;
+    if (linked === null && ptMac && !ptMoving() && ptStoppedAt() === null && (live !== null || now >= planned) && now < planned + (lastCalc.len + 120) * 1000) unknownStop = true;
+    if (linked === null && ptMac && (link.tc || link.restoredPos != null)) {
       var sp = ptStoppedAt();
       if (sp !== null && sp >= 0 && sp <= lastCalc.len + 60) {
         if (live !== null) stopped = sp;                                        // the service started; ProTools is stopped now
@@ -3302,7 +3304,14 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
     paintChip($("bMode"), ast);
     var verb = ast.fires ? "Auto-start" : ast.level === "none" ? "ProTools start" : "Hit play";
 
-    if (el < 0) {
+    if (unknownStop) {
+      // this is the ProTools Mac, ProTools isn't playing, and it hasn't said where it is yet
+      booth.cOn = false;
+      $("bLab").textContent = live !== null ? "ProTools stopped" : "ProTools stopped \u00b7 not started yet";
+      var uh = monoHtml("--:--.---"); if ($("bBig")._h !== uh) { $("bBig").innerHTML = uh; $("bBig")._h = uh; }
+      var us = "Press Play in ProTools (or hold a cue-sheet row) to sync the counter";
+      if ($("bSub")._h !== us) { $("bSub").textContent = us; $("bSub")._h = us; }
+    } else if (el < 0) {
       booth.cOn = false; $("bSub")._h = "";
       var left = Math.ceil(-el);
       var cued = ast.fires && (link.done[booth.key] || {}).cue;
@@ -3897,7 +3906,21 @@ body.tv-mode .vx-then.then-pulse { animation: thenPulse 1s ease-in-out infinite;
   }
   function ptMoving() { return performance.now() - link.lastQF < 400; }
   // ProTools sent timecode earlier but has stopped: where it stopped (seconds into the session)
-  function ptStoppedAt() { return link.inp && link.tc && !ptMoving() ? ptPosNow() : null; }
+  function ptStoppedAt() {
+    if (link.inp && link.tc && !ptMoving()) return ptPosNow();
+    if (!link.tc && link.restoredPos != null && !ptMoving()) return link.restoredPos;   // after a reload, before ProTools says anything
+    return null;
+  }
+  try {
+    var savedPT = JSON.parse(localStorage.getItem("st-pt-last") || "null");
+    if (savedPT && Date.now() - savedPT.at < 12 * 3600000) link.restoredPos = savedPT.p;
+  } catch (e) {}
+  setInterval(function () {
+    if (!link.tc) return;
+    var p = ptMoving() ? (state.ptReturns !== false && link.playStart != null ? link.playStart : ptPosNow()) : ptPosNow();
+    if (p === null) return;
+    try { localStorage.setItem("st-pt-last", JSON.stringify({ p: Math.round(p * 1000) / 1000, at: Date.now() })); } catch (e) {}
+  }, 500);
   // a "started" mark far from its own service (left over from a test) is cleared
   function cleanStrayStart() {
     if (!state.live || !lastCalc || lastCalc.program === "switch") return;
