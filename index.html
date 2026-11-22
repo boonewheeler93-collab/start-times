@@ -1521,7 +1521,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
 /* TV / multiviewer: maximum contrast and heavier strokes, which survive being shrunk into a tile */
 body.tv-mode { background: #000 !important; }
 body.tv-mode .vx-next { background: #000 !important; border-color: rgba(255,255,255,0.08) !important; }
-body.tv-mode #vNextCd { font-weight: 800; letter-spacing: -0.04em; color: #fff; line-height: 0.8; margin: 0.6vh 0 1.2vh; }
+body.tv-mode #vNextCd { font-weight: 800; letter-spacing: -0.04em; color: #fff; line-height: 0.8; margin: 1.2vh 0; }
 body.tv-mode .vx-then { font-weight: 800; }
 body.tv-mode .vx-chip { font-weight: 800; }
 </style>
@@ -2050,7 +2050,7 @@ body.tv-mode .vx-chip { font-weight: 800; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v155";
+  var APP_BUILD = "v156";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -5590,6 +5590,23 @@ body.tv-mode .vx-chip { font-weight: 800; }
     // TV: fill 96% of the width; the line box is trimmed to the digits (line-height 0.8), so height allows room / 0.8
     var size = tvMode ? Math.min(100 * (card.clientWidth * 0.96) / w, room / 0.8) : Math.min(100 * (card.clientWidth * 0.88) / w, room * 0.8);
     el.style.fontSize = Math.max(40, Math.floor(size)) + "px";
+    centerDigits(el, tvMode);
+  }
+  // TV: put the digits themselves (not their text box) exactly midway between the label above and the Then pill below
+  function centerDigits(el, tvMode) {
+    el.style.transform = "";
+    if (!tvMode) return;
+    try {
+      var cs = getComputedStyle(el), fs = parseFloat(cs.fontSize), L = el.getBoundingClientRect().height;
+      var cv = centerDigits.cv || (centerDigits.cv = document.createElement("canvas")), cx = cv.getContext("2d");
+      cx.font = cs.fontWeight + " " + fs + "px " + cs.fontFamily;
+      var m = cx.measureText(el.textContent || "00:00");
+      var FA = m.fontBoundingBoxAscent, FD = m.fontBoundingBoxDescent, A = m.actualBoundingBoxAscent, D = Math.max(0, m.actualBoundingBoxDescent);
+      if (!(FA > 0) || !(A > 0)) return;
+      var base = (L - (FA + FD)) / 2 + FA;               // where the baseline sits inside the text box
+      var above = base - A, below = L - (base + D);      // empty space above / below the digits inside the box
+      el.style.transform = "translateY(" + ((below - above) / 2).toFixed(1) + "px)";
+    } catch (e) {}
   }
   window.addEventListener("resize", function () { var el = $("vNextCd"); if (el) el._fitKey = null; fitCountdown(); });
   function renderViewer() {
