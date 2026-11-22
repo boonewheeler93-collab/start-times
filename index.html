@@ -1324,7 +1324,7 @@ body.tv-mode .vx-top { grid-row: 1; grid-column: 1; margin: 0; font-size: clamp(
 body.tv-mode .vx-now, body.tv-mode .vx-ptcard, body.tv-mode .vx-panel, body.tv-mode .vx-foot, body.tv-mode .vx-alerts { display: none !important; }
 body.tv-mode .vx-next { grid-row: 2 !important; grid-column: 1 !important; align-self: stretch; min-height: 0; height: 100%; box-sizing: border-box;
   display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1.5vh 2vw; }
-body.tv-mode .vx-next .vx-next-k { font-size: clamp(1.2rem, min(4.2vw, 7vh), 5rem); }
+body.tv-mode .vx-next .vx-next-k { font-size: clamp(1.4rem, min(5vw, 8.5vh), 6rem); font-weight: 800; }
 body.tv-mode .vx-next .vx-at { font-size: clamp(1rem, min(2.6vw, 4.4vh), 3rem); }
 body.tv-mode .vx-then { text-transform: capitalize; display: block; margin-top: 1.2vh; margin-bottom: 1.5vh; line-height: 1.25; font-weight: 800; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
   font-size: clamp(1.2rem, min(4vw, 6.6vh), 5rem); color: var(--ink, #eef1ff); }
@@ -1340,7 +1340,7 @@ body.tv-mode .vx-then:empty { display: none; }
 .vx-refresh:hover { color: var(--ink, #fff); border-color: rgba(255,255,255,0.3); }
 
 /* TV view: the Then pill sits right under the numbers; the bottom stays clear for the multiviewer label */
-body.tv-mode .vx-next { justify-content: flex-start; padding-top: 2vh; padding-bottom: 15vh; }
+body.tv-mode .vx-next { justify-content: center; padding-top: 1vh; padding-bottom: 9vh; }
 body.tv-mode .vx-next .vx-at { display: none; }
 body.tv-mode .vx-then { overflow: visible; display: inline-flex; align-items: baseline; gap: 0.35em; width: auto; max-width: 92%; margin: 0.4vh 0 0;
   padding: 0.18em 0.85em 0.22em; border-radius: 999px; line-height: 1.2; font-size: clamp(1.2rem, min(3.6vw, 6.2vh), 4.6rem);
@@ -1517,6 +1517,13 @@ body.ready-on #bMode, body.ready-on #bLinkChip, body.ready-on #bLinkTest, body.r
 body.pt-held #vNextCd { opacity: 0.75; }
 
 #vDebug { position: fixed; left: 12px; top: 12px; z-index: 99; margin: 0; padding: 10px 14px; border-radius: 10px; background: rgba(0,0,0,0.85); color: #b8f5c8; font: 13px/1.45 ui-monospace, Menlo, monospace; white-space: pre; }
+
+/* TV / multiviewer: maximum contrast and heavier strokes, which survive being shrunk into a tile */
+body.tv-mode { background: #000 !important; }
+body.tv-mode .vx-next { background: #000 !important; border-color: rgba(255,255,255,0.08) !important; }
+body.tv-mode #vNextCd { font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+body.tv-mode .vx-then { font-weight: 800; }
+body.tv-mode .vx-chip { font-weight: 800; }
 </style>
 </head>
 <body>
@@ -2043,7 +2050,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v153";
+  var APP_BUILD = "v154";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
