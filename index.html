@@ -1521,7 +1521,7 @@ body.pt-held #vNextCd { opacity: 0.75; }
 /* TV / multiviewer: maximum contrast and heavier strokes, which survive being shrunk into a tile */
 body.tv-mode { background: #000 !important; }
 body.tv-mode .vx-next { background: #000 !important; border-color: rgba(255,255,255,0.08) !important; }
-body.tv-mode #vNextCd { font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+body.tv-mode #vNextCd { font-weight: 800; letter-spacing: -0.04em; color: #fff; line-height: 0.8; margin: 0.6vh 0 1.2vh; }
 body.tv-mode .vx-then { font-weight: 800; }
 body.tv-mode .vx-chip { font-weight: 800; }
 </style>
@@ -2050,7 +2050,7 @@ body.tv-mode .vx-chip { font-weight: 800; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v154";
+  var APP_BUILD = "v155";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -5587,7 +5587,8 @@ body.tv-mode .vx-chip { font-weight: 800; }
     var subH = sub && getComputedStyle(sub).display !== "none" ? sub.offsetHeight : 0;
     var room = card.clientHeight - pad - (label ? label.offsetHeight : 0) - subH - (then ? then.offsetHeight : 0) - 24;
     var tvMode = document.body.classList.contains("tv-mode");
-    var size = Math.min(100 * (card.clientWidth * 0.88) / w, room * (tvMode ? 0.86 : 0.8));
+    // TV: fill 96% of the width; the line box is trimmed to the digits (line-height 0.8), so height allows room / 0.8
+    var size = tvMode ? Math.min(100 * (card.clientWidth * 0.96) / w, room / 0.8) : Math.min(100 * (card.clientWidth * 0.88) / w, room * 0.8);
     el.style.fontSize = Math.max(40, Math.floor(size)) + "px";
   }
   window.addEventListener("resize", function () { var el = $("vNextCd"); if (el) el._fitKey = null; fitCountdown(); });
