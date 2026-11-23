@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-22T18:43:53Z",
+  "updated": "2026-11-23T22:57:29Z",
   "weekend": {
     "plan_id": "91142211",
     "title": null,
@@ -281,6 +281,28 @@
         "key": "E",
         "notes": [],
         "lead": null
+      },
+      {
+        "title": "I Was But God",
+        "type": "song",
+        "section": "Worship",
+        "length": 274,
+        "position": "during",
+        "description": "+ Boone\n* Big Ending",
+        "key": "C",
+        "notes": [],
+        "lead": "Boone"
+      },
+      {
+        "title": "Jesus Be The Name (SHORTENED ENDING)",
+        "type": "song",
+        "section": "Worship",
+        "length": 330,
+        "position": "during",
+        "description": "+ Ana\n* End BIG",
+        "key": "C",
+        "notes": [],
+        "lead": "Ana"
       },
       {
         "title": "Transition out of Worship",
