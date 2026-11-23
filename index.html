@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="disabled-adaptations" content="watch">
 <meta name="theme-color" content="#060914">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Start Times">
@@ -1524,6 +1525,27 @@ body.tv-mode .vx-next { background: #000 !important; border-color: rgba(255,255,
 body.tv-mode #vNextCd { font-weight: 800; letter-spacing: -0.04em; color: #fff; line-height: 0.8; margin: 1.2vh 0; }
 body.tv-mode .vx-then { font-weight: 800; }
 body.tv-mode .vx-chip { font-weight: 800; }
+
+/* ===== Watch view (#watch): next cue, its countdown, and what's after it ===== */
+body.watch-mode { background: #000 !important; }
+body.watch-mode #viewer { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+body.watch-mode .vx-top, body.watch-mode #vNow, body.watch-mode #vPtCard, body.watch-mode #vPanel, body.watch-mode #vFoot, body.watch-mode #vAlert, body.watch-mode #vNextSub { display: none !important; }
+body.watch-mode .vx-next { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; box-sizing: border-box;
+  padding: 4px 4px 6px !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important; background: #000 !important; box-shadow: none !important; gap: 2px; }
+html:has(body.watch-mode), body.watch-mode { height: 100%; overflow: hidden; }
+body.watch-mode .vx-next-k { font-size: 0 !important; line-height: 1; text-align: center; }        /* just the cue name on the watch */
+body.watch-mode .vx-next-k .vx-chip { font-size: 7.5vw; font-weight: 800; max-width: 96vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; }
+body.watch-mode .vx-next-k .vx-held { font-size: 6vw; display: block; margin: 0 auto 2px; width: max-content; }
+body.watch-mode .vx-chip { padding: 0.08em 0.5em; }
+body.watch-mode #vNextCd { font-weight: 800; color: #fff; line-height: 0.95; letter-spacing: -0.04em; white-space: nowrap; margin: 0; }
+body.watch-mode .vx-then:not(:empty) { display: inline-flex !important; align-items: baseline; gap: 0.35em; border-radius: 999px; border: 1px solid rgba(157,176,255,0.35); background: rgba(157,176,255,0.10); font-weight: 800; color: #e8ecff; }
+body.watch-mode .vx-then .vx-at, body.watch-mode .vx-then small { font-size: 0.85em; color: #b8c0dc; }
+body.watch-mode .vx-then { font-size: 6vw !important; margin-top: 4px; padding: 0.25em 0.7em; max-width: 98vw; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; line-height: 1.25; }
+body.watch-mode .vx-then .vx-lead { display: none; }
+/* the drop takeover works on the watch too */
+body.watch-mode.drop-take .drop-take-box, body.watch-mode.drop-now .drop-take-box { display: flex; position: fixed; inset: 0; z-index: 90; flex-direction: column; align-items: center; justify-content: center; background: #8f0f0b; color: #fff; text-align: center; }
+body.watch-mode.drop-now .drop-take-box { background: #ff3b30; }
+body.watch-mode .dt-k { font-size: 9vw; } body.watch-mode .dt-n { font-size: 48vw; } body.watch-mode .dt-s { font-size: 6vw; } body.watch-mode .dt-drop { font-size: 26vw; }
 </style>
 </head>
 <body>
@@ -2050,7 +2072,7 @@ body.tv-mode .vx-chip { font-weight: 800; }
     });
     return k !== null && e !== null && e > k ? e - k : null;
   }
-  var APP_BUILD = "v156";
+  var APP_BUILD = "v157";
   function alignCueHeads() {
     Array.prototype.forEach.call(document.querySelectorAll(".cue-h"), function (h) {
       var card = h.closest(".b-right") || h.closest("section") || h.parentElement, rail = card && card.querySelector(".lcs-rail");
@@ -4911,7 +4933,7 @@ body.tv-mode .vx-chip { font-weight: 800; }
   setTimeout(function loop() { checkBuild(); setTimeout(loop, viewOnly() ? 60000 : 300000); }, 60000);
   function scheduleReload() {
     if (reloadWanted) return; reloadWanted = true;
-    if (viewOnly()) { location.replace(location.pathname + "?v=" + Date.now() + (/^#tv$/i.test(location.hash) ? "#tv" : "#view")); return; }
+    if (viewOnly()) { location.replace(location.pathname + "?v=" + Date.now() + viewHash()); return; }
     var tick = setInterval(function () {
       if (!safeToReload(nowMs())) return;
       clearInterval(tick);
@@ -5574,6 +5596,16 @@ body.tv-mode .vx-chip { font-weight: 800; }
   function fitCountdown() {
     var el = $("vNextCd"), card = $("vNext");
     if (!el || !card || card.hidden) return;
+    if (document.body.classList.contains("watch-mode")) {
+      var wk = el.textContent.length + "|" + card.clientWidth;
+      if (el._fitKey === wk) return; el._fitKey = wk;
+      el.style.fontSize = "100px";
+      var byW = 100 * (card.clientWidth * 0.95) / (el.scrollWidth || 1);
+      var lab = card.querySelector(".vx-next-k"), th = card.querySelector(".vx-then");
+      var roomH = window.innerHeight - (lab ? lab.offsetHeight : 0) - (th && th.textContent ? th.offsetHeight + 4 : 0) - 16;
+      el.style.fontSize = Math.max(24, Math.floor(Math.min(byW, roomH / 0.95))) + "px";
+      return;
+    }
     if (window.innerWidth < 900) { if (el.style.fontSize) el.style.fontSize = ""; el._fitKey = null; return; }
     var thenEl = card.querySelector(".vx-then");
     var key = el.textContent.length + "|" + card.clientWidth + "x" + card.clientHeight + "|" + (thenEl ? thenEl.textContent.length + ":" + thenEl.className : "");
@@ -5741,11 +5773,13 @@ body.tv-mode .vx-chip { font-weight: 800; }
     else if (done && occ.length > 1) foot = "Next service: " + occ[1].sv.day + " " + svcClock(occ[1].sv.sec);
     if ($("vFoot").textContent !== foot) $("vFoot").textContent = foot;
   }
+  function viewHash() { return /^#tv$/i.test(location.hash) ? "#tv" : /^#watch$/i.test(location.hash) ? "#watch" : "#view"; }
   function applyViewMode() {
-    var tv = /^#tv$/i.test(location.hash);
-    var on = !!window.START_TIMES_VIEW || /^#view$/i.test(location.hash) || tv;
+    var tv = /^#tv$/i.test(location.hash), watch = /^#watch$/i.test(location.hash);
+    var on = !!window.START_TIMES_VIEW || /^#view$/i.test(location.hash) || tv || watch;
     document.body.classList.toggle("view-mode", on);
     document.body.classList.toggle("tv-mode", tv);
+    document.body.classList.toggle("watch-mode", watch);
     var cdEl = $("vNextCd"); if (cdEl) cdEl._fitKey = null;
     $("viewer").hidden = !on;
     if (on) { if (booth.open) closeBooth(); document.title = "Start Times (live)"; renderViewer(); }
@@ -5753,7 +5787,7 @@ body.tv-mode .vx-chip { font-weight: 800; }
   window.addEventListener("hashchange", applyViewMode);
   // public / TV view: reload the newest version, staying in the same view
   $("vRefresh").addEventListener("click", function () {
-    location.replace(location.pathname + "?v=" + Date.now() + (/^#tv$/i.test(location.hash) ? "#tv" : "#view"));
+    location.replace(location.pathname + "?v=" + Date.now() + viewHash());
   });
   setInterval(renderViewer, 250);
   applyViewMode();
