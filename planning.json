@@ -1,17 +1,17 @@
 {
-  "updated": "2026-11-23T22:57:29Z",
+  "updated": "2026-11-24T21:36:45Z",
   "weekend": {
-    "plan_id": "91142211",
+    "plan_id": "91142212",
     "title": null,
-    "series": "Supernatural",
-    "dates": "November 21 & 22, 2026",
-    "sort_date": "2026-11-21T17:00:00Z",
+    "series": "Because of You",
+    "dates": "November 28 & 29, 2026",
+    "sort_date": "2026-11-28T17:00:00Z",
     "times": [
-      "2026-11-21T23:00:00Z",
-      "2026-11-22T14:30:00Z",
-      "2026-11-22T16:00:00Z",
-      "2026-11-22T17:30:00Z",
-      "2026-11-22T19:00:00Z"
+      "2026-11-28T23:00:00Z",
+      "2026-11-29T14:30:00Z",
+      "2026-11-29T16:00:00Z",
+      "2026-11-29T17:30:00Z",
+      "2026-11-29T19:00:00Z"
     ],
     "items": [
       {
@@ -57,24 +57,21 @@
         "lead": null
       },
       {
-        "title": "Walk-in:  Waiting On The World To Change - John Mayer",
+        "title": "Walk-in:  Listen To The Music - The Doobie Brothers",
         "type": "item",
         "section": "WALK-IN SONG",
-        "length": 199,
+        "length": 240,
         "position": "during",
-        "description": "+ Kari (SAT) / Boone (SUN)\n*BGV's",
+        "description": "+ Ana\n*BGVs",
         "key": null,
         "notes": [],
-        "lead": {
-          "Saturday": "Kari",
-          "Sunday": "Boone"
-        }
+        "lead": "Ana"
       },
       {
         "title": "BEGINS NOW",
         "type": "item",
         "section": "WORSHIP",
-        "length": 29,
+        "length": 40,
         "position": "during",
         "description": null,
         "key": null,
@@ -82,32 +79,26 @@
         "lead": null
       },
       {
-        "title": "The Joy",
+        "title": "Alleluia",
         "type": "song",
         "section": "WORSHIP",
-        "length": 291,
+        "length": 258,
         "position": "during",
-        "description": "+ Ady (SAT) / Tara (SUN)\n*WELCOME",
-        "key": "G",
+        "description": "+ Boone",
+        "key": "A",
         "notes": [],
-        "lead": {
-          "Saturday": "Ady",
-          "Sunday": "Tara"
-        }
+        "lead": "Boone"
       },
       {
-        "title": "I Know A Name",
+        "title": "So Much",
         "type": "song",
         "section": "WORSHIP",
-        "length": 282,
+        "length": 309,
         "position": "during",
-        "description": "+ Ana (SAT) \n+ Boone (SUN)",
+        "description": "+ Jill",
         "key": "D",
         "notes": [],
-        "lead": {
-          "Saturday": "Ana",
-          "Sunday": "Boone"
-        }
+        "lead": "Jill"
       },
       {
         "title": "Pastoral Moment ",
@@ -115,24 +106,21 @@
         "section": "WORSHIP",
         "length": 0,
         "position": "during",
-        "description": "+ Ana\n*pad in D",
+        "description": "+ Boone\n*pad in C",
         "key": null,
         "notes": [],
-        "lead": "Ana"
+        "lead": "Boone"
       },
       {
-        "title": "More Than Able",
+        "title": "The Love of Jesus *NEW SONG*",
         "type": "song",
         "section": "WORSHIP",
-        "length": 456,
+        "length": 336,
         "position": "during",
-        "description": "+ Kari / Ana (SAT)\n+ Boone / Ana (SUN)\n*BIG ENDING ",
-        "key": "D",
+        "description": "+ Boone",
+        "key": "C",
         "notes": [],
-        "lead": {
-          "Saturday": "Kari / Ana",
-          "Sunday": "Boone / Ana"
-        }
+        "lead": "Boone"
       },
       {
         "title": "Offering + Stage Time",
@@ -151,7 +139,7 @@
         "section": "M E S S A G E",
         "length": 2160,
         "position": "during",
-        "description": "* Pastor Craig\n“Pastors, will you take this over now - it’s your time to PRAY…” Db",
+        "description": "* Pastor Craig",
         "key": null,
         "notes": [
           {
@@ -163,17 +151,6 @@
             "content": "Craig"
           }
         ],
-        "lead": null
-      },
-      {
-        "title": "PASTOR MIKE - HANDS PRAYER",
-        "type": "item",
-        "section": "M E S S A G E",
-        "length": 60,
-        "position": "during",
-        "description": "+ Mike will take over once Pastor Craig says so in the message.",
-        "key": null,
-        "notes": [],
         "lead": null
       },
       {
