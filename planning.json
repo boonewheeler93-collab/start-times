@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-24T21:36:45Z",
+  "updated": "2026-11-25T20:44:25Z",
   "weekend": {
     "plan_id": "91142212",
     "title": null,
@@ -254,10 +254,10 @@
         "section": "Worship",
         "length": 230,
         "position": "during",
-        "description": null,
+        "description": "+ Ana/Kennedy",
         "key": "E",
         "notes": [],
-        "lead": null
+        "lead": "Ana/Kennedy"
       },
       {
         "title": "I Was But God",
